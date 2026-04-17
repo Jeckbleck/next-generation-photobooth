@@ -1,0 +1,12 @@
+<Window x:Class="Photobooth.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="The Next Generation Photobooth"
+        WindowState="Maximized"
+        WindowStyle="None"
+        Background="{StaticResource BackgroundBrush}"
+        ResizeMode="NoResize">
+
+    <Frame x:Name="RootFrame"
+           NavigationUIVisibility="Hidden"/>
+</Window>

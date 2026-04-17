@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <PlatformTarget>x86</PlatformTarget>
+    <AssemblyName>Photobooth</AssemblyName>
+    <RootNamespace>Photobooth</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Copy EDSDK DLLs (32-bit) to output directory.
+    DLL source: D:\EDSDKv132010W\Windows\EDSDK\Dll\
+    Drop EDSDK.dll and EdsImage.dll next to the .csproj or adjust the paths below.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="4.*" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.*" />
+    <PackageReference Include="Serilog.Sinks.Debug" Version="3.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="EDSDK.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="EdsImage.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
