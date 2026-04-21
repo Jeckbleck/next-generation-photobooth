@@ -26,11 +26,11 @@ namespace Photobooth.Camera
         private bool _sdkInitialized;
         private IntPtr _cameraRef;
 
-        // Set before calling TakePictureAsync so downloads go to the right folder
+        public bool IsConnected { get; private set; }
+
         public string SessionDirectory { get; set; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
 
-        // Resolves when a download completes, carrying the saved file path
         private TaskCompletionSource<string>? _pendingDownload;
 
         // --- Lifecycle -----------------------------------------------------------
@@ -39,19 +39,27 @@ namespace Photobooth.Camera
         {
             Log.Information("Initializing EDSDK");
 
-            uint err = EDSDKLib.EDSDK.EdsInitializeSDK();
-            if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
+            // Tear down any previous session so Initialize() is safe to call again (e.g. reconnect)
+            TearDownCameraSession();
+
+            if (!_sdkInitialized)
             {
-                Log.Error("EdsInitializeSDK failed 0x{Error:X8}", err);
-                return false;
+                uint err = EDSDKLib.EDSDK.EdsInitializeSDK();
+                if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
+                {
+                    Log.Error("EdsInitializeSDK failed 0x{Error:X8}", err);
+                    IsConnected = false;
+                    return false;
+                }
+                _sdkInitialized = true;
             }
-            _sdkInitialized = true;
 
             IntPtr cameraList;
-            err = EDSDKLib.EDSDK.EdsGetCameraList(out cameraList);
-            if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
+            uint listErr = EDSDKLib.EDSDK.EdsGetCameraList(out cameraList);
+            if (listErr != EDSDKLib.EDSDK.EDS_ERR_OK)
             {
-                Log.Error("EdsGetCameraList failed 0x{Error:X8}", err);
+                Log.Error("EdsGetCameraList failed 0x{Error:X8}", listErr);
+                IsConnected = false;
                 return false;
             }
 
@@ -63,14 +71,16 @@ namespace Photobooth.Camera
             {
                 EDSDKLib.EDSDK.EdsRelease(cameraList);
                 Log.Warning("No camera found");
+                IsConnected = false;
                 return false;
             }
 
-            err = EDSDKLib.EDSDK.EdsGetChildAtIndex(cameraList, 0, out _cameraRef);
+            uint getErr = EDSDKLib.EDSDK.EdsGetChildAtIndex(cameraList, 0, out _cameraRef);
             EDSDKLib.EDSDK.EdsRelease(cameraList);
-            if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
+            if (getErr != EDSDKLib.EDSDK.EDS_ERR_OK)
             {
-                Log.Error("EdsGetChildAtIndex failed 0x{Error:X8}", err);
+                Log.Error("EdsGetChildAtIndex failed 0x{Error:X8}", getErr);
+                IsConnected = false;
                 return false;
             }
 
@@ -78,7 +88,8 @@ namespace Photobooth.Camera
             IObserver self = this;
             _model.Add(ref self);
 
-            _selfHandle = GCHandle.Alloc(this);
+            if (!_selfHandle.IsAllocated)
+                _selfHandle = GCHandle.Alloc(this);
             IntPtr ptr = GCHandle.ToIntPtr(_selfHandle);
 
             _propHandler  = HandlePropertyEvent;
@@ -98,8 +109,21 @@ namespace Photobooth.Camera
             GC.KeepAlive(_objHandler);
             GC.KeepAlive(_stateHandler);
 
+            IsConnected = true;
             Log.Information("Camera session opened successfully");
             return true;
+        }
+
+        private void TearDownCameraSession()
+        {
+            if (_cameraRef == IntPtr.Zero) return;
+
+            _processor?.Stop();
+            _processor = null;
+
+            EDSDKLib.EDSDK.EdsRelease(_cameraRef);
+            _cameraRef = IntPtr.Zero;
+            _model = null;
         }
 
         // --- Live View -----------------------------------------------------------
@@ -128,10 +152,6 @@ namespace Photobooth.Camera
 
         // --- Capture -------------------------------------------------------------
 
-        /// <summary>
-        /// Triggers the shutter and waits for the photo to fully download.
-        /// Returns the saved file path, or throws on timeout/error.
-        /// </summary>
         public async Task<string> TakePictureAsync(CancellationToken ct = default)
         {
             if (_model == null || _processor == null)
@@ -141,7 +161,6 @@ namespace Photobooth.Camera
 
             _pendingDownload = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            // Block EVF queue from re-filling so TakePictureCommand runs immediately
             _model.IsCapturing = true;
             Log.Information("Triggering shutter — waiting for download");
             _processor.PostCommand(new TakePictureCommand(ref _model));
@@ -176,19 +195,16 @@ namespace Photobooth.Camera
                     Log.Warning("Camera reported device busy");
                     break;
 
-                case CameraEvent.Type.SHUT_DOWN:
-                    Log.Warning("Camera disconnected (StateEvent_Shutdown)");
-                    CameraDisconnected?.Invoke(this, EventArgs.Empty);
-                    break;
-
                 case CameraEvent.Type.ERROR:
                     Log.Error("Camera error 0x{Error:X8}", e.Arg);
+                    // Fail a pending capture immediately instead of waiting for the 30-second timeout
+                    _pendingDownload?.TrySetException(
+                        new InvalidOperationException($"EDSDK error 0x{e.Arg:X8}"));
                     Error?.Invoke(this, $"EDSDK error 0x{e.Arg:X8}");
                     break;
             }
         }
 
-        // Called by DownloadCommand on successful save
         private void OnPhotoSaved(string path)
         {
             Log.Information("Photo download complete: {Path}", path);
@@ -232,7 +248,13 @@ namespace Photobooth.Camera
         {
             if (inEvent == EDSDKLib.EDSDK.StateEvent_Shutdown)
             {
-                Log.Warning("Camera state event: Shutdown");
+                Log.Warning("Camera disconnected (StateEvent_Shutdown)");
+                IsConnected = false;
+
+                // If a capture is in-flight, cancel it immediately rather than waiting 30 s
+                if (_model != null) _model.IsCapturing = false;
+                _pendingDownload?.TrySetCanceled();
+
                 CameraDisconnected?.Invoke(this, EventArgs.Empty);
             }
             return EDSDKLib.EDSDK.EDS_ERR_OK;
@@ -276,14 +298,7 @@ namespace Photobooth.Camera
         public void Dispose()
         {
             Log.Information("Closing camera session");
-            _processor?.PostCommand(new CloseSessionCommand(ref _model!));
-            _processor?.Stop();
-
-            if (_cameraRef != IntPtr.Zero)
-            {
-                EDSDKLib.EDSDK.EdsRelease(_cameraRef);
-                _cameraRef = IntPtr.Zero;
-            }
+            TearDownCameraSession();
 
             if (_selfHandle.IsAllocated)
                 _selfHandle.Free();

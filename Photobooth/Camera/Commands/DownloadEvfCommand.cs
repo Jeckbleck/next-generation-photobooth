@@ -64,12 +64,15 @@ namespace Photobooth.Camera.Commands
 
             if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
             {
-                if (err == EDSDKLib.EDSDK.EDS_ERR_OBJECT_NOTREADY) return false;
-                if (err == EDSDKLib.EDSDK.EDS_ERR_DEVICE_BUSY)
+                // Transient conditions — retry silently
+                if (err == EDSDKLib.EDSDK.EDS_ERR_OBJECT_NOTREADY ||
+                    err == EDSDKLib.EDSDK.EDS_ERR_DEVICE_BUSY ||
+                    err == EDSDKLib.EDSDK.EDS_ERR_PROTECTION_VIOLATION ||
+                    err == EDSDKLib.EDSDK.EDS_ERR_NOT_SUPPORTED)
                 {
-                    _model.NotifyObservers(new CameraEvent(CameraEvent.Type.DEVICE_BUSY, IntPtr.Zero));
                     return false;
                 }
+
                 _model.NotifyObservers(new CameraEvent(CameraEvent.Type.ERROR, (IntPtr)err));
             }
             return true;

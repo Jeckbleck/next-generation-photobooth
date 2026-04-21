@@ -29,10 +29,29 @@
                        FontSize="18" TextAlignment="Center"
                        Margin="0,0,0,40"/>
 
-            <Button Content="START SESSION"
+            <Button x:Name="StartButton"
+                    Content="START SESSION"
                     Style="{StaticResource KioskButton}"
                     HorizontalAlignment="Center"
                     Click="StartSession_Click"/>
+
+            <!-- Shown only when no camera is detected -->
+            <TextBlock x:Name="CameraStatusText"
+                       Text="No camera connected"
+                       Foreground="#FF6B6B"
+                       FontSize="15"
+                       TextAlignment="Center"
+                       Margin="0,16,0,4"
+                       Visibility="Collapsed"/>
+
+            <Button x:Name="RetryButton"
+                    Content="RETRY CONNECTION"
+                    Style="{StaticResource GhostButton}"
+                    HorizontalAlignment="Center"
+                    Padding="28,10" FontSize="15"
+                    Margin="0,0,0,0"
+                    Visibility="Collapsed"
+                    Click="RetryCamera_Click"/>
         </StackPanel>
 
         <!-- Gear / settings button — top-right corner -->

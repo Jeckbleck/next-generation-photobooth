@@ -12,6 +12,9 @@ namespace Photobooth
         {
             AppLogger.Initialize();
             base.OnStartup(e);
+
+            Log.Information("App startup — initializing camera");
+            Camera.Initialize();
         }
 
         protected override void OnExit(ExitEventArgs e)

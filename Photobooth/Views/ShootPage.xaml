@@ -52,6 +52,32 @@
                    Opacity="0"
                    IsHitTestVisible="False"/>
 
+        <!-- Disconnect overlay (shown when camera disconnects mid-session) -->
+        <Grid x:Name="DisconnectOverlay" Visibility="Collapsed">
+            <Rectangle Fill="#CC000000"/>
+            <Border Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="12"
+                    Width="440"
+                    Padding="40"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Camera Disconnected"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="26" FontWeight="Bold"
+                               Margin="0,0,0,12"/>
+                    <TextBlock Text="Your session was interrupted because the camera lost connection. Please check the USB cable and try again."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="15" TextWrapping="Wrap"
+                               Margin="0,0,0,28"/>
+                    <Button Content="← GO BACK"
+                            Style="{StaticResource KioskButton}"
+                            HorizontalAlignment="Left"
+                            Padding="28,12" FontSize="16"
+                            Click="Back_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- Bottom bar -->
         <Border VerticalAlignment="Bottom"
                 Background="#80000000"
