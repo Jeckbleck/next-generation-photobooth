@@ -25,57 +25,84 @@ namespace Photobooth.Camera.Commands
             if ((_model.EvfOutputDevice & EDSDKLib.EDSDK.EvfOutputDevice_PC) == 0)
                 return true;
 
-            uint err;
-            IntPtr evfImage = IntPtr.Zero;
-            IntPtr stream = IntPtr.Zero;
-            IntPtr dataSetPtr = IntPtr.Zero;
+            uint err = TryDownload();
+            return err == EDSDKLib.EDSDK.EDS_ERR_OK || err != EDSDKLib.EDSDK.EDS_ERR_DEVICE_BUSY;
+            // true  = done (success or unrecoverable) — CommandProcessor moves on
+            // false = camera physically busy — CommandProcessor retries after 500 ms (appropriate)
+        }
+
+        // Attempts one EVF download, retrying briefly on OBJECT_NOTREADY without handing
+        // control back to CommandProcessor (which would impose a 500 ms penalty).
+        private uint TryDownload()
+        {
             const ulong bufferSize = 2 * 1024 * 1024;
+            const int maxNotReadyRetries = 6;   // 6 × 20 ms = 120 ms max wait
+            const int notReadySleepMs   = 20;
 
-            err = EDSDKLib.EDSDK.EdsCreateMemoryStream(bufferSize, out stream);
+            uint err = EDSDKLib.EDSDK.EDS_ERR_OK;
 
-            if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
-                err = EDSDKLib.EDSDK.EdsCreateEvfImageRef(stream, out evfImage);
-
-            if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
-                err = EDSDKLib.EDSDK.EdsDownloadEvfImage(_model.Camera, evfImage);
-
-            if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
+            for (int attempt = 0; attempt <= maxNotReadyRetries; attempt++)
             {
-                var dataset = new EvfDataSet { Stream = stream };
+                IntPtr evfImage  = IntPtr.Zero;
+                IntPtr stream    = IntPtr.Zero;
+                IntPtr dataSetPtr = IntPtr.Zero;
 
-                EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_Zoom, 0, out dataset.Zoom);
-                EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_ImagePosition, 0, out dataset.ImagePosition);
-                EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_ZoomRect, 0, out dataset.ZoomRect);
-                EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_CoordinateSystem, 0, out dataset.SizeJpegLarge);
-                EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_VisibleRect, 0, out dataset.VisibleRect);
+                err = EDSDKLib.EDSDK.EdsCreateMemoryStream(bufferSize, out stream);
 
-                _model.SizeJpegLarge = dataset.SizeJpegLarge;
-                _model.SetPropertyRect(EDSDKLib.EDSDK.PropID_Evf_ZoomRect, dataset.ZoomRect);
-                _model.SetPropertyRect(EDSDKLib.EDSDK.PropID_Evf_VisibleRect, dataset.VisibleRect);
+                if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
+                    err = EDSDKLib.EDSDK.EdsCreateEvfImageRef(stream, out evfImage);
 
-                dataSetPtr = Marshal.AllocHGlobal(Marshal.SizeOf(dataset));
-                Marshal.StructureToPtr(dataset, dataSetPtr, false);
-                _model.NotifyObservers(new CameraEvent(CameraEvent.Type.EVFDATA_CHANGED, dataSetPtr));
-            }
+                if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
+                    err = EDSDKLib.EDSDK.EdsDownloadEvfImage(_model.Camera, evfImage);
 
-            if (stream != IntPtr.Zero) EDSDKLib.EDSDK.EdsRelease(stream);
-            if (evfImage != IntPtr.Zero) EDSDKLib.EDSDK.EdsRelease(evfImage);
-            if (dataSetPtr != IntPtr.Zero) Marshal.FreeHGlobal(dataSetPtr);
-
-            if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
-            {
-                // Transient conditions — retry silently
-                if (err == EDSDKLib.EDSDK.EDS_ERR_OBJECT_NOTREADY ||
-                    err == EDSDKLib.EDSDK.EDS_ERR_DEVICE_BUSY ||
-                    err == EDSDKLib.EDSDK.EDS_ERR_PROTECTION_VIOLATION ||
-                    err == EDSDKLib.EDSDK.EDS_ERR_NOT_SUPPORTED)
+                if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
                 {
-                    return false;
+                    var dataset = new EvfDataSet { Stream = stream };
+
+                    EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_Zoom,             0, out dataset.Zoom);
+                    EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_ImagePosition,    0, out dataset.ImagePosition);
+                    EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_ZoomRect,         0, out dataset.ZoomRect);
+                    EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_CoordinateSystem, 0, out dataset.SizeJpegLarge);
+                    EDSDKLib.EDSDK.EdsGetPropertyData(evfImage, EDSDKLib.EDSDK.PropID_Evf_VisibleRect,      0, out dataset.VisibleRect);
+
+                    _model.SizeJpegLarge = dataset.SizeJpegLarge;
+                    _model.SetPropertyRect(EDSDKLib.EDSDK.PropID_Evf_ZoomRect,    dataset.ZoomRect);
+                    _model.SetPropertyRect(EDSDKLib.EDSDK.PropID_Evf_VisibleRect, dataset.VisibleRect);
+
+                    dataSetPtr = Marshal.AllocHGlobal(Marshal.SizeOf(dataset));
+                    Marshal.StructureToPtr(dataset, dataSetPtr, false);
+                    _model.NotifyObservers(new CameraEvent(CameraEvent.Type.EVFDATA_CHANGED, dataSetPtr));
                 }
 
+                if (stream    != IntPtr.Zero) EDSDKLib.EDSDK.EdsRelease(stream);
+                if (evfImage  != IntPtr.Zero) EDSDKLib.EDSDK.EdsRelease(evfImage);
+                if (dataSetPtr != IntPtr.Zero) Marshal.FreeHGlobal(dataSetPtr);
+
+                if (err == EDSDKLib.EDSDK.EDS_ERR_OK) return err;
+
+                // Camera hasn't prepared the next frame yet — wait briefly and retry within
+                // this Execute() call rather than returning false to CommandProcessor, which
+                // would impose a 500 ms penalty that collapses EVF to ~2 fps.
+                if (err == EDSDKLib.EDSDK.EDS_ERR_OBJECT_NOTREADY)
+                {
+                    if (attempt < maxNotReadyRetries)
+                    {
+                        Thread.Sleep(notReadySleepMs);
+                        continue;
+                    }
+                    return err; // Exhausted retries; caller skips this frame
+                }
+
+                // EDS_ERR_DEVICE_BUSY → surface to caller (returns false → 500 ms retry is correct)
+                if (err == EDSDKLib.EDSDK.EDS_ERR_DEVICE_BUSY)
+                    return err;
+
+                // Any other error: notify and stop
                 _model.NotifyObservers(new CameraEvent(CameraEvent.Type.ERROR, (IntPtr)err));
+                return err;
             }
-            return true;
+
+            return err;
         }
     }
 }

@@ -80,6 +80,10 @@ namespace Photobooth.Views
             _camera.StartLiveView();
             RequestNextEvfFrame();
 
+            // 50 ms safety-net: if a DownloadEvfCommand exhausted all its NOT_READY retries
+            // (rare) and returned without a frame, this ensures the loop restarts quickly
+            // rather than waiting for the 500 ms CommandProcessor retry path.
+            // Also provides the 5-second stall detection.
             _evfWatchdog = new System.Threading.Timer(_ =>
             {
                 if (!_evfRunning || _shooting) return;
@@ -87,7 +91,6 @@ namespace Photobooth.Views
                 _evfFramePending = false;
                 RequestNextEvfFrame();
 
-                // If no EVF frame has arrived in 5 s, tell the user the preview is unavailable
                 if ((DateTime.UtcNow - _lastEvfFrameTime).TotalSeconds > 5)
                 {
                     Dispatcher.BeginInvoke(() =>
@@ -99,7 +102,7 @@ namespace Photobooth.Views
                         }
                     });
                 }
-            }, null, 500, 500);
+            }, null, 50, 50);
         }
 
         private void RequestNextEvfFrame()
@@ -113,10 +116,11 @@ namespace Photobooth.Views
         {
             _evfFramePending = false;
             _lastEvfFrameTime = DateTime.UtcNow;
-            Dispatcher.BeginInvoke(() =>
+            // Render priority keeps EVF ahead of lower-priority UI work (layout, animations)
+            // and prevents decoded frames from queuing up behind other dispatcher callbacks.
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
             {
                 EvfImage.Source = frame;
-                // Clear the stall warning once frames resume
                 if (StatusText.Text == "Camera preview unavailable.")
                     StatusText.Text = string.Empty;
             });
