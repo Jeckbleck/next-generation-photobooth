@@ -135,18 +135,66 @@
                     <TextBlock Text="Settings"
                                Foreground="{StaticResource TextPrimaryBrush}"
                                FontSize="26" FontWeight="Bold"
-                               Margin="0,0,0,16"/>
-
-                    <TextBlock Text="No configurable settings yet. More options coming soon."
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontSize="15" TextWrapping="Wrap"
                                Margin="0,0,0,24"/>
 
-                    <Button Content="Close"
-                            Style="{StaticResource KioskButton}"
-                            HorizontalAlignment="Right"
-                            Padding="24,10" FontSize="15"
-                            Click="CloseSettingsContent_Click"/>
+                    <!-- Printer -->
+                    <TextBlock Text="PRINTER"
+                               Foreground="{StaticResource AccentBrush}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock x:Name="PrinterStatusText"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="13" TextWrapping="Wrap"
+                               Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBox x:Name="PrinterNameBox"
+                                 Width="320"
+                                 FontSize="14"
+                                 Background="#0D1B2A"
+                                 Foreground="White"
+                                 BorderBrush="#334"
+                                 Padding="10,6"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip="Leave blank to auto-detect any DNP printer"/>
+                        <Button Content="Auto-detect"
+                                Style="{StaticResource GhostButton}"
+                                Padding="16,6" FontSize="13"
+                                Margin="8,0,0,0"
+                                Click="AutoDetectPrinter_Click"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Leave blank to auto-detect any DNP / DS620 printer."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" Margin="0,0,0,24"/>
+
+                    <!-- Branding text -->
+                    <TextBlock Text="STRIP BRANDING TEXT"
+                               Foreground="{StaticResource AccentBrush}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,0,0,8"/>
+
+                    <TextBox x:Name="BrandingTextBox"
+                             FontSize="14"
+                             Background="#0D1B2A"
+                             Foreground="White"
+                             BorderBrush="#334"
+                             Padding="10,6"
+                             Margin="0,0,0,28"/>
+
+                    <!-- Buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel"
+                                Style="{StaticResource GhostButton}"
+                                Padding="24,10" FontSize="15"
+                                Margin="0,0,12,0"
+                                Click="CloseSettingsContent_Click"/>
+                        <Button Content="Save"
+                                Style="{StaticResource KioskButton}"
+                                Padding="24,10" FontSize="15"
+                                Click="SaveSettings_Click"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>
