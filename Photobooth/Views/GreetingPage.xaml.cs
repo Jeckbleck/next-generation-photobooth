@@ -98,7 +98,6 @@ namespace Photobooth.Views
             {
                 Log.Information("Settings unlocked successfully");
                 SettingsOverlay.Visibility = Visibility.Collapsed;
-                PopulateSettingsPanel();
                 SettingsContentPanel.Visibility = Visibility.Visible;
             }
             else
@@ -109,60 +108,9 @@ namespace Photobooth.Views
             }
         }
 
-        private void PopulateSettingsPanel()
-        {
-            PrinterNameBox.Text  = App.Settings.Current.PrinterName ?? string.Empty;
-            BrandingTextBox.Text = App.Settings.Current.BrandingText;
-            RefreshPrinterStatus();
-        }
-
-        private void RefreshPrinterStatus()
-        {
-            string manual = PrinterNameBox.Text.Trim();
-            if (!string.IsNullOrEmpty(manual))
-            {
-                PrinterStatusText.Text = $"Using: {manual}";
-                return;
-            }
-            string? auto = App.Printer.FindDnpPrinter();
-            PrinterStatusText.Text = auto != null
-                ? $"Auto-detected: {auto}"
-                : "No DNP printer detected. Connect the printer or enter its name manually.";
-        }
-
-        private void AutoDetectPrinter_Click(object sender, RoutedEventArgs e)
-        {
-            string? found = App.Printer.FindDnpPrinter();
-            if (found != null)
-            {
-                PrinterNameBox.Text = found;
-                Log.Information("Auto-detected printer: {Name}", found);
-            }
-            else
-            {
-                Log.Warning("Auto-detect found no DNP printer");
-            }
-            RefreshPrinterStatus();
-        }
-
-        private void SaveSettings_Click(object sender, RoutedEventArgs e)
-        {
-            string name = PrinterNameBox.Text.Trim();
-            App.Settings.Current.PrinterName = string.IsNullOrEmpty(name) ? null : name;
-
-            string branding = BrandingTextBox.Text.Trim();
-            App.Settings.Current.BrandingText = string.IsNullOrEmpty(branding)
-                ? "THE NEXT GENERATION PHOTOBOOTH"
-                : branding;
-
-            App.Settings.Save();
-            Log.Information("Settings saved — printer={Printer}", App.Settings.Current.PrinterName ?? "(auto)");
-            SettingsContentPanel.Visibility = Visibility.Collapsed;
-        }
-
         private void CloseSettingsContent_Click(object sender, RoutedEventArgs e)
         {
-            Log.Debug("Settings panel closed without saving");
+            Log.Debug("Settings panel closed");
             SettingsContentPanel.Visibility = Visibility.Collapsed;
         }
     }
