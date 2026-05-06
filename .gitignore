@@ -25,3 +25,7 @@ Desktop.ini
 
 # Rider / JetBrains
 .idea/
+
+# Claude
+.claude/
+CLAUDE.md
