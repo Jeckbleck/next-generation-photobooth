@@ -1,7 +1,7 @@
 <Page x:Class="Photobooth.Views.GreetingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Background="{StaticResource BackgroundBrush}">
+      Background="{DynamicResource BackgroundBrush}">
 
     <Page.Resources>
         <Style x:Key="SettingsNavButton" TargetType="Button">
@@ -36,9 +36,9 @@
 
         <Style x:Key="SettingsNavButtonActive" TargetType="Button" BasedOn="{StaticResource SettingsNavButton}">
             <Setter Property="Background"  Value="#1E2B47"/>
-            <Setter Property="Foreground"  Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground"  Value="{DynamicResource AccentBrush}"/>
             <Setter Property="FontWeight"  Value="SemiBold"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         </Style>
 
         <Style x:Key="ToggleSwitch" TargetType="ToggleButton">
@@ -53,7 +53,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Track" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}"/>
                                 <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
                             </Trigger>
@@ -65,6 +65,16 @@
     </Page.Resources>
 
     <Grid>
+        <!-- Greeting background image + dim overlay (managed from Display → Appearance) -->
+        <Image x:Name="GreetingBgImage"
+               Stretch="UniformToFill"
+               Visibility="Collapsed"
+               IsHitTestVisible="False"/>
+        <Rectangle x:Name="GreetingBgOverlay"
+                   Fill="#A0000000"
+                   Visibility="Collapsed"
+                   IsHitTestVisible="False"/>
+
         <!-- Main greeting content -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
@@ -81,7 +91,7 @@
                        Margin="0,0,0,24"/>
 
             <Rectangle Height="3" Width="200"
-                       Fill="{StaticResource AccentBrush}"
+                       Fill="{DynamicResource AccentBrush}"
                        HorizontalAlignment="Center"
                        Margin="0,0,0,24"/>
 
@@ -132,7 +142,7 @@
         <Grid x:Name="SettingsOverlay" Visibility="Collapsed">
             <Rectangle Fill="#B0000000"/>
 
-            <Border Background="{StaticResource SurfaceBrush}"
+            <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="12"
                     Width="420"
                     Padding="40"
@@ -161,7 +171,7 @@
 
                     <TextBlock x:Name="PinError"
                                Text="Incorrect PIN"
-                               Foreground="{StaticResource AccentBrush}"
+                               Foreground="{DynamicResource AccentBrush}"
                                FontSize="14"
                                Visibility="Collapsed"
                                Margin="0,0,0,16"/>
@@ -187,7 +197,7 @@
         <Grid x:Name="SettingsContentPanel" Visibility="Collapsed">
             <Rectangle Fill="#B0000000"/>
 
-            <Border Background="{StaticResource SurfaceBrush}"
+            <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="12" Width="780" MaxHeight="600"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
@@ -228,7 +238,7 @@
                                 <StackPanel x:Name="PanelEvents" Visibility="Visible">
                                     <TextBlock Text="Event Management" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                                    <TextBlock Text="ACTIVE EVENT" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="ACTIVE EVENT" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="Select event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
@@ -250,7 +260,7 @@
                                                 Padding="18,7" FontSize="13"/>
                                     </StackPanel>
 
-                                    <TextBlock Text="EVENT OPTIONS" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,12">
@@ -287,7 +297,7 @@
                                         <TextBlock Grid.Column="1" Text="prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                     </Grid>
 
-                                    <TextBlock Text="STORAGE" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="STORAGE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="Save photos to" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
@@ -303,7 +313,7 @@
                                                 Padding="14,6" FontSize="13" Margin="8,0,0,0"/>
                                     </Grid>
 
-                                    <TextBlock Text="SESSION PREVIEW" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="SESSION PREVIEW" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,20">
@@ -332,7 +342,7 @@
                                         </StackPanel>
                                     </ScrollViewer>
 
-                                    <TextBlock Text="SESSION DATA" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="SESSION DATA" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,10">
@@ -356,8 +366,8 @@
                                     <Button Content="Clear session data"
                                             Style="{StaticResource GhostButton}"
                                             HorizontalAlignment="Left" Padding="18,7" FontSize="13"
-                                            Foreground="{StaticResource AccentBrush}"
-                                            BorderBrush="{StaticResource AccentBrush}"
+                                            Foreground="{DynamicResource AccentBrush}"
+                                            BorderBrush="{DynamicResource AccentBrush}"
                                             Margin="0,4,0,0"/>
                                 </StackPanel>
 
@@ -365,7 +375,7 @@
                                 <StackPanel x:Name="PanelCamera" Visibility="Collapsed">
                                     <TextBlock Text="Camera Settings" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                                    <TextBlock Text="EXPOSURE" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="EXPOSURE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,10">
@@ -390,7 +400,7 @@
                                         </ComboBox>
                                     </Grid>
 
-                                    <TextBlock Text="COLOR" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="COLOR" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,20">
@@ -401,7 +411,7 @@
                                         </ComboBox>
                                     </Grid>
 
-                                    <TextBlock Text="FILE" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="FILE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid>
@@ -417,7 +427,7 @@
                                 <StackPanel x:Name="PanelStrip" Visibility="Collapsed">
                                     <TextBlock Text="Strip Customization" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                                    <TextBlock Text="BRANDING" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="BRANDING" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="Branding text" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
@@ -431,7 +441,7 @@
                                         <TextBlock Text="+ Upload logo  (coming soon)" Foreground="#555577" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
 
-                                    <TextBlock Text="LAYOUT" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="LAYOUT" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="Background" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,6"/>
@@ -456,7 +466,7 @@
                                 <StackPanel x:Name="PanelPrinter" Visibility="Collapsed">
                                     <TextBlock Text="Printer" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                                    <TextBlock Text="CONNECTION" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="CONNECTION" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock x:Name="PrinterStatusText" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8"/>
@@ -466,7 +476,7 @@
                                     </StackPanel>
                                     <TextBlock Text="Leave blank to auto-detect any DNP / DS620 printer." Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,20"/>
 
-                                    <TextBlock Text="PAPER" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="PAPER" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,10">
@@ -496,7 +506,95 @@
                                 <StackPanel x:Name="PanelDisplay" Visibility="Collapsed">
                                     <TextBlock Text="Display" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
-                                    <TextBlock Text="COUNTDOWN" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="APPEARANCE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+                                    <TextBlock Text="Greeting background" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="BgPathBox"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="12" IsReadOnly="True"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="Browse"
+                                                Style="{StaticResource GhostButton}"
+                                                Padding="14,6" FontSize="13" Margin="8,0,0,0"
+                                                Click="BrowseGreetingBg_Click"/>
+                                        <Button Grid.Column="2" Content="Clear"
+                                                Style="{StaticResource GhostButton}"
+                                                Padding="14,6" FontSize="13" Margin="6,0,0,0"
+                                                Click="ClearGreetingBg_Click"/>
+                                    </Grid>
+                                    <Border x:Name="BgPreviewBorder"
+                                            Height="64" CornerRadius="6"
+                                            Background="#0D1B2A" BorderBrush="#1E2F4A" BorderThickness="1"
+                                            Margin="0,0,0,20" ClipToBounds="True"
+                                            Visibility="Collapsed">
+                                        <Image x:Name="BgPreviewImage" Stretch="UniformToFill"/>
+                                    </Border>
+
+                                    <TextBlock Text="Accent color" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="6"
+                                                Background="{DynamicResource AccentBrush}" Margin="0,0,8,0"/>
+                                        <TextBox x:Name="AccentHexBox" Grid.Column="1"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" Text="#E94560"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="2" Content="Apply"
+                                                Style="{StaticResource GhostButton}"
+                                                Padding="14,6" FontSize="13" Margin="8,0,0,0"
+                                                Click="ApplyAccentColor_Click"/>
+                                    </Grid>
+
+                                    <TextBlock Text="App background" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="6"
+                                                Background="{DynamicResource BackgroundBrush}" Margin="0,0,8,0"/>
+                                        <TextBox x:Name="BgColorHexBox" Grid.Column="1"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" Text="#1A1A2E"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="2" Content="Apply"
+                                                Style="{StaticResource GhostButton}"
+                                                Padding="14,6" FontSize="13" Margin="8,0,0,0"
+                                                Click="ApplyBgColor_Click"/>
+                                    </Grid>
+
+                                    <TextBlock Text="Surface" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="6"
+                                                Background="{DynamicResource SurfaceBrush}" Margin="0,0,8,0"/>
+                                        <TextBox x:Name="SurfaceHexBox" Grid.Column="1"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" Text="#16213E"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="2" Content="Apply"
+                                                Style="{StaticResource GhostButton}"
+                                                Padding="14,6" FontSize="13" Margin="8,0,0,0"
+                                                Click="ApplySurfaceColor_Click"/>
+                                    </Grid>
+
+                                    <TextBlock Text="COUNTDOWN" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,20">
@@ -506,7 +604,7 @@
                                         <TextBlock Grid.Column="2" Text="3 s" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                     </Grid>
 
-                                    <TextBlock Text="SESSION" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="SESSION" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,10">
@@ -523,7 +621,7 @@
                                         </ComboBox>
                                     </Grid>
 
-                                    <TextBlock Text="FEATURES" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="FEATURES" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
                                     <CheckBox Content="Show attract screen when idle" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
                                 </StackPanel>
@@ -535,14 +633,14 @@
                                         Enhance photos with AI-powered style processing via a local FastAPI server before printing and display. The server runs separately on this machine or on the local network.
                                     </TextBlock>
 
-                                    <TextBlock Text="CONNECTION" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="CONNECTION" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <CheckBox Content="Enable AI Enhancement" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,10"/>
                                     <TextBlock Text="Server URL" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
                                     <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,20" Text="http://localhost:8000"/>
 
-                                    <TextBlock Text="STYLE" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="STYLE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,20">
@@ -566,7 +664,7 @@
                                         Automatically back up session photos to a Synology NAS or any SMB/SFTP network storage after each session. The kiosk continues to operate offline if the server is unreachable.
                                     </TextBlock>
 
-                                    <TextBlock Text="SERVER" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="SERVER" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="NAS address" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
@@ -576,7 +674,7 @@
                                     <TextBlock Text="Password" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
                                     <PasswordBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,20"/>
 
-                                    <TextBlock Text="SCHEDULE" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="SCHEDULE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <CheckBox Content="Enable automatic sync" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,10"/>
@@ -597,9 +695,9 @@
                                 <!-- ABOUT -->
                                 <StackPanel x:Name="PanelAbout" Visibility="Collapsed">
                                     <TextBlock Text="The Next Generation Photobooth" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="AboutVersion" Text="Version 1.0.0-dev" Foreground="{StaticResource AccentBrush}" FontSize="13" Margin="0,0,0,24"/>
+                                    <TextBlock x:Name="AboutVersion" Text="Version 1.0.0-dev" Foreground="{DynamicResource AccentBrush}" FontSize="13" Margin="0,0,0,24"/>
 
-                                    <TextBlock Text="DEVICES" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="DEVICES" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,12">
@@ -619,7 +717,7 @@
                                         </StackPanel>
                                     </Grid>
 
-                                    <TextBlock Text="FILES" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="FILES" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,8">
@@ -633,7 +731,7 @@
                                         <TextBlock x:Name="AboutSessionsPath" Grid.Column="1" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" TextWrapping="Wrap"/>
                                     </Grid>
 
-                                    <TextBlock Text="RUNTIME" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="RUNTIME" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
                                     <TextBlock Text=".NET 10  ·  Canon EDSDK 13.20.10  ·  WPF" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
                                 </StackPanel>

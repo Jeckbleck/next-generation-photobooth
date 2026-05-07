@@ -2,6 +2,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using Serilog;
 
 namespace Photobooth.Views
@@ -182,6 +185,87 @@ namespace Photobooth.Views
             PrinterStatusText.Text = "Auto-detect available after merging feature/printer-setup.";
             Log.Debug("Auto-detect clicked on settings-menu branch — no-op");
         }
+
+        // --- Display tab: Appearance — background image -------------------------
+
+        private void BrowseGreetingBg_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog
+            {
+                Title  = "Select greeting background image",
+                Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp;*.tiff|All files|*.*"
+            };
+            if (dlg.ShowDialog() != true) return;
+
+            try
+            {
+                var bmp = new BitmapImage(new Uri(dlg.FileName));
+                GreetingBgImage.Source      = bmp;
+                GreetingBgImage.Visibility  = Visibility.Visible;
+                GreetingBgOverlay.Visibility = Visibility.Visible;
+                BgPathBox.Text              = dlg.FileName;
+                BgPreviewImage.Source       = bmp;
+                BgPreviewBorder.Visibility  = Visibility.Visible;
+                Log.Information("Greeting background set: {Path}", dlg.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to load background image");
+            }
+        }
+
+        private void ClearGreetingBg_Click(object sender, RoutedEventArgs e)
+        {
+            GreetingBgImage.Source       = null;
+            GreetingBgImage.Visibility   = Visibility.Collapsed;
+            GreetingBgOverlay.Visibility  = Visibility.Collapsed;
+            BgPathBox.Text               = string.Empty;
+            BgPreviewImage.Source        = null;
+            BgPreviewBorder.Visibility   = Visibility.Collapsed;
+            Log.Information("Greeting background cleared");
+        }
+
+        // --- Display tab: Appearance — color pickers ----------------------------
+
+        private void ApplyAccentColor_Click(object sender, RoutedEventArgs e)
+            => ApplyBrushColor("AccentBrush", AccentHexBox.Text.Trim());
+
+        private void ApplyBgColor_Click(object sender, RoutedEventArgs e)
+            => ApplyBrushColor("BackgroundBrush", BgColorHexBox.Text.Trim());
+
+        private void ApplySurfaceColor_Click(object sender, RoutedEventArgs e)
+            => ApplyBrushColor("SurfaceBrush", SurfaceHexBox.Text.Trim());
+
+        private static void ApplyBrushColor(string resourceKey, string hex)
+        {
+            try
+            {
+                var color = (Color)ColorConverter.ConvertFromString(hex);
+                Application.Current.Resources[resourceKey] = new SolidColorBrush(color);
+
+                if (resourceKey == "AccentBrush")
+                {
+                    Application.Current.Resources["AccentHoverBrush"]   = new SolidColorBrush(Lighten(color, 0.12));
+                    Application.Current.Resources["AccentPressedBrush"] = new SolidColorBrush(Darken(color, 0.22));
+                }
+
+                Log.Information("Applied {Key} = {Hex}", resourceKey, hex);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Invalid color value '{Hex}' for {Key}", hex, resourceKey);
+            }
+        }
+
+        private static Color Lighten(Color c, double amount) => Color.FromArgb(c.A,
+            (byte)Math.Min(255, c.R + (int)((255 - c.R) * amount)),
+            (byte)Math.Min(255, c.G + (int)((255 - c.G) * amount)),
+            (byte)Math.Min(255, c.B + (int)((255 - c.B) * amount)));
+
+        private static Color Darken(Color c, double amount) => Color.FromArgb(c.A,
+            (byte)(c.R * (1.0 - amount)),
+            (byte)(c.G * (1.0 - amount)),
+            (byte)(c.B * (1.0 - amount)));
 
         // --- Close ---------------------------------------------------------------
 
