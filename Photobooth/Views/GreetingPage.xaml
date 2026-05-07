@@ -40,6 +40,28 @@
             <Setter Property="FontWeight"  Value="SemiBold"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
         </Style>
+
+        <Style x:Key="ToggleSwitch" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Track" Width="42" Height="24" CornerRadius="12" Background="#334">
+                            <Ellipse x:Name="Thumb" Width="18" Height="18" Fill="White"
+                                     HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -218,7 +240,52 @@
                                     </ComboBox>
 
                                     <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,20"/>
+                                    <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
+                                        <Button Content="Clear"
+                                                Style="{StaticResource GhostButton}"
+                                                Padding="18,7" FontSize="13" Margin="0,0,8,0"/>
+                                        <Button Content="Save"
+                                                Style="{StaticResource KioskButton}"
+                                                Padding="18,7" FontSize="13"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="EVENT OPTIONS" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Paid event" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
+                                            <TextBlock Text="Require payment before each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="False" VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Save images" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
+                                            <TextBlock Text="Store photos to disk after each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                    <TextBlock Text="Print limit per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,4"/>
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Text="1" VerticalContentAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    </Grid>
 
                                     <TextBlock Text="STORAGE" Foreground="{StaticResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
