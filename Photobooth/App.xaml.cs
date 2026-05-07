@@ -1,12 +1,14 @@
 using System.Windows;
 using Photobooth.Camera;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth
 {
     public partial class App : Application
     {
-        public static CameraService Camera { get; } = new CameraService();
+        public static CameraService    Camera   { get; } = new CameraService();
+        public static SettingsManager  Settings { get; } = new SettingsManager();
 
         protected override void OnStartup(StartupEventArgs e)
         {

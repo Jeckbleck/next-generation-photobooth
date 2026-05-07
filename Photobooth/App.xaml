@@ -5,21 +5,23 @@
     <Application.Resources>
         <ResourceDictionary>
             <!-- Colour palette -->
-            <SolidColorBrush x:Key="BackgroundBrush"   Color="#1A1A2E"/>
-            <SolidColorBrush x:Key="AccentBrush"       Color="#E94560"/>
-            <SolidColorBrush x:Key="SurfaceBrush"      Color="#16213E"/>
-            <SolidColorBrush x:Key="TextPrimaryBrush"  Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="BackgroundBrush"    Color="#1A1A2E"/>
+            <SolidColorBrush x:Key="AccentBrush"        Color="#E94560"/>
+            <SolidColorBrush x:Key="AccentHoverBrush"   Color="#FF2040"/>
+            <SolidColorBrush x:Key="AccentPressedBrush" Color="#C0304A"/>
+            <SolidColorBrush x:Key="SurfaceBrush"       Color="#16213E"/>
+            <SolidColorBrush x:Key="TextPrimaryBrush"   Color="#FFFFFF"/>
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A0A0C0"/>
 
             <!-- Base button style -->
             <Style x:Key="KioskButton" TargetType="Button">
-                <Setter Property="Background"   Value="{StaticResource AccentBrush}"/>
-                <Setter Property="Foreground"   Value="White"/>
-                <Setter Property="FontSize"     Value="22"/>
-                <Setter Property="FontWeight"   Value="Bold"/>
-                <Setter Property="Padding"      Value="40,16"/>
+                <Setter Property="Background"      Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="Foreground"      Value="White"/>
+                <Setter Property="FontSize"        Value="22"/>
+                <Setter Property="FontWeight"      Value="Bold"/>
+                <Setter Property="Padding"         Value="40,16"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Cursor"       Value="Hand"/>
+                <Setter Property="Cursor"          Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
@@ -29,17 +31,17 @@
                                 <ContentPresenter HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"/>
                             </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#FF2040"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter Property="Background" Value="#C0304A"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+                    </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <!-- Ghost/secondary button -->

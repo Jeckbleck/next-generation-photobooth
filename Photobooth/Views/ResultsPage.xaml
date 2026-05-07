@@ -1,7 +1,7 @@
 <Page x:Class="Photobooth.Views.ResultsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Background="{StaticResource BackgroundBrush}">
+      Background="{DynamicResource BackgroundBrush}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -18,7 +18,7 @@
                        TextAlignment="Center"
                        Margin="0,0,0,8"/>
             <Rectangle Height="3" Width="120"
-                       Fill="{StaticResource AccentBrush}"
+                       Fill="{DynamicResource AccentBrush}"
                        HorizontalAlignment="Center"/>
         </StackPanel>
 
@@ -27,19 +27,19 @@
                      Rows="1" Columns="3"
                      Margin="40,0">
             <Border Margin="12" CornerRadius="8"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Image x:Name="Photo1"
                        Stretch="UniformToFill"
                        RenderOptions.BitmapScalingMode="HighQuality"/>
             </Border>
             <Border Margin="12" CornerRadius="8"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Image x:Name="Photo2"
                        Stretch="UniformToFill"
                        RenderOptions.BitmapScalingMode="HighQuality"/>
             </Border>
             <Border Margin="12" CornerRadius="8"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Image x:Name="Photo3"
                        Stretch="UniformToFill"
                        RenderOptions.BitmapScalingMode="HighQuality"/>

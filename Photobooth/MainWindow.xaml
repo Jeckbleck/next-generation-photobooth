@@ -4,7 +4,7 @@
         Title="The Next Generation Photobooth"
         WindowState="Maximized"
         WindowStyle="None"
-        Background="{StaticResource BackgroundBrush}"
+        Background="{DynamicResource BackgroundBrush}"
         ResizeMode="NoResize">
 
     <Frame x:Name="RootFrame"
