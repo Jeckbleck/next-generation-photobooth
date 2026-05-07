@@ -198,7 +198,7 @@
             <Rectangle Fill="#B0000000"/>
 
             <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="12" Width="780" MaxHeight="600"
+                    CornerRadius="12" Width="780" Height="600"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -232,7 +232,7 @@
                         </Grid.RowDefinitions>
 
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="28,28,28,0">
-                            <Grid>
+                            <Grid Margin="0,0,12,0">
 
                                 <!-- EVENT MANAGEMENT -->
                                 <StackPanel x:Name="PanelEvents" Visibility="Visible">
@@ -368,7 +368,28 @@
                                             HorizontalAlignment="Left" Padding="18,7" FontSize="13"
                                             Foreground="{DynamicResource AccentBrush}"
                                             BorderBrush="{DynamicResource AccentBrush}"
-                                            Margin="0,4,0,0"/>
+                                            Margin="0,4,0,20"/>
+
+                                    <TextBlock Text="SECURITY" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+                                    <TextBlock Text="New PIN" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <PasswordBox x:Name="NewPinBox"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" MaxLength="6" Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="Confirm PIN" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <PasswordBox x:Name="ConfirmPinBox"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" MaxLength="6" Margin="0,0,0,8"/>
+
+                                    <TextBlock x:Name="PinChangeStatus" FontSize="12" Visibility="Collapsed" Margin="0,0,0,8"/>
+
+                                    <Button Content="Change PIN"
+                                            Style="{StaticResource GhostButton}"
+                                            HorizontalAlignment="Left" Padding="18,7" FontSize="13"
+                                            Margin="0,0,0,4"
+                                            Click="ChangePIN_Click"/>
                                 </StackPanel>
 
                                 <!-- CAMERA SETTINGS -->

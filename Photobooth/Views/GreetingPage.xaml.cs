@@ -11,7 +11,6 @@ namespace Photobooth.Views
 {
     public partial class GreetingPage : Page
     {
-        private const string StaffPin = "1234";
 
         // Lazily initialised — named elements aren't available until after InitializeComponent.
         private Button[]?          _navButtons;
@@ -113,7 +112,7 @@ namespace Photobooth.Views
 
         private void TryUnlock()
         {
-            if (PinBox.Password == StaffPin)
+            if (App.Settings.VerifyPin(PinBox.Password))
             {
                 Log.Information("Settings unlocked successfully");
                 SettingsOverlay.Visibility = Visibility.Collapsed;
@@ -266,6 +265,39 @@ namespace Photobooth.Views
             (byte)(c.R * (1.0 - amount)),
             (byte)(c.G * (1.0 - amount)),
             (byte)(c.B * (1.0 - amount)));
+
+        // --- Event Management tab: change PIN ------------------------------------
+
+        private void ChangePIN_Click(object sender, RoutedEventArgs e)
+        {
+            var newPin = NewPinBox.Password;
+            var confirmPin = ConfirmPinBox.Password;
+
+            if (newPin.Length < 4)
+            {
+                ShowPinStatus("PIN must be at least 4 digits.", isError: true);
+                return;
+            }
+            if (newPin != confirmPin)
+            {
+                ShowPinStatus("PINs do not match.", isError: true);
+                return;
+            }
+
+            App.Settings.SetPin(newPin);
+            NewPinBox.Password = string.Empty;
+            ConfirmPinBox.Password = string.Empty;
+            ShowPinStatus("PIN changed successfully.", isError: false);
+        }
+
+        private void ShowPinStatus(string message, bool isError)
+        {
+            PinChangeStatus.Text = message;
+            PinChangeStatus.Foreground = isError
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x6B, 0x6B))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
+            PinChangeStatus.Visibility = System.Windows.Visibility.Visible;
+        }
 
         // --- Close ---------------------------------------------------------------
 
