@@ -18,7 +18,7 @@ namespace Photobooth.Print
             foreach (string name in PrinterSettings.InstalledPrinters)
             {
                 var u = name.ToUpperInvariant();
-                if (u.Contains("DNP") || u.Contains("DS620") || u.Contains("DS-620"))
+                if (u.Contains("DNP") || u.Contains("DS620") || u.Contains("DS-620") || u.Contains("RX1"))
                     return name;
             }
             return null;
