@@ -242,22 +242,22 @@
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="Select event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <ComboBox Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6" Margin="0,0,0,10">
-                                        <ComboBoxItem Content="— Select event —" IsSelected="True"/>
-                                        <ComboBoxItem Content="Summer Bash 2026"/>
-                                        <ComboBoxItem Content="Corporate Gala Q2"/>
-                                        <ComboBoxItem Content="Birthday Party – May 4"/>
-                                    </ComboBox>
+                                    <ComboBox x:Name="EventsComboBox"
+                                              Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6" Margin="0,0,0,10"
+                                              SelectionChanged="EventsComboBox_SelectionChanged"/>
 
                                     <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+                                    <TextBox x:Name="EventNameBox"
+                                             Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
                                         <Button Content="Clear"
                                                 Style="{StaticResource GhostButton}"
-                                                Padding="18,7" FontSize="13" Margin="0,0,8,0"/>
+                                                Padding="18,7" FontSize="13" Margin="0,0,8,0"
+                                                Click="ClearEvent_Click"/>
                                         <Button Content="Save"
                                                 Style="{StaticResource KioskButton}"
-                                                Padding="18,7" FontSize="13"/>
+                                                Padding="18,7" FontSize="13"
+                                                Click="SaveEvent_Click"/>
                                     </StackPanel>
 
                                     <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -272,7 +272,7 @@
                                             <TextBlock Text="Paid event" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
                                             <TextBlock Text="Require payment before each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
                                         </StackPanel>
-                                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="False" VerticalAlignment="Center"/>
+                                        <ToggleButton x:Name="PaywallToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="False" VerticalAlignment="Center" Click="Toggle_Click"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,12">
@@ -284,7 +284,7 @@
                                             <TextBlock Text="Save images" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
                                             <TextBlock Text="Store photos to disk after each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
                                         </StackPanel>
-                                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center"/>
+                                        <ToggleButton x:Name="SaveImagesToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center" Click="Toggle_Click"/>
                                     </Grid>
 
                                     <TextBlock Text="Print limit per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,4"/>
@@ -293,7 +293,11 @@
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Text="1" VerticalContentAlignment="Center"/>
+                                        <TextBox x:Name="PrintLimitBox"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
+                                                 PreviewTextInput="PrintLimitBox_PreviewTextInput"
+                                                 LostFocus="PrintLimitBox_LostFocus"/>
                                         <TextBlock Grid.Column="1" Text="prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                     </Grid>
 
@@ -306,11 +310,14 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="12"
-                                                 Text="C:\Users\Pictures\Photobooth" VerticalContentAlignment="Center"/>
+                                        <TextBox x:Name="StoragePathBox"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="12" IsReadOnly="True"
+                                                 VerticalContentAlignment="Center"/>
                                         <Button Grid.Column="1" Content="Browse"
                                                 Style="{StaticResource GhostButton}"
-                                                Padding="14,6" FontSize="13" Margin="8,0,0,0"/>
+                                                Padding="14,6" FontSize="13" Margin="8,0,0,0"
+                                                Click="BrowseStoragePath_Click"/>
                                     </Grid>
 
                                     <TextBlock Text="SESSION PREVIEW" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -353,13 +360,13 @@
                                         <Border Grid.Column="0" Background="#0D1B2A" CornerRadius="8" Padding="16,12" Margin="0,0,6,0">
                                             <StackPanel>
                                                 <TextBlock Text="Sessions" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"/>
-                                                <TextBlock Text="—" Foreground="{StaticResource TextPrimaryBrush}" FontSize="22" FontWeight="Bold"/>
+                                                <TextBlock x:Name="SessionCountText" Text="—" Foreground="{StaticResource TextPrimaryBrush}" FontSize="22" FontWeight="Bold"/>
                                             </StackPanel>
                                         </Border>
                                         <Border Grid.Column="1" Background="#0D1B2A" CornerRadius="8" Padding="16,12" Margin="6,0,0,0">
                                             <StackPanel>
                                                 <TextBlock Text="Photos" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"/>
-                                                <TextBlock Text="—" Foreground="{StaticResource TextPrimaryBrush}" FontSize="22" FontWeight="Bold"/>
+                                                <TextBlock x:Name="PhotoCountText" Text="—" Foreground="{StaticResource TextPrimaryBrush}" FontSize="22" FontWeight="Bold"/>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -368,7 +375,8 @@
                                             HorizontalAlignment="Left" Padding="18,7" FontSize="13"
                                             Foreground="{DynamicResource AccentBrush}"
                                             BorderBrush="{DynamicResource AccentBrush}"
-                                            Margin="0,4,0,20"/>
+                                            Margin="0,4,0,20"
+                                            Click="ClearSessionData_Click"/>
 
                                     <TextBlock Text="SECURITY" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>

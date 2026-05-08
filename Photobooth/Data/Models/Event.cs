@@ -17,8 +17,7 @@ namespace Photobooth.Data.Models
 
         public bool     PaywallEnabled          { get; set; } = false;
         public bool     SaveImagesEnabled       { get; set; } = true;
-        public bool     AutoDeleteAfterSession  { get; set; } = false;
-        public int      PrintLimitPerSession    { get; set; } = 1;
+        public int?     PrintLimitPerSession    { get; set; }
 
         [MaxLength(20)]
         public string?  AccentColor            { get; set; }

@@ -13,8 +13,11 @@ namespace Photobooth.Views
     {
 
         // Lazily initialised — named elements aren't available until after InitializeComponent.
-        private Button[]?          _navButtons;
+        private Button[]?           _navButtons;
         private FrameworkElement[]? _contentPanels;
+
+        private int?  _selectedEventId;
+        private bool  _loadingEvents;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -129,8 +132,214 @@ namespace Photobooth.Views
 
         private void OpenSettings()
         {
+            LoadEvents();
+            RefreshStoragePath();
             RefreshPrinterStatus();
             SelectTab(0);
+        }
+
+        // --- Event Management tab ------------------------------------------------
+
+        private void LoadEvents()
+        {
+            _loadingEvents = true;
+            try
+            {
+                EventsComboBox.Items.Clear();
+                EventsComboBox.Items.Add(new ComboBoxItem { Content = "— New event —", Tag = null });
+                foreach (var ev in App.Events.GetActive())
+                    EventsComboBox.Items.Add(new ComboBoxItem { Content = ev.Name, Tag = ev.Id });
+                EventsComboBox.SelectedIndex = 0;
+            }
+            finally
+            {
+                _loadingEvents = false;
+            }
+
+            // Restore the previously active event if it still exists
+            var savedId = App.Settings.ActiveEventId;
+            if (savedId.HasValue)
+                SelectEventById(savedId.Value);
+            else
+            {
+                _selectedEventId = null;
+                ClearEventFields();
+            }
+        }
+
+        private void EventsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_loadingEvents) return;
+            if (EventsComboBox.SelectedItem is not ComboBoxItem item) return;
+
+            if (item.Tag is int id)
+            {
+                SetSelectedEvent(id);
+                var ev = App.Events.GetById(id);
+                if (ev is not null)
+                {
+                    PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerSession);
+                    RefreshSessionStats(id);
+                }
+            }
+            else
+            {
+                SetSelectedEvent(null);
+                ClearEventFields();
+            }
+        }
+
+        /// <summary>
+        /// Single point of truth for changing the selected event.
+        /// Keeps _selectedEventId and the persisted setting in sync.
+        /// </summary>
+        private void SetSelectedEvent(int? id)
+        {
+            _selectedEventId = id;
+            App.Settings.SetActiveEventId(id);
+        }
+
+        private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
+        {
+            EventNameBox.Text          = name;
+            PaywallToggle.IsChecked    = paywallEnabled;
+            SaveImagesToggle.IsChecked = saveImagesEnabled;
+            PrintLimitBox.Text         = printLimit?.ToString() ?? string.Empty;
+        }
+
+        private void ClearEventFields()
+        {
+            EventNameBox.Text          = string.Empty;
+            PaywallToggle.IsChecked    = false;
+            SaveImagesToggle.IsChecked = true;
+            PrintLimitBox.Text         = string.Empty;
+            SessionCountText.Text      = "—";
+            PhotoCountText.Text        = "—";
+        }
+
+        private void RefreshSessionStats(int eventId)
+        {
+            var (sessions, photos) = App.Events.GetStats(eventId);
+            SessionCountText.Text = sessions.ToString();
+            PhotoCountText.Text   = photos.ToString();
+        }
+
+        private void SaveEvent_Click(object sender, RoutedEventArgs e)
+        {
+            var name = EventNameBox.Text.Trim();
+            if (string.IsNullOrEmpty(name)) return;
+
+            int? printLimit = int.TryParse(PrintLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
+
+            int savedId;
+            if (_selectedEventId.HasValue)
+            {
+                App.Events.UpdateDetails(_selectedEventId.Value, name,
+                    PaywallToggle.IsChecked == true,
+                    SaveImagesToggle.IsChecked == true,
+                    printLimit);
+                savedId = _selectedEventId.Value;
+            }
+            else
+            {
+                var ev = App.Events.Create(name,
+                    PaywallToggle.IsChecked == true,
+                    SaveImagesToggle.IsChecked == true,
+                    printLimit);
+                savedId = ev.Id;
+            }
+
+            LoadEvents();
+            SelectEventById(savedId);
+        }
+
+        private void ClearEvent_Click(object sender, RoutedEventArgs e)
+        {
+            _loadingEvents = true;
+            EventsComboBox.SelectedIndex = 0;
+            _loadingEvents = false;
+            SetSelectedEvent(null);
+            ClearEventFields();
+        }
+
+        private void ClearSessionData_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+            App.Events.ClearSessions(_selectedEventId.Value);
+            RefreshSessionStats(_selectedEventId.Value);
+        }
+
+        private void Toggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+
+            if (sender == PaywallToggle)
+                App.Events.SetPaywall(_selectedEventId.Value, PaywallToggle.IsChecked == true);
+            else if (sender == SaveImagesToggle)
+                App.Events.SetSaveImages(_selectedEventId.Value, SaveImagesToggle.IsChecked == true);
+        }
+
+        private void PrintLimitBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !e.Text.All(char.IsDigit);
+        }
+
+        private void PrintLimitBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+
+            int? limit = int.TryParse(PrintLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
+            App.Events.SetPrintLimit(_selectedEventId.Value, limit);
+            PrintLimitBox.Text = limit?.ToString() ?? string.Empty;
+        }
+
+        private void SelectEventById(int id)
+        {
+            var ev = App.Events.GetById(id);
+            if (ev is null) return; // event no longer exists — stay in new-event state
+
+            _loadingEvents = true;
+            try
+            {
+                foreach (ComboBoxItem item in EventsComboBox.Items)
+                {
+                    if (item.Tag is int itemId && itemId == id)
+                    {
+                        EventsComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                _loadingEvents = false;
+            }
+
+            SetSelectedEvent(id);
+            PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerSession);
+            RefreshSessionStats(id);
+        }
+
+        // --- Storage path --------------------------------------------------------
+
+        private void RefreshStoragePath()
+        {
+            StoragePathBox.Text = App.Settings.StorageRoot;
+        }
+
+        private void BrowseStoragePath_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title            = "Select storage root folder",
+                InitialDirectory = App.Settings.StorageRoot,
+            };
+
+            if (dlg.ShowDialog() != true) return;
+
+            App.Settings.SetStorageRoot(dlg.FolderName);
+            StoragePathBox.Text = dlg.FolderName;
+            Log.Information("Storage root changed to {Path}", dlg.FolderName);
         }
 
         // --- Tab navigation ------------------------------------------------------
@@ -158,7 +367,7 @@ namespace Photobooth.Views
         private void PopulateAboutTab()
         {
             AboutCameraStatus.Text = App.Camera.IsConnected ? "Connected" : "Not connected";
-            AboutPrinterStatus.Text = "—";   // populated when printer branch is merged
+            AboutPrinterStatus.Text = "—";
 
             AboutLogPath.Text = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -169,7 +378,7 @@ namespace Photobooth.Views
                 "Photobooth");
         }
 
-        // --- Printer tab (fully wired on merge with feature/printer-setup) -------
+        // --- Printer tab ---------------------------------------------------------
 
         private void RefreshPrinterStatus()
         {
@@ -185,7 +394,7 @@ namespace Photobooth.Views
             Log.Debug("Auto-detect clicked on settings-menu branch — no-op");
         }
 
-        // --- Display tab: Appearance — background image -------------------------
+        // --- Display tab: background image ---------------------------------------
 
         private void BrowseGreetingBg_Click(object sender, RoutedEventArgs e)
         {
@@ -199,12 +408,12 @@ namespace Photobooth.Views
             try
             {
                 var bmp = new BitmapImage(new Uri(dlg.FileName));
-                GreetingBgImage.Source      = bmp;
-                GreetingBgImage.Visibility  = Visibility.Visible;
+                GreetingBgImage.Source       = bmp;
+                GreetingBgImage.Visibility   = Visibility.Visible;
                 GreetingBgOverlay.Visibility = Visibility.Visible;
-                BgPathBox.Text              = dlg.FileName;
-                BgPreviewImage.Source       = bmp;
-                BgPreviewBorder.Visibility  = Visibility.Visible;
+                BgPathBox.Text               = dlg.FileName;
+                BgPreviewImage.Source        = bmp;
+                BgPreviewBorder.Visibility   = Visibility.Visible;
                 Log.Information("Greeting background set: {Path}", dlg.FileName);
             }
             catch (Exception ex)
@@ -217,14 +426,14 @@ namespace Photobooth.Views
         {
             GreetingBgImage.Source       = null;
             GreetingBgImage.Visibility   = Visibility.Collapsed;
-            GreetingBgOverlay.Visibility  = Visibility.Collapsed;
+            GreetingBgOverlay.Visibility = Visibility.Collapsed;
             BgPathBox.Text               = string.Empty;
             BgPreviewImage.Source        = null;
             BgPreviewBorder.Visibility   = Visibility.Collapsed;
             Log.Information("Greeting background cleared");
         }
 
-        // --- Display tab: Appearance — color pickers ----------------------------
+        // --- Display tab: color pickers ------------------------------------------
 
         private void ApplyAccentColor_Click(object sender, RoutedEventArgs e)
             => ApplyBrushColor("AccentBrush", AccentHexBox.Text.Trim());
@@ -266,11 +475,11 @@ namespace Photobooth.Views
             (byte)(c.G * (1.0 - amount)),
             (byte)(c.B * (1.0 - amount)));
 
-        // --- Event Management tab: change PIN ------------------------------------
+        // --- Security: change PIN ------------------------------------------------
 
         private void ChangePIN_Click(object sender, RoutedEventArgs e)
         {
-            var newPin = NewPinBox.Password;
+            var newPin     = NewPinBox.Password;
             var confirmPin = ConfirmPinBox.Password;
 
             if (newPin.Length < 4)
@@ -285,7 +494,7 @@ namespace Photobooth.Views
             }
 
             App.Settings.SetPin(newPin);
-            NewPinBox.Password = string.Empty;
+            NewPinBox.Password     = string.Empty;
             ConfirmPinBox.Password = string.Empty;
             ShowPinStatus("PIN changed successfully.", isError: false);
         }
@@ -294,9 +503,9 @@ namespace Photobooth.Views
         {
             PinChangeStatus.Text = message;
             PinChangeStatus.Foreground = isError
-                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x6B, 0x6B))
-                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
-            PinChangeStatus.Visibility = System.Windows.Visibility.Visible;
+                ? new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B))
+                : new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+            PinChangeStatus.Visibility = Visibility.Visible;
         }
 
         // --- Close ---------------------------------------------------------------

@@ -28,6 +28,24 @@ namespace Photobooth.Services
             Log.Information("Staff PIN updated");
         }
 
+        public int? ActiveEventId => _settings.ActiveEventId;
+
+        public void SetActiveEventId(int? id)
+        {
+            _settings.ActiveEventId = id;
+            Save();
+            Log.Debug("Active event set to {Id}", id?.ToString() ?? "none");
+        }
+
+        public string StorageRoot => _settings.StorageRoot;
+
+        public void SetStorageRoot(string path)
+        {
+            _settings.StorageRoot = path;
+            Save();
+            Log.Information("Storage root updated to {Path}", path);
+        }
+
         private AppSettings Load()
         {
             try
@@ -78,7 +96,9 @@ namespace Photobooth.Services
 
     public class AppSettings
     {
-        // Default: SHA-256 hash of "1234"
-        public string PinHash { get; set; } = SettingsManager.HashPin("1234");
+        public string PinHash       { get; set; } = SettingsManager.HashPin("1234");
+        public int?   ActiveEventId { get; set; }
+        public string StorageRoot   { get; set; } = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
     }
 }

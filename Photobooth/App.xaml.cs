@@ -1,6 +1,7 @@
 using System.Windows;
 using Photobooth.Camera;
 using Photobooth.Data;
+using Photobooth.Data.Repositories;
 using Photobooth.Services;
 using Serilog;
 
@@ -8,9 +9,24 @@ namespace Photobooth
 {
     public partial class App : Application
     {
-        public static CameraService       Camera   { get; } = new CameraService();
-        public static SettingsManager     Settings { get; } = new SettingsManager();
-        public static PhotoboothDbContext Db       { get; } = new PhotoboothDbContext();
+        // --- Internal infrastructure (not exposed to the presentation layer) -----
+
+        private static readonly PhotoboothDbContext _db        = new PhotoboothDbContext();
+        private static readonly IEventRepository    _eventRepo = new EventRepository(_db);
+
+        // --- Public API — one entry point per layer boundary --------------------
+
+        public static CameraService      Camera      { get; } = new CameraService();
+        public static SettingsManager    Settings    { get; } = new SettingsManager();
+        public static IFileStorageService FileStorage { get; } = new FileStorageService(Settings);
+
+        /// <summary>
+        /// Business-layer entry point for event management.
+        /// Views must only call this interface — never the repository or DbContext.
+        /// </summary>
+        public static IEventService Events { get; } = new EventService(_eventRepo, FileStorage);
+
+        // --- Application lifecycle -----------------------------------------------
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -18,17 +34,17 @@ namespace Photobooth
             base.OnStartup(e);
 
             Log.Information("Initialising database");
-            Db.Database.EnsureCreated();
+            _db.Database.EnsureCreated();
 
-            Log.Information("App startup — initializing camera");
+            Log.Information("App startup — initialising camera");
             Camera.Initialize();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
-            Log.Information("Disposing camera service");
+            Log.Information("App shutting down");
             Camera.Dispose();
-            Db.Dispose();
+            _db.Dispose();
             AppLogger.Shutdown();
             base.OnExit(e);
         }

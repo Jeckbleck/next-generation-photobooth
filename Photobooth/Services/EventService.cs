@@ -1,0 +1,116 @@
+using System.Text.RegularExpressions;
+using Photobooth.Data.Models;
+using Photobooth.Data.Repositories;
+using Serilog;
+
+namespace Photobooth.Services
+{
+    /// <summary>
+    /// Business-layer implementation of IEventService.
+    /// Enforces rules (validation, slug generation) and delegates all
+    /// persistence to IEventRepository — it never touches DbContext directly.
+    /// </summary>
+    public class EventService : IEventService
+    {
+        private readonly IEventRepository    _repo;
+        private readonly IFileStorageService _fileStorage;
+
+        public EventService(IEventRepository repo, IFileStorageService fileStorage)
+        {
+            _repo        = repo;
+            _fileStorage = fileStorage;
+        }
+
+        // --- Queries -------------------------------------------------------------
+
+        public List<Event> GetActive() => _repo.GetActive();
+
+        public Event? GetById(int id) => _repo.FindById(id);
+
+        public (int Sessions, int Photos) GetStats(int eventId) =>
+            (_repo.CountSessions(eventId), _repo.CountPhotos(eventId));
+
+        // --- Mutations -----------------------------------------------------------
+
+        public Event Create(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Event name cannot be empty.", nameof(name));
+
+            var ev = new Event
+            {
+                Name                 = name.Trim(),
+                Slug                 = GenerateSlug(name),
+                PaywallEnabled       = paywallEnabled,
+                SaveImagesEnabled    = saveImagesEnabled,
+                PrintLimitPerSession = printLimit,
+            };
+
+            _repo.Add(ev);
+            _repo.SaveChanges();
+            _fileStorage.CreateEventFolders(ev.Slug);
+            Log.Information("Created event '{Name}' (slug: {Slug})", ev.Name, ev.Slug);
+            return ev;
+        }
+
+        public void UpdateDetails(int id, string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Event name cannot be empty.", nameof(name));
+
+            var ev = Require(id);
+            ev.Name                 = name.Trim();
+            ev.PaywallEnabled       = paywallEnabled;
+            ev.SaveImagesEnabled    = saveImagesEnabled;
+            ev.PrintLimitPerSession = printLimit;
+
+            _repo.SaveChanges();
+            Log.Information("Updated event '{Name}'", ev.Name);
+        }
+
+        public void SetPaywall(int id, bool enabled)
+        {
+            Require(id).PaywallEnabled = enabled;
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} paywall → {Value}", id, enabled);
+        }
+
+        public void SetSaveImages(int id, bool enabled)
+        {
+            Require(id).SaveImagesEnabled = enabled;
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} save images → {Value}", id, enabled);
+        }
+
+        public void SetPrintLimit(int id, int? limit)
+        {
+            Require(id).PrintLimitPerSession = limit;
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} print limit → {Value}", id, limit?.ToString() ?? "unlimited");
+        }
+
+        public void ClearSessions(int id)
+        {
+            _repo.RemoveSessions(id);
+            _repo.SaveChanges();
+            Log.Information("Cleared sessions for event {Id}", id);
+        }
+
+        // --- Private helpers -----------------------------------------------------
+
+        private Event Require(int id) =>
+            _repo.FindById(id) ?? throw new InvalidOperationException($"Event {id} not found.");
+
+        /// <summary>
+        /// Derives a URL-safe slug from a display name.
+        /// Example: "Summer Bash 2026" → "summer-bash-2026-2026"
+        /// </summary>
+        public static string GenerateSlug(string name)
+        {
+            var slug = name.ToLowerInvariant();
+            slug = Regex.Replace(slug, @"[^a-z0-9\s]", "");
+            slug = Regex.Replace(slug, @"\s+", "-").Trim('-');
+            return $"{slug}-{DateTime.UtcNow.Year}";
+        }
+    }
+}
