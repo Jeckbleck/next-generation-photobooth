@@ -33,6 +33,12 @@ namespace Photobooth.Data.Repositories
         /// </summary>
         void RemoveSessions(int eventId);
 
+        /// <summary>
+        /// Sets ArchivedAt to the current UTC time, soft-deleting the event.
+        /// Does not call SaveChanges.
+        /// </summary>
+        void Archive(int eventId);
+
         /// <summary>Persists all pending changes to the database.</summary>
         void SaveChanges();
     }

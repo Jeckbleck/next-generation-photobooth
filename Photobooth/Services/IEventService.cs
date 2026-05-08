@@ -42,5 +42,11 @@ namespace Photobooth.Services
 
         /// <summary>Deletes all sessions (and their photos) for the given event.</summary>
         void ClearSessions(int id);
+
+        /// <summary>
+        /// Soft-deletes the event by setting ArchivedAt.
+        /// Archived events are excluded from all future queries.
+        /// </summary>
+        void Archive(int id);
     }
 }

@@ -249,16 +249,31 @@
                                     <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
                                     <TextBox x:Name="EventNameBox"
                                              Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
-                                        <Button Content="Clear"
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="ArchiveEventButton"
+                                                Content="Archive event"
                                                 Style="{StaticResource GhostButton}"
-                                                Padding="18,7" FontSize="13" Margin="0,0,8,0"
-                                                Click="ClearEvent_Click"/>
-                                        <Button Content="Save"
-                                                Style="{StaticResource KioskButton}"
+                                                HorizontalAlignment="Left"
                                                 Padding="18,7" FontSize="13"
-                                                Click="SaveEvent_Click"/>
-                                    </StackPanel>
+                                                Foreground="#FF6B6B" BorderBrush="#FF6B6B"
+                                                IsEnabled="False"
+                                                Click="ArchiveEvent_Click"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Content="Clear"
+                                                    Style="{StaticResource GhostButton}"
+                                                    Padding="18,7" FontSize="13" Margin="0,0,8,0"
+                                                    Click="ClearEvent_Click"/>
+                                            <Button Content="Save"
+                                                    Style="{StaticResource KioskButton}"
+                                                    Padding="18,7" FontSize="13"
+                                                    Click="SaveEvent_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,20"/>
 
                                     <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
@@ -305,7 +320,7 @@
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock Text="Save photos to" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <Grid Margin="0,0,0,20">
+                                    <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -319,6 +334,11 @@
                                                 Padding="14,6" FontSize="13" Margin="8,0,0,0"
                                                 Click="BrowseStoragePath_Click"/>
                                     </Grid>
+                                    <TextBlock x:Name="StoragePathWarning"
+                                               Text="⚠  No storage path set — events cannot be created until a folder is selected."
+                                               Foreground="#E9A020" FontSize="12" TextWrapping="Wrap"
+                                               Visibility="Collapsed" Margin="0,0,0,14"/>
+                                    <Rectangle Height="0" Margin="0,0,0,6"/>
 
                                     <TextBlock Text="SESSION PREVIEW" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>

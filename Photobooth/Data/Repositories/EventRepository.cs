@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Photobooth.Data.Models;
 using Serilog;
 
@@ -35,6 +36,14 @@ namespace Photobooth.Data.Repositories
             var sessions = _db.Sessions.Where(s => s.EventId == eventId).ToList();
             _db.Sessions.RemoveRange(sessions);
             Log.Debug("Staged removal of {Count} sessions for event {EventId}", sessions.Count, eventId);
+        }
+
+        public void Archive(int eventId)
+        {
+            // IgnoreQueryFilters so we can find already-archived events too (idempotent)
+            var ev = _db.Events.IgnoreQueryFilters().FirstOrDefault(e => e.Id == eventId);
+            if (ev is not null)
+                ev.ArchivedAt = DateTime.UtcNow;
         }
 
         public void SaveChanges() => _db.SaveChanges();

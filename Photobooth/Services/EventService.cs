@@ -37,6 +37,9 @@ namespace Photobooth.Services
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Event name cannot be empty.", nameof(name));
 
+            if (string.IsNullOrWhiteSpace(_fileStorage.StorageRoot))
+                throw new InvalidOperationException("A storage root path must be configured before creating events.");
+
             var ev = new Event
             {
                 Name                 = name.Trim(),
@@ -94,6 +97,14 @@ namespace Photobooth.Services
             _repo.RemoveSessions(id);
             _repo.SaveChanges();
             Log.Information("Cleared sessions for event {Id}", id);
+        }
+
+        public void Archive(int id)
+        {
+            var ev = Require(id);
+            _repo.Archive(id);
+            _repo.SaveChanges();
+            Log.Information("Archived event '{Name}' (id: {Id})", ev.Name, id);
         }
 
         // --- Private helpers -----------------------------------------------------

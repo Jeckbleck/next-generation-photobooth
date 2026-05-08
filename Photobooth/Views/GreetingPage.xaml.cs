@@ -201,20 +201,22 @@ namespace Photobooth.Views
 
         private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
         {
-            EventNameBox.Text          = name;
-            PaywallToggle.IsChecked    = paywallEnabled;
-            SaveImagesToggle.IsChecked = saveImagesEnabled;
-            PrintLimitBox.Text         = printLimit?.ToString() ?? string.Empty;
+            EventNameBox.Text              = name;
+            PaywallToggle.IsChecked        = paywallEnabled;
+            SaveImagesToggle.IsChecked     = saveImagesEnabled;
+            PrintLimitBox.Text             = printLimit?.ToString() ?? string.Empty;
+            ArchiveEventButton.IsEnabled   = true;
         }
 
         private void ClearEventFields()
         {
-            EventNameBox.Text          = string.Empty;
-            PaywallToggle.IsChecked    = false;
-            SaveImagesToggle.IsChecked = true;
-            PrintLimitBox.Text         = string.Empty;
-            SessionCountText.Text      = "—";
-            PhotoCountText.Text        = "—";
+            EventNameBox.Text              = string.Empty;
+            PaywallToggle.IsChecked        = false;
+            SaveImagesToggle.IsChecked     = true;
+            PrintLimitBox.Text             = string.Empty;
+            SessionCountText.Text          = "—";
+            PhotoCountText.Text            = "—";
+            ArchiveEventButton.IsEnabled   = false;
         }
 
         private void RefreshSessionStats(int eventId)
@@ -242,6 +244,17 @@ namespace Photobooth.Views
             }
             else
             {
+                if (!App.Settings.IsStorageConfigured)
+                {
+                    StoragePathWarning.Visibility = Visibility.Visible;
+                    MessageBox.Show(
+                        "Please select a storage folder before creating an event.\n\nUse the Browse button in the Storage section above.",
+                        "Storage path required",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
                 var ev = App.Events.Create(name,
                     PaywallToggle.IsChecked == true,
                     SaveImagesToggle.IsChecked == true,
@@ -267,6 +280,27 @@ namespace Photobooth.Views
             if (!_selectedEventId.HasValue) return;
             App.Events.ClearSessions(_selectedEventId.Value);
             RefreshSessionStats(_selectedEventId.Value);
+        }
+
+        private void ArchiveEvent_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+
+            var ev = App.Events.GetById(_selectedEventId.Value);
+            if (ev is null) return;
+
+            var result = MessageBox.Show(
+                $"Archive \"{ev.Name}\"?\n\nThe event will be hidden from the list. All sessions and photos on disk are kept and can be recovered by an administrator.",
+                "Archive Event",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            App.Events.Archive(_selectedEventId.Value);
+            SetSelectedEvent(null);
+            LoadEvents();
         }
 
         private void Toggle_Click(object sender, RoutedEventArgs e)
@@ -325,6 +359,9 @@ namespace Photobooth.Views
         private void RefreshStoragePath()
         {
             StoragePathBox.Text = App.Settings.StorageRoot;
+            StoragePathWarning.Visibility = App.Settings.IsStorageConfigured
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         private void BrowseStoragePath_Click(object sender, RoutedEventArgs e)
@@ -339,6 +376,7 @@ namespace Photobooth.Views
 
             App.Settings.SetStorageRoot(dlg.FolderName);
             StoragePathBox.Text = dlg.FolderName;
+            StoragePathWarning.Visibility = Visibility.Collapsed;
             Log.Information("Storage root changed to {Path}", dlg.FolderName);
         }
 

@@ -12,6 +12,8 @@ namespace Photobooth.Services
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Photobooth", "settings.json");
 
+        public static readonly string DefaultStorageRoot = Path.Combine("C:\\", "Photobooth");
+
         private AppSettings _settings;
 
         public SettingsManager()
@@ -39,6 +41,8 @@ namespace Photobooth.Services
 
         public string StorageRoot => _settings.StorageRoot;
 
+        public bool IsStorageConfigured => !string.IsNullOrWhiteSpace(_settings.StorageRoot);
+
         public void SetStorageRoot(string path)
         {
             _settings.StorageRoot = path;
@@ -56,6 +60,11 @@ namespace Photobooth.Services
                     var loaded = JsonSerializer.Deserialize<AppSettings>(json);
                     if (loaded is not null)
                     {
+                        if (string.IsNullOrWhiteSpace(loaded.StorageRoot))
+                        {
+                            loaded.StorageRoot = DefaultStorageRoot;
+                            Save(loaded);
+                        }
                         Log.Debug("Settings loaded from {Path}", FilePath);
                         return loaded;
                     }
@@ -98,7 +107,6 @@ namespace Photobooth.Services
     {
         public string PinHash       { get; set; } = SettingsManager.HashPin("1234");
         public int?   ActiveEventId { get; set; }
-        public string StorageRoot   { get; set; } = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
+        public string StorageRoot   { get; set; } = SettingsManager.DefaultStorageRoot;
     }
 }
