@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using Photobooth.Print;
 using Serilog;
 
 namespace Photobooth.Views
@@ -26,6 +28,25 @@ namespace Photobooth.Views
         {
             LoadPhotos();
             StartCountdown();
+            _ = PrintAsync();
+        }
+
+        private async Task PrintAsync()
+        {
+            try
+            {
+                PrintStatusText.Text = "Printing your strip…";
+                using var strip = await Task.Run(() =>
+                    PhotostripComposer.Compose(_paths, App.Settings.Current.BrandingText));
+                await App.Printer.PrintStripAsync(strip);
+                PrintStatusText.Text = "Your strip is printing!";
+                Log.Information("Print job submitted for {Count} photos", _paths.Count);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Print failed");
+                PrintStatusText.Text = "Print failed — please see staff.";
+            }
         }
 
         private void LoadPhotos()

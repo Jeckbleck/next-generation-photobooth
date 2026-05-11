@@ -49,6 +49,10 @@
         <!-- Footer -->
         <Grid Grid.Row="2" Margin="40,24,40,40">
             <StackPanel HorizontalAlignment="Center">
+                <TextBlock x:Name="PrintStatusText"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="14" TextAlignment="Center"
+                           Margin="0,0,0,8"/>
                 <TextBlock x:Name="ReturnCountdown"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="16" TextAlignment="Center"
