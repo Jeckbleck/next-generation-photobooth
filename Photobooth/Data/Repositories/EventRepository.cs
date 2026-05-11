@@ -19,7 +19,8 @@ namespace Photobooth.Data.Repositories
         public List<Event> GetActive() =>
             _db.Events.OrderByDescending(e => e.CreatedAt).ToList();
 
-        public Event? FindById(int id) => _db.Events.Find(id);
+        public Event?   FindById(int id)        => _db.Events.Find(id);
+        public Session? FindSessionById(int id) => _db.Sessions.Find(id);
 
         public int CountSessions(int eventId) =>
             _db.Sessions.Count(s => s.EventId == eventId);
@@ -70,6 +71,12 @@ namespace Photobooth.Data.Repositories
         {
             var ev = _db.Events.Find(eventId);
             if (ev is not null) ev.BackgroundImagePath = path;
+        }
+
+        public void AddPrints(int sessionId, int copies)
+        {
+            var session = _db.Sessions.Find(sessionId);
+            if (session is not null) session.PrintCount += copies;
         }
 
         public void SaveChanges() => _db.SaveChanges();

@@ -55,5 +55,12 @@ namespace Photobooth.Services
         void SetBackgroundColor(int id, string? color);
         void SetSurfaceColor(int id, string? color);
         void SetBackgroundImagePath(int id, string? path);
+
+        /// <summary>
+        /// Records that <paramref name="copies"/> prints were produced for a session.
+        /// Throws <see cref="InvalidOperationException"/> if the session's event has a
+        /// print limit and this call would exceed it.
+        /// </summary>
+        void RecordPrint(int sessionId, int copies = 1);
     }
 }

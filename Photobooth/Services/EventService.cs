@@ -141,6 +141,25 @@ namespace Photobooth.Services
             Log.Debug("Event {Id} background image → {Value}", id, path ?? "none");
         }
 
+        public void RecordPrint(int sessionId, int copies = 1)
+        {
+            var session = _repo.FindSessionById(sessionId)
+                ?? throw new InvalidOperationException($"Session {sessionId} not found.");
+
+            var ev = Require(session.EventId);
+            if (ev.PrintLimitPerSession.HasValue &&
+                session.PrintCount + copies > ev.PrintLimitPerSession.Value)
+            {
+                throw new InvalidOperationException(
+                    $"Print limit of {ev.PrintLimitPerSession.Value} reached for this session.");
+            }
+
+            _repo.AddPrints(sessionId, copies);
+            _repo.SaveChanges();
+            Log.Information("Session {SessionId} printed {Copies} cop(ies) — total: {Total}",
+                sessionId, copies, session.PrintCount + copies);
+        }
+
         // --- Private helpers -----------------------------------------------------
 
         private Event Require(int id) =>

@@ -16,6 +16,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Returns the event with the given id, or null if not found.</summary>
         Event? FindById(int id);
 
+        /// <summary>Returns the session with the given id, or null if not found.</summary>
+        Session? FindSessionById(int id);
+
         /// <summary>Returns the number of sessions belonging to the event.</summary>
         int CountSessions(int eventId);
 
@@ -52,6 +55,9 @@ namespace Photobooth.Data.Repositories
 
         /// <summary>Sets the background image path for the event. Null removes it.</summary>
         void SetBackgroundImagePath(int eventId, string? path);
+
+        /// <summary>Increments the print counter for a session by the given number of copies.</summary>
+        void AddPrints(int sessionId, int copies);
 
         /// <summary>Persists all pending changes to the database.</summary>
         void SaveChanges();
