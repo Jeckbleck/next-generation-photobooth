@@ -46,6 +46,32 @@ namespace Photobooth.Data.Repositories
                 ev.ArchivedAt = DateTime.UtcNow;
         }
 
+        // --- Appearance ----------------------------------------------------------
+
+        public void SetAccentColor(int eventId, string? color)
+        {
+            var ev = _db.Events.Find(eventId);
+            if (ev is not null) ev.AccentColor = color;
+        }
+
+        public void SetBackgroundColor(int eventId, string? color)
+        {
+            var ev = _db.Events.Find(eventId);
+            if (ev is not null) ev.BackgroundColor = color;
+        }
+
+        public void SetSurfaceColor(int eventId, string? color)
+        {
+            var ev = _db.Events.Find(eventId);
+            if (ev is not null) ev.SurfaceColor = color;
+        }
+
+        public void SetBackgroundImagePath(int eventId, string? path)
+        {
+            var ev = _db.Events.Find(eventId);
+            if (ev is not null) ev.BackgroundImagePath = path;
+        }
+
         public void SaveChanges() => _db.SaveChanges();
     }
 }

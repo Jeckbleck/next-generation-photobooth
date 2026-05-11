@@ -107,6 +107,40 @@ namespace Photobooth.Services
             Log.Information("Archived event '{Name}' (id: {Id})", ev.Name, id);
         }
 
+        // --- Appearance ----------------------------------------------------------
+
+        public void SetAccentColor(int id, string? color)
+        {
+            Require(id);
+            _repo.SetAccentColor(id, color);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} accent color → {Value}", id, color ?? "default");
+        }
+
+        public void SetBackgroundColor(int id, string? color)
+        {
+            Require(id);
+            _repo.SetBackgroundColor(id, color);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} background color → {Value}", id, color ?? "default");
+        }
+
+        public void SetSurfaceColor(int id, string? color)
+        {
+            Require(id);
+            _repo.SetSurfaceColor(id, color);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} surface color → {Value}", id, color ?? "default");
+        }
+
+        public void SetBackgroundImagePath(int id, string? path)
+        {
+            Require(id);
+            _repo.SetBackgroundImagePath(id, path);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} background image → {Value}", id, path ?? "none");
+        }
+
         // --- Private helpers -----------------------------------------------------
 
         private Event Require(int id) =>

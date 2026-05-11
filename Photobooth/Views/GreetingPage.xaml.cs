@@ -16,6 +16,10 @@ namespace Photobooth.Views
         private Button[]?           _navButtons;
         private FrameworkElement[]? _contentPanels;
 
+        private const string DefaultAccent     = "#E94560";
+        private const string DefaultBackground = "#1A1A2E";
+        private const string DefaultSurface    = "#16213E";
+
         private int?  _selectedEventId;
         private bool  _loadingEvents;
 
@@ -39,6 +43,34 @@ namespace Photobooth.Views
         {
             App.Camera.CameraDisconnected += OnCameraDisconnected;
             UpdateCameraStatus();
+            ApplyActiveEventAppearance();
+        }
+
+        private void ApplyActiveEventAppearance()
+        {
+            var id = App.Settings.ActiveEventId;
+            if (!id.HasValue) return;
+            var ev = App.Events.GetById(id.Value);
+            if (ev is null) return;
+
+            if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",     ev.AccentColor);
+            if (!string.IsNullOrEmpty(ev.BackgroundColor)) ApplyBrushColor("BackgroundBrush", ev.BackgroundColor);
+            if (!string.IsNullOrEmpty(ev.SurfaceColor))    ApplyBrushColor("SurfaceBrush",    ev.SurfaceColor);
+
+            if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
+            {
+                try
+                {
+                    var bmp = new BitmapImage(new Uri(ev.BackgroundImagePath));
+                    GreetingBgImage.Source       = bmp;
+                    GreetingBgImage.Visibility   = Visibility.Visible;
+                    GreetingBgOverlay.Visibility = Visibility.Visible;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to restore background image on load");
+                }
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -180,6 +212,7 @@ namespace Photobooth.Views
                 {
                     PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerSession);
                     RefreshSessionStats(id);
+                    LoadEventAppearance(ev);
                 }
             }
             else
@@ -352,6 +385,7 @@ namespace Photobooth.Views
             SetSelectedEvent(id);
             PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerSession);
             RefreshSessionStats(id);
+            LoadEventAppearance(ev);
         }
 
         // --- Storage path --------------------------------------------------------
@@ -453,6 +487,9 @@ namespace Photobooth.Views
                 BgPreviewImage.Source        = bmp;
                 BgPreviewBorder.Visibility   = Visibility.Visible;
                 Log.Information("Greeting background set: {Path}", dlg.FileName);
+
+                if (_selectedEventId.HasValue)
+                    App.Events.SetBackgroundImagePath(_selectedEventId.Value, dlg.FileName);
             }
             catch (Exception ex)
             {
@@ -461,6 +498,13 @@ namespace Photobooth.Views
         }
 
         private void ClearGreetingBg_Click(object sender, RoutedEventArgs e)
+        {
+            ClearBackground();
+            if (_selectedEventId.HasValue)
+                App.Events.SetBackgroundImagePath(_selectedEventId.Value, null);
+        }
+
+        private void ClearBackground()
         {
             GreetingBgImage.Source       = null;
             GreetingBgImage.Visibility   = Visibility.Collapsed;
@@ -473,14 +517,90 @@ namespace Photobooth.Views
 
         // --- Display tab: color pickers ------------------------------------------
 
+        private void LoadEventAppearance(Data.Models.Event ev)
+        {
+            var accent = ev.AccentColor     ?? DefaultAccent;
+            var bg     = ev.BackgroundColor ?? DefaultBackground;
+            var surf   = ev.SurfaceColor    ?? DefaultSurface;
+
+            AccentHexBox.Text  = accent;
+            BgColorHexBox.Text = bg;
+            SurfaceHexBox.Text = surf;
+
+            ApplyBrushColor("AccentBrush",     accent);
+            ApplyBrushColor("BackgroundBrush", bg);
+            ApplyBrushColor("SurfaceBrush",    surf);
+
+            if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
+            {
+                try
+                {
+                    var bmp = new BitmapImage(new Uri(ev.BackgroundImagePath));
+                    GreetingBgImage.Source       = bmp;
+                    GreetingBgImage.Visibility   = Visibility.Visible;
+                    GreetingBgOverlay.Visibility = Visibility.Visible;
+                    BgPathBox.Text               = ev.BackgroundImagePath;
+                    BgPreviewImage.Source        = bmp;
+                    BgPreviewBorder.Visibility   = Visibility.Visible;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to restore background image for event {Id}", ev.Id);
+                    ClearBackground();
+                }
+            }
+            else
+            {
+                ClearBackground();
+            }
+        }
+
         private void ApplyAccentColor_Click(object sender, RoutedEventArgs e)
-            => ApplyBrushColor("AccentBrush", AccentHexBox.Text.Trim());
+        {
+            var hex = AccentHexBox.Text.Trim();
+            ApplyBrushColor("AccentBrush", hex);
+            if (_selectedEventId.HasValue)
+                App.Events.SetAccentColor(_selectedEventId.Value, hex);
+        }
 
         private void ApplyBgColor_Click(object sender, RoutedEventArgs e)
-            => ApplyBrushColor("BackgroundBrush", BgColorHexBox.Text.Trim());
+        {
+            var hex = BgColorHexBox.Text.Trim();
+            ApplyBrushColor("BackgroundBrush", hex);
+            if (_selectedEventId.HasValue)
+                App.Events.SetBackgroundColor(_selectedEventId.Value, hex);
+        }
 
         private void ApplySurfaceColor_Click(object sender, RoutedEventArgs e)
-            => ApplyBrushColor("SurfaceBrush", SurfaceHexBox.Text.Trim());
+        {
+            var hex = SurfaceHexBox.Text.Trim();
+            ApplyBrushColor("SurfaceBrush", hex);
+            if (_selectedEventId.HasValue)
+                App.Events.SetSurfaceColor(_selectedEventId.Value, hex);
+        }
+
+        private void RevertAppearance_Click(object sender, RoutedEventArgs e)
+        {
+            AccentHexBox.Text  = DefaultAccent;
+            BgColorHexBox.Text = DefaultBackground;
+            SurfaceHexBox.Text = DefaultSurface;
+
+            ApplyBrushColor("AccentBrush",     DefaultAccent);
+            ApplyBrushColor("BackgroundBrush", DefaultBackground);
+            ApplyBrushColor("SurfaceBrush",    DefaultSurface);
+
+            ClearBackground();
+
+            if (_selectedEventId.HasValue)
+            {
+                App.Events.SetAccentColor(_selectedEventId.Value, null);
+                App.Events.SetBackgroundColor(_selectedEventId.Value, null);
+                App.Events.SetSurfaceColor(_selectedEventId.Value, null);
+                App.Events.SetBackgroundImagePath(_selectedEventId.Value, null);
+            }
+
+            Log.Information("Appearance reverted to defaults");
+        }
 
         private static void ApplyBrushColor(string resourceKey, string hex)
         {

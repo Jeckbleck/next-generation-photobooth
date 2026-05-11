@@ -48,5 +48,12 @@ namespace Photobooth.Services
         /// Archived events are excluded from all future queries.
         /// </summary>
         void Archive(int id);
+
+        // --- Appearance ----------------------------------------------------------
+
+        void SetAccentColor(int id, string? color);
+        void SetBackgroundColor(int id, string? color);
+        void SetSurfaceColor(int id, string? color);
+        void SetBackgroundImagePath(int id, string? path);
     }
 }
