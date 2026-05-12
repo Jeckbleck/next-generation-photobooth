@@ -31,6 +31,12 @@ namespace Photobooth
             Log.Information("Initialising database");
             _db.Database.EnsureCreated();
 
+            if (Settings.ActiveEventId.HasValue && _eventRepo.FindById(Settings.ActiveEventId.Value) is null)
+            {
+                Log.Warning("ActiveEventId {Id} not found in database — clearing stale reference", Settings.ActiveEventId.Value);
+                Settings.SetActiveEventId(null);
+            }
+
             Log.Information("App startup — initializing camera");
             Camera.Initialize();
         }
