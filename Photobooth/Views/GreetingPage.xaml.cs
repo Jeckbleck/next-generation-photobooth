@@ -80,10 +80,12 @@ namespace Photobooth.Views
 
         private void UpdateCameraStatus()
         {
-            bool connected = App.Camera.IsConnected;
-            StartButton.IsEnabled       = connected;
+            bool connected  = App.Camera.IsConnected;
+            bool hasEvent   = App.Settings.ActiveEventId.HasValue;
+            StartButton.IsEnabled       = connected && hasEvent;
             CameraStatusText.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
             RetryButton.Visibility      = connected ? Visibility.Collapsed : Visibility.Visible;
+            NoEventText.Visibility      = hasEvent  ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void OnCameraDisconnected(object? sender, System.EventArgs e)
@@ -112,6 +114,13 @@ namespace Photobooth.Views
             if (!App.Camera.IsConnected)
             {
                 Log.Warning("Start tapped but camera not connected — blocked navigation");
+                UpdateCameraStatus();
+                return;
+            }
+
+            if (!App.Settings.ActiveEventId.HasValue)
+            {
+                Log.Warning("Start tapped but no active event selected — blocked navigation");
                 UpdateCameraStatus();
                 return;
             }
@@ -699,6 +708,7 @@ namespace Photobooth.Views
         {
             Log.Debug("Settings panel closed");
             SettingsContentPanel.Visibility = Visibility.Collapsed;
+            UpdateCameraStatus();
         }
     }
 }

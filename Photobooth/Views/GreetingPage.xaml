@@ -123,6 +123,16 @@
                     Margin="0,0,0,0"
                     Visibility="Collapsed"
                     Click="RetryCamera_Click"/>
+
+            <!-- Shown only when no active event is selected -->
+            <TextBlock x:Name="NoEventText"
+                       Text="No active event — select one in settings before starting."
+                       Foreground="#E9A020"
+                       FontSize="15"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,16,0,0"
+                       Visibility="Collapsed"/>
         </StackPanel>
 
         <!-- Gear / settings button — top-right corner -->
