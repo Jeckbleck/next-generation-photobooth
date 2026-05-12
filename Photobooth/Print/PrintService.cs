@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
-using Photobooth.Settings;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth.Print
@@ -18,7 +18,7 @@ namespace Photobooth.Print
             foreach (string name in PrinterSettings.InstalledPrinters)
             {
                 var u = name.ToUpperInvariant();
-                if (u.Contains("DNP") || u.Contains("DS620") || u.Contains("DS-620") || u.Contains("RX1"))
+                if (u.Contains("DNP") || u.Contains("DS620") || u.Contains("DS-620") || u.Contains("DS 620") || u.Contains("RX1"))
                     return name;
             }
             return null;
@@ -27,48 +27,75 @@ namespace Photobooth.Print
         // Manual override → DNP auto-detect → null (system default).
         public string? EffectivePrinterName()
         {
-            if (!string.IsNullOrWhiteSpace(_settings.Current.PrinterName))
-                return _settings.Current.PrinterName;
+            if (!string.IsNullOrWhiteSpace(_settings.PrinterName))
+                return _settings.PrinterName;
             return FindDnpPrinter();
         }
 
         public Task PrintStripAsync(Bitmap strip)
         {
-            return Task.Run(() =>
+            // PrintDocument and some drivers (e.g. DNP) require an STA thread.
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new System.Threading.Thread(() =>
             {
-                string? printerName = EffectivePrinterName();
-                Log.Information("Printing strip on {Printer}", printerName ?? "(system default)");
-
-                var doc = new PrintDocument();
-                if (printerName != null)
-                    doc.PrinterSettings.PrinterName = printerName;
-
-                // Portrait 4×6 paper — matches the 1240×1844 px canvas.
-                var paperSize = Find4x6PortraitSize(doc.PrinterSettings);
-                if (paperSize != null)
+                try
                 {
-                    doc.DefaultPageSettings.PaperSize = paperSize;
-                    Log.Debug("Paper size: {Name}", paperSize.PaperName);
+                    PrintOnCurrentThread(strip);
+                    tcs.SetResult(true);
                 }
-                else
+                catch (Exception ex)
                 {
-                    Log.Warning("No 4×6 paper size found — using driver default");
+                    tcs.SetException(ex);
                 }
-
-                doc.DefaultPageSettings.Landscape = false;
-
-                var bmp = strip; // capture for lambda
-                doc.PrintPage += (_, e) =>
-                {
-                    e.Graphics!.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    e.Graphics.PixelOffsetMode    = PixelOffsetMode.HighQuality;
-                    e.Graphics.DrawImage(bmp, e.PageBounds);
-                    e.HasMorePages = false;
-                };
-
-                doc.Print();
-                Log.Information("Print job submitted");
             });
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.IsBackground = true;
+            thread.Start();
+            return tcs.Task;
+        }
+
+        private void PrintOnCurrentThread(Bitmap strip)
+        {
+            string? printerName = EffectivePrinterName();
+            Log.Information("Printing strip on {Printer}", printerName ?? "(system default)");
+            Log.Debug("Installed printers: {Printers}",
+                string.Join(", ", PrinterSettings.InstalledPrinters.Cast<string>()));
+
+            var doc = new PrintDocument();
+            if (printerName != null)
+                doc.PrinterSettings.PrinterName = printerName;
+
+            Log.Debug("Resolved printer: {Printer} — IsValid={Valid}",
+                doc.PrinterSettings.PrinterName,
+                doc.PrinterSettings.IsValid);
+
+            // Portrait 4×6 paper — matches the 1240×1844 px canvas.
+            var paperSize = Find4x6PortraitSize(doc.PrinterSettings);
+            if (paperSize != null)
+            {
+                doc.DefaultPageSettings.PaperSize = paperSize;
+                Log.Debug("Paper size matched: {Name}", paperSize.PaperName);
+            }
+            else
+            {
+                Log.Warning("No 4×6 paper size found — using driver default. Available: {Sizes}",
+                    string.Join(", ", doc.PrinterSettings.PaperSizes.Cast<PaperSize>()
+                        .Select(s => s.PaperName)));
+            }
+
+            doc.DefaultPageSettings.Landscape = false;
+
+            var bmp = strip;
+            doc.PrintPage += (_, e) =>
+            {
+                e.Graphics!.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                e.Graphics.PixelOffsetMode    = PixelOffsetMode.HighQuality;
+                e.Graphics.DrawImage(bmp, e.PageBounds);
+                e.HasMorePages = false;
+            };
+
+            doc.Print();
+            Log.Information("Print job submitted");
         }
 
         private static PaperSize? Find4x6PortraitSize(PrinterSettings ps)

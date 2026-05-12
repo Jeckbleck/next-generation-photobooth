@@ -1,7 +1,6 @@
 using System.Windows;
 using Photobooth.Camera;
 using Photobooth.Print;
-using Photobooth.Settings;
 using Photobooth.Data;
 using Photobooth.Data.Repositories;
 using Photobooth.Services;
@@ -18,20 +17,11 @@ namespace Photobooth
 
         // --- Public API — one entry point per layer boundary --------------------
 
-        public static CameraService      Camera      { get; } = new CameraService();
-        public static SettingsManager    Settings    { get; } = new SettingsManager();
+        public static CameraService       Camera      { get; } = new CameraService();
+        public static SettingsManager     Settings    { get; } = new SettingsManager();
         public static IFileStorageService FileStorage { get; } = new FileStorageService(Settings);
-
-        /// <summary>
-        /// Business-layer entry point for event management.
-        /// Views must only call this interface — never the repository or DbContext.
-        /// </summary>
-        public static IEventService Events { get; } = new EventService(_eventRepo, FileStorage);
-
-        // --- Application lifecycle -----------------------------------------------
-        public static CameraService  Camera   { get; } = new CameraService();
-        public static SettingsManager Settings { get; } = new SettingsManager();
-        public static PrintService   Printer  { get; } = new PrintService(Settings);
+        public static IEventService       Events      { get; } = new EventService(_eventRepo, FileStorage);
+        public static PrintService        Printer     { get; } = new PrintService(Settings);
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -41,7 +31,6 @@ namespace Photobooth
             Log.Information("Initialising database");
             _db.Database.EnsureCreated();
 
-            Settings.Load();
             Log.Information("App startup — initializing camera");
             Camera.Initialize();
         }

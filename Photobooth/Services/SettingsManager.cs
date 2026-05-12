@@ -43,6 +43,23 @@ namespace Photobooth.Services
 
         public bool IsStorageConfigured => !string.IsNullOrWhiteSpace(_settings.StorageRoot);
 
+        public string? PrinterName => _settings.PrinterName;
+
+        public void SetPrinterName(string? name)
+        {
+            _settings.PrinterName = name;
+            Save();
+            Log.Information("Printer name updated to {Name}", name ?? "auto-detect");
+        }
+
+        public string BrandingText => _settings.BrandingText;
+
+        public void SetBrandingText(string text)
+        {
+            _settings.BrandingText = text;
+            Save();
+        }
+
         public void SetStorageRoot(string path)
         {
             _settings.StorageRoot = path;
@@ -105,8 +122,10 @@ namespace Photobooth.Services
 
     public class AppSettings
     {
-        public string PinHash       { get; set; } = SettingsManager.HashPin("1234");
-        public int?   ActiveEventId { get; set; }
-        public string StorageRoot   { get; set; } = SettingsManager.DefaultStorageRoot;
+        public string  PinHash       { get; set; } = SettingsManager.HashPin("1234");
+        public int?    ActiveEventId { get; set; }
+        public string  StorageRoot   { get; set; } = SettingsManager.DefaultStorageRoot;
+        public string? PrinterName   { get; set; }
+        public string  BrandingText  { get; set; } = "THE NEXT GENERATION PHOTOBOOTH";
     }
 }

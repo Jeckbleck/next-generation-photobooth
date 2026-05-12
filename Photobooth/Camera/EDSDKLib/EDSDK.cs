@@ -1378,8 +1378,10 @@ namespace EDSDKLib
         //  Returns:    Any of the sdk errors.
         -----------------------------------------------------------------------------*/
         [DllImport("EDSDK.dll")]
+#pragma warning disable CS0618
         public extern static uint EdsSetPropertyData( IntPtr inRef, uint inPropertyID,
              int inParam, int inPropertySize, [MarshalAs(UnmanagedType.AsAny), In] object inPropertyData);
+#pragma warning restore CS0618
     
         /*-----------------------------------------------------------------------------
         //  
@@ -2560,7 +2562,7 @@ namespace EDSDKLib
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string szCaption;
 
-            [MarshalAs(UnmanagedType.ByValArray)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
             public byte[] data;
         }
         #endregion

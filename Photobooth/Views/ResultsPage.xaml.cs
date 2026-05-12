@@ -37,7 +37,7 @@ namespace Photobooth.Views
             {
                 PrintStatusText.Text = "Printing your strip…";
                 using var strip = await Task.Run(() =>
-                    PhotostripComposer.Compose(_paths, App.Settings.Current.BrandingText));
+                    PhotostripComposer.Compose(_paths, App.Settings.BrandingText));
                 await App.Printer.PrintStripAsync(strip);
                 PrintStatusText.Text = "Your strip is printing!";
                 Log.Information("Print job submitted for {Count} photos", _paths.Count);

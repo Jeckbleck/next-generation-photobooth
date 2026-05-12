@@ -519,11 +519,18 @@
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <TextBlock x:Name="PrinterStatusText" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                        <TextBox x:Name="PrinterNameBox" Width="260" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" ToolTip="Leave blank to auto-detect any DNP printer"/>
-                                        <Button Content="Auto-detect" Style="{StaticResource GhostButton}" Padding="14,6" FontSize="13" Margin="8,0,0,0" Click="AutoDetectPrinter_Click"/>
-                                    </StackPanel>
-                                    <TextBlock Text="Leave blank to auto-detect any DNP / DS620 printer." Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,20"/>
+                                    <ComboBox x:Name="PrinterDropdown"
+                                              Width="320" HorizontalAlignment="Left"
+                                              Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                              Padding="10,7" FontSize="13" Margin="0,0,0,4"
+                                              SelectionChanged="PrinterDropdown_SelectionChanged">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Foreground" Value="Black"/>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                    </ComboBox>
+                                    <TextBlock Text="Select the printer to use for photo strips." Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,20"/>
 
                                     <TextBlock Text="PAPER" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>

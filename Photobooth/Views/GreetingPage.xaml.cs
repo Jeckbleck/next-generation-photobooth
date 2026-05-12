@@ -166,7 +166,7 @@ namespace Photobooth.Views
         {
             LoadEvents();
             RefreshStoragePath();
-            RefreshPrinterStatus();
+            PopulatePrinterDropdown();
             SelectTab(0);
         }
 
@@ -452,18 +452,45 @@ namespace Photobooth.Views
 
         // --- Printer tab ---------------------------------------------------------
 
-        private void RefreshPrinterStatus()
+        private void PopulatePrinterDropdown()
         {
-            string manual = PrinterNameBox.Text.Trim();
-            PrinterStatusText.Text = string.IsNullOrEmpty(manual)
-                ? "Auto-detect will run on the printer branch."
-                : $"Using: {manual}";
+            PrinterDropdown.SelectionChanged -= PrinterDropdown_SelectionChanged;
+            PrinterDropdown.Items.Clear();
+            PrinterDropdown.Items.Add("(none)");
+
+            string? saved = App.Settings.PrinterName;
+            int selectIndex = 0;
+
+            foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+            {
+                PrinterDropdown.Items.Add(name);
+                if (name == saved)
+                    selectIndex = PrinterDropdown.Items.Count - 1;
+            }
+
+            PrinterDropdown.SelectedIndex = selectIndex;
+            PrinterStatusText.Text = selectIndex == 0
+                ? "No printer selected."
+                : $"Active: {PrinterDropdown.SelectedItem}";
+
+            PrinterDropdown.SelectionChanged += PrinterDropdown_SelectionChanged;
         }
 
-        private void AutoDetectPrinter_Click(object sender, RoutedEventArgs e)
+        private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            PrinterStatusText.Text = "Auto-detect available after merging feature/printer-setup.";
-            Log.Debug("Auto-detect clicked on settings-menu branch — no-op");
+            if (PrinterDropdown.SelectedIndex <= 0)
+            {
+                App.Settings.SetPrinterName(null);
+                PrinterStatusText.Text = "No printer selected.";
+                Log.Information("Printer selection cleared");
+            }
+            else
+            {
+                string name = (string)PrinterDropdown.SelectedItem;
+                App.Settings.SetPrinterName(name);
+                PrinterStatusText.Text = $"Active: {name}";
+                Log.Information("Printer selected: {Name}", name);
+            }
         }
 
         // --- Display tab: background image ---------------------------------------
