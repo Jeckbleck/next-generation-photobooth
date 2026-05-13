@@ -31,7 +31,16 @@ namespace Photobooth.Views
         {
             LoadPhotos();
             StartCountdown();
-            _ = PrintAsync();
+
+            if (App.Settings.AutoPrint)
+            {
+                _ = PrintAsync();
+            }
+            else
+            {
+                PrintButton.Visibility  = Visibility.Visible;
+                PrintStatusText.Text    = "Press Print when you're ready.";
+            }
         }
 
         private async Task PrintAsync()
@@ -129,6 +138,12 @@ namespace Photobooth.Views
             Log.Information("Returning to GreetingPage");
             var window = Window.GetWindow(this) as MainWindow;
             window?.NavigateTo(new GreetingPage());
+        }
+
+        private void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
+            PrintButton.IsEnabled = false;
+            _ = PrintAsync();
         }
 
         private void StartAgain_Click(object sender, RoutedEventArgs e)

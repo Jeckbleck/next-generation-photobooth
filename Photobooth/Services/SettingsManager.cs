@@ -52,6 +52,15 @@ namespace Photobooth.Services
             Log.Information("Printer name updated to {Name}", name ?? "auto-detect");
         }
 
+        public bool AutoPrint => _settings.AutoPrint;
+
+        public void SetAutoPrint(bool value)
+        {
+            _settings.AutoPrint = value;
+            Save();
+            Log.Debug("Auto-print → {Value}", value);
+        }
+
         public string BrandingText => _settings.BrandingText;
 
         public void SetBrandingText(string text)
@@ -126,6 +135,7 @@ namespace Photobooth.Services
         public int?    ActiveEventId { get; set; }
         public string  StorageRoot   { get; set; } = SettingsManager.DefaultStorageRoot;
         public string? PrinterName   { get; set; }
+        public bool    AutoPrint     { get; set; } = true;
         public string  BrandingText  { get; set; } = "THE NEXT GENERATION PHOTOBOOTH";
     }
 }

@@ -82,19 +82,11 @@
         <Border VerticalAlignment="Bottom"
                 Background="#80000000"
                 Padding="24,16">
-            <Grid>
-                <Button x:Name="StartButton"
-                        Content="TAKE PHOTOS"
-                        Style="{StaticResource KioskButton}"
-                        HorizontalAlignment="Center"
-                        Click="StartButton_Click"/>
-
-                <Button Content="← Back"
-                        Style="{StaticResource GhostButton}"
-                        HorizontalAlignment="Left"
-                        Padding="20,10" FontSize="16"
-                        Click="Back_Click"/>
-            </Grid>
+            <Button Content="← Back"
+                    Style="{StaticResource GhostButton}"
+                    HorizontalAlignment="Left"
+                    Padding="20,10" FontSize="16"
+                    Click="Back_Click"/>
         </Border>
     </Grid>
 </Page>

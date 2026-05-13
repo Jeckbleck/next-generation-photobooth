@@ -574,7 +574,7 @@
                                         </ComboBox>
                                     </Grid>
 
-                                    <Border Background="#0D1B2A" CornerRadius="8" Padding="14,10">
+                                    <Border Background="#0D1B2A" CornerRadius="8" Padding="14,10" Margin="0,0,0,24">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="⚠" Foreground="#E9A020" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Top"/>
                                             <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12">
@@ -582,6 +582,18 @@
                                             </TextBlock>
                                         </StackPanel>
                                     </Border>
+
+                                    <TextBlock Text="BEHAVIOUR" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Auto-print" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
+                                            <TextBlock Text="Print the strip automatically at the end of each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton x:Name="AutoPrintToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center" Click="AutoPrintToggle_Click"/>
+                                    </Grid>
                                 </StackPanel>
 
                                 <!-- DISPLAY -->

@@ -53,6 +53,13 @@
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="14" TextAlignment="Center"
                            Margin="0,0,0,8"/>
+                <Button x:Name="PrintButton"
+                        Content="PRINT STRIP"
+                        Style="{StaticResource KioskButton}"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,16"
+                        Visibility="Collapsed"
+                        Click="PrintButton_Click"/>
                 <TextBlock x:Name="ReturnCountdown"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="16" TextAlignment="Center"

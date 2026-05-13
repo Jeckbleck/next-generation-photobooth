@@ -95,11 +95,11 @@ namespace Photobooth.Views
             {
                 Log.Warning("ShootPage loaded but camera not connected");
                 StatusText.Text = "No camera detected — go back and check the connection.";
-                StartButton.IsEnabled = false;
                 return;
             }
 
             StartEvf();
+            _ = AutoStartAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -172,10 +172,16 @@ namespace Photobooth.Views
 
         // --- Photo sequence ------------------------------------------------------
 
-        private async void StartButton_Click(object sender, RoutedEventArgs e)
+        private async Task AutoStartAsync()
         {
-            if (_shooting) return;
-            StartButton.IsEnabled = false;
+            // Brief pause so the EVF feed is visible before the countdown starts
+            await Task.Delay(1500);
+            if (!_evfRunning || _shooting) return;
+            await RunSequenceAsync();
+        }
+
+        private async Task RunSequenceAsync()
+        {
             _capturedPaths.Clear();
             _sequenceAborted = false;
             ResetDots();
@@ -224,7 +230,6 @@ namespace Photobooth.Views
                     // 30-second timeout elapsed without a download completing
                     Log.Error("Photo {N} timed out waiting for download", i);
                     StatusText.Text = "Camera timed out — check the USB connection and try again.";
-                    StartButton.IsEnabled = true;
                     return;
                 }
                 catch (InvalidOperationException ex)
@@ -233,7 +238,6 @@ namespace Photobooth.Views
                     _shooting = false;
                     Log.Error("Hard camera error on photo {N}: {Message}", i, ex.Message);
                     StatusText.Text = $"Camera error — {ex.Message}";
-                    StartButton.IsEnabled = true;
                     return;
                 }
 
@@ -245,8 +249,6 @@ namespace Photobooth.Views
                 {
                     _shooting = false;
                     RequestNextEvfFrame();
-                    StatusText.Text = $"Get ready for photo {i + 1}…";
-                    await Task.Delay(5000);
                 }
             }
 

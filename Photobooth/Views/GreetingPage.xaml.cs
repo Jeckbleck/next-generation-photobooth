@@ -176,6 +176,7 @@ namespace Photobooth.Views
             LoadEvents();
             RefreshStoragePath();
             PopulatePrinterDropdown();
+            AutoPrintToggle.IsChecked = App.Settings.AutoPrint;
             SelectTab(0);
         }
 
@@ -510,6 +511,11 @@ namespace Photobooth.Views
                 : $"Active: {PrinterDropdown.SelectedItem}";
 
             PrinterDropdown.SelectionChanged += PrinterDropdown_SelectionChanged;
+        }
+
+        private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
+        {
+            App.Settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
         }
 
         private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)
