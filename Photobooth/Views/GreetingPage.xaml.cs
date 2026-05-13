@@ -468,7 +468,28 @@ namespace Photobooth.Views
                 ContentPanels[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
             }
 
+            if (index == 2) LoadStripDesigner();
             if (index == 7) PopulateAboutTab();
+        }
+
+        // --- Strip designer tab --------------------------------------------------
+
+        private void LoadStripDesigner()
+        {
+            if (_selectedEventId.HasValue)
+            {
+                var ev = App.Events.GetById(_selectedEventId.Value);
+                if (ev is not null)
+                {
+                    StripDesigner.LoadForEvent(
+                        ev.Id,
+                        ev.Slug,
+                        App.FileStorage.GetStripTemplatePath(ev.Slug),
+                        ev.PhotostripTemplatePath);
+                    return;
+                }
+            }
+            StripDesigner.LoadForEvent(null, null, null, null);
         }
 
         // --- About tab (read-only live data) -------------------------------------

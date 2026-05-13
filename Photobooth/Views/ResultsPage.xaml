@@ -22,29 +22,13 @@
                        HorizontalAlignment="Center"/>
         </StackPanel>
 
-        <!-- 3 photos side by side -->
-        <UniformGrid Grid.Row="1"
-                     Rows="1" Columns="3"
-                     Margin="40,0">
-            <Border Margin="12" CornerRadius="8"
-                    Background="{DynamicResource SurfaceBrush}">
-                <Image x:Name="Photo1"
-                       Stretch="UniformToFill"
-                       RenderOptions.BitmapScalingMode="HighQuality"/>
-            </Border>
-            <Border Margin="12" CornerRadius="8"
-                    Background="{DynamicResource SurfaceBrush}">
-                <Image x:Name="Photo2"
-                       Stretch="UniformToFill"
-                       RenderOptions.BitmapScalingMode="HighQuality"/>
-            </Border>
-            <Border Margin="12" CornerRadius="8"
-                    Background="{DynamicResource SurfaceBrush}">
-                <Image x:Name="Photo3"
-                       Stretch="UniformToFill"
-                       RenderOptions.BitmapScalingMode="HighQuality"/>
-            </Border>
-        </UniformGrid>
+        <!-- Composed photostrip preview -->
+        <Image x:Name="StripPreview"
+               Grid.Row="1"
+               Stretch="Uniform"
+               HorizontalAlignment="Center"
+               RenderOptions.BitmapScalingMode="HighQuality"
+               Margin="40,0"/>
 
         <!-- Footer -->
         <Grid Grid.Row="2" Margin="40,24,40,40">

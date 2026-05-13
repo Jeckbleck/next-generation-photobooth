@@ -73,6 +73,12 @@ namespace Photobooth.Data.Repositories
             if (ev is not null) ev.BackgroundImagePath = path;
         }
 
+        public void SetPhotostripTemplatePath(int eventId, string? path)
+        {
+            var ev = _db.Events.Find(eventId);
+            if (ev is not null) ev.PhotostripTemplatePath = path;
+        }
+
         public void AddPrints(int sessionId, int copies)
         {
             var session = _db.Sessions.Find(sessionId);

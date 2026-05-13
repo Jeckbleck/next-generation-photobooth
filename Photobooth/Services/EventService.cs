@@ -141,6 +141,14 @@ namespace Photobooth.Services
             Log.Debug("Event {Id} background image → {Value}", id, path ?? "none");
         }
 
+        public void SetPhotostripTemplatePath(int id, string? path)
+        {
+            Require(id);
+            _repo.SetPhotostripTemplatePath(id, path);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} photostrip template → {Value}", id, path ?? "none");
+        }
+
         public void RecordPrint(int sessionId, int copies = 1)
         {
             var session = _repo.FindSessionById(sessionId)

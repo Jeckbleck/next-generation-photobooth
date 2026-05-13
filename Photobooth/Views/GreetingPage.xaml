@@ -1,6 +1,7 @@
 <Page x:Class="Photobooth.Views.GreetingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:Photobooth.Views"
       Background="{DynamicResource BackgroundBrush}">
 
     <Page.Resources>
@@ -501,7 +502,7 @@
                                 <!-- STRIP CUSTOMIZATION -->
                                 <StackPanel x:Name="PanelStrip" Visibility="Collapsed">
                                     <TextBlock Text="Strip Designer" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
-                                    <TextBlock Text="The strip designer is coming soon." Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextWrapping="Wrap"/>
+                                    <local:StripDesignerControl x:Name="StripDesigner"/>
                                 </StackPanel>
 
                                 <!-- PRINTER -->

@@ -55,6 +55,7 @@ namespace Photobooth.Services
         void SetBackgroundColor(int id, string? color);
         void SetSurfaceColor(int id, string? color);
         void SetBackgroundImagePath(int id, string? path);
+        void SetPhotostripTemplatePath(int id, string? path);
 
         /// <summary>
         /// Records that <paramref name="copies"/> prints were produced for a session.

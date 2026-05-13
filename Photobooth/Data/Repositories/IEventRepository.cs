@@ -56,6 +56,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Sets the background image path for the event. Null removes it.</summary>
         void SetBackgroundImagePath(int eventId, string? path);
 
+        /// <summary>Sets the photostrip template image path for the event. Null removes it.</summary>
+        void SetPhotostripTemplatePath(int eventId, string? path);
+
         /// <summary>Increments the print counter for a session by the given number of copies.</summary>
         void AddPrints(int sessionId, int copies);
 
