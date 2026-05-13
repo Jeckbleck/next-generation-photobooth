@@ -258,6 +258,7 @@ namespace Photobooth.Views
             PrintLimitBox.Text             = string.Empty;
             SessionCountText.Text          = "—";
             PhotoCountText.Text            = "—";
+            RecentPhotosList.ItemsSource   = null;
             ArchiveEventButton.IsEnabled   = false;
         }
 
@@ -266,6 +267,32 @@ namespace Photobooth.Views
             var (sessions, photos) = App.Events.GetStats(eventId);
             SessionCountText.Text = sessions.ToString();
             PhotoCountText.Text   = photos.ToString();
+            RefreshPhotoPreview(eventId);
+        }
+
+        private void RefreshPhotoPreview(int eventId)
+        {
+            var photos = App.Events.GetRecentPhotos(eventId, 9);
+            var thumbnails = photos
+                .Where(p => p.FilePath != null && File.Exists(p.FilePath))
+                .Select(p =>
+                {
+                    try
+                    {
+                        var bmp = new BitmapImage();
+                        bmp.BeginInit();
+                        bmp.UriSource        = new Uri(p.FilePath!);
+                        bmp.CacheOption      = BitmapCacheOption.OnLoad;
+                        bmp.DecodePixelWidth = 180;
+                        bmp.EndInit();
+                        bmp.Freeze();
+                        return (System.Windows.Media.ImageSource?)bmp;
+                    }
+                    catch { return null; }
+                })
+                .Where(b => b != null)
+                .ToList();
+            RecentPhotosList.ItemsSource = thumbnails;
         }
 
         private void SaveEvent_Click(object sender, RoutedEventArgs e)

@@ -62,5 +62,19 @@ namespace Photobooth.Services
         /// print limit and this call would exceed it.
         /// </summary>
         void RecordPrint(int sessionId, int copies = 1);
+
+        // --- Session / photo lifecycle -------------------------------------------
+
+        /// <summary>Creates and persists a new session for the given event.</summary>
+        Session StartSession(int eventId);
+
+        /// <summary>Deletes the session if it exists. Used to clean up abandoned (zero-photo) sessions.</summary>
+        void AbandonSession(int sessionId);
+
+        /// <summary>Records a captured photo path for the session and persists.</summary>
+        void RecordPhoto(int sessionId, int sequence, string filePath);
+
+        /// <summary>Returns the <paramref name="count"/> most recent photos for the event, newest first.</summary>
+        List<Photo> GetRecentPhotos(int eventId, int count = 9);
     }
 }

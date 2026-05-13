@@ -79,6 +79,44 @@ namespace Photobooth.Data.Repositories
             if (session is not null) session.PrintCount += copies;
         }
 
+        // --- Session / photo lifecycle -------------------------------------------
+
+        public Session AddSession(int eventId)
+        {
+            var session = new Session { EventId = eventId };
+            _db.Sessions.Add(session);
+            _db.SaveChanges();
+            Log.Debug("Created session {SessionId} for event {EventId}", session.Id, eventId);
+            return session;
+        }
+
+        public void DeleteSession(int sessionId)
+        {
+            var session = _db.Sessions.Find(sessionId);
+            if (session is null) return;
+            _db.Sessions.Remove(session);
+            _db.SaveChanges();
+            Log.Debug("Deleted session {SessionId}", sessionId);
+        }
+
+        public void AddPhoto(int sessionId, int sequence, string filePath)
+        {
+            _db.Photos.Add(new Photo
+            {
+                SessionId = sessionId,
+                Sequence  = sequence,
+                FilePath  = filePath,
+            });
+        }
+
+        public List<Photo> GetRecentPhotos(int eventId, int count) =>
+            _db.Photos
+               .Where(p => p.Session.EventId == eventId && p.FilePath != null)
+               .OrderByDescending(p => p.Session.CreatedAt)
+               .ThenBy(p => p.Sequence)
+               .Take(count)
+               .ToList();
+
         public void SaveChanges() => _db.SaveChanges();
     }
 }

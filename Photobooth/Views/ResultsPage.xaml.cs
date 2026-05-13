@@ -13,15 +13,18 @@ namespace Photobooth.Views
     public partial class ResultsPage : Page
     {
         private readonly List<string> _paths;
+        private readonly int _sessionId;
         private Timer? _timer;
         private int _secondsLeft = 5;
 
-        public ResultsPage(List<string> photoPaths)
+        public ResultsPage(List<string> photoPaths, int sessionId)
         {
             InitializeComponent();
-            _paths = photoPaths;
+            _paths     = photoPaths;
+            _sessionId = sessionId;
             Loaded += OnLoaded;
-            Log.Information("Navigated to ResultsPage with {Count} photo(s)", photoPaths.Count);
+            Log.Information("Navigated to ResultsPage with {Count} photo(s), session {SessionId}",
+                photoPaths.Count, sessionId);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -33,6 +36,26 @@ namespace Photobooth.Views
 
         private async Task PrintAsync()
         {
+            // Check and record the print before starting the job.
+            // RecordPrint throws if the session's print limit would be exceeded.
+            if (_sessionId > 0)
+            {
+                try
+                {
+                    App.Events.RecordPrint(_sessionId);
+                }
+                catch (InvalidOperationException limitEx)
+                {
+                    Log.Warning(limitEx, "Print limit reached for session {SessionId}", _sessionId);
+                    PrintStatusText.Text = "Print limit reached for this session.";
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Could not record print for session {SessionId}", _sessionId);
+                }
+            }
+
             try
             {
                 PrintStatusText.Text = "Printing your strip…";

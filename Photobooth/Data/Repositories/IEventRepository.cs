@@ -59,6 +59,20 @@ namespace Photobooth.Data.Repositories
         /// <summary>Increments the print counter for a session by the given number of copies.</summary>
         void AddPrints(int sessionId, int copies);
 
+        // --- Session / photo lifecycle -------------------------------------------
+
+        /// <summary>Creates a new session for the given event, saves, and returns it.</summary>
+        Session AddSession(int eventId);
+
+        /// <summary>Removes a session (and its photos via cascade) and saves. No-op if not found.</summary>
+        void DeleteSession(int sessionId);
+
+        /// <summary>Stages a new photo record for the session. Caller must call SaveChanges.</summary>
+        void AddPhoto(int sessionId, int sequence, string filePath);
+
+        /// <summary>Returns the <paramref name="count"/> most recent photos for the event, newest session first.</summary>
+        List<Photo> GetRecentPhotos(int eventId, int count);
+
         /// <summary>Persists all pending changes to the database.</summary>
         void SaveChanges();
     }

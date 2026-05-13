@@ -19,6 +19,8 @@ namespace Photobooth.Services
         public void CreateEventFolders(string slug)
         {
             Directory.CreateDirectory(GetPhotosPath(slug));
+            Directory.CreateDirectory(GetEnhancedPath(slug));
+            Directory.CreateDirectory(GetAnimatedPath(slug));
             Directory.CreateDirectory(GetBackgroundsPath(slug));
             Directory.CreateDirectory(GetStripTemplatePath(slug));
             Log.Information("Created folder structure for '{Slug}' under {Root}", slug, StorageRoot);
@@ -27,12 +29,11 @@ namespace Photobooth.Services
         public string GetPhotosPath(string slug) =>
             Path.Combine(StorageRoot, slug, "Photos");
 
-        public string GetSessionPhotosPath(string slug, DateTime date)
-        {
-            var path = Path.Combine(GetPhotosPath(slug), date.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(path);
-            return path;
-        }
+        public string GetAnimatedPath(string slug) =>
+            Path.Combine(StorageRoot, slug, "Animated");
+
+        public string GetEnhancedPath(string slug) =>
+            Path.Combine(StorageRoot, slug, "Enhanced");
 
         public string GetBackgroundsPath(string slug) =>
             Path.Combine(StorageRoot, slug, "Backgrounds");

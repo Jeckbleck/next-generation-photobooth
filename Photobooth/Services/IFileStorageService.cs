@@ -23,11 +23,11 @@ namespace Photobooth.Services
         /// <summary>Returns the Photos directory for the given event slug.</summary>
         string GetPhotosPath(string slug);
 
-        /// <summary>
-        /// Returns the date-bucketed directory for a session's photos.
-        /// Creates the directory if it does not already exist.
-        /// </summary>
-        string GetSessionPhotosPath(string slug, DateTime date);
+        /// <summary>Returns the Animated directory for the given event slug.</summary>
+        string GetAnimatedPath(string slug);
+
+        /// <summary>Returns the Enhanced directory for the given event slug.</summary>
+        string GetEnhancedPath(string slug);
 
         /// <summary>Returns the Backgrounds directory for the given event slug.</summary>
         string GetBackgroundsPath(string slug);

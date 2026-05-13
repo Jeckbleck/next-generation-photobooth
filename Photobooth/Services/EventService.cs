@@ -160,6 +160,32 @@ namespace Photobooth.Services
                 sessionId, copies, session.PrintCount + copies);
         }
 
+        // --- Session / photo lifecycle -------------------------------------------
+
+        public Session StartSession(int eventId)
+        {
+            Require(eventId);
+            var session = _repo.AddSession(eventId);
+            Log.Information("Started session {SessionId} for event {EventId}", session.Id, eventId);
+            return session;
+        }
+
+        public void AbandonSession(int sessionId)
+        {
+            _repo.DeleteSession(sessionId);
+            Log.Information("Abandoned empty session {SessionId}", sessionId);
+        }
+
+        public void RecordPhoto(int sessionId, int sequence, string filePath)
+        {
+            _repo.AddPhoto(sessionId, sequence, filePath);
+            _repo.SaveChanges();
+            Log.Debug("Recorded photo {Sequence} for session {SessionId}: {Path}", sequence, sessionId, filePath);
+        }
+
+        public List<Photo> GetRecentPhotos(int eventId, int count = 9) =>
+            _repo.GetRecentPhotos(eventId, count);
+
         // --- Private helpers -----------------------------------------------------
 
         private Event Require(int id) =>

@@ -23,20 +23,63 @@ namespace Photobooth.Views
         private DateTime _lastEvfFrameTime;
         private System.Threading.Timer? _evfWatchdog;
 
+        private int? _sessionId;
+        private string _sessionDir = string.Empty;
+
         public ShootPage()
         {
             InitializeComponent();
-
-            string sessionDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-            Directory.CreateDirectory(sessionDir);
-            _camera.SessionDirectory = sessionDir;
-
-            Log.Information("Navigated to ShootPage — session dir: {SessionDir}", sessionDir);
-
+            InitialiseSession();
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
+        }
+
+        private void InitialiseSession()
+        {
+            var eventId = App.Settings.ActiveEventId;
+            if (!eventId.HasValue)
+            {
+                Log.Warning("ShootPage opened with no active event — session will not be tracked");
+                _sessionDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                    "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                Directory.CreateDirectory(_sessionDir);
+                _camera.SessionDirectory = _sessionDir;
+                return;
+            }
+
+            var ev = App.Events.GetById(eventId.Value);
+            if (ev is null)
+            {
+                Log.Warning("Active event {Id} not found — session will not be tracked", eventId.Value);
+                _sessionDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                    "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                Directory.CreateDirectory(_sessionDir);
+                _camera.SessionDirectory = _sessionDir;
+                return;
+            }
+
+            try
+            {
+                var session = App.Events.StartSession(ev.Id);
+                _sessionId = session.Id;
+
+                _sessionDir = App.FileStorage.GetPhotosPath(ev.Slug);
+                Directory.CreateDirectory(_sessionDir);
+                _camera.SessionDirectory = _sessionDir;
+
+                Log.Information("ShootPage — session {SessionId}, dir: {Dir}", _sessionId, _sessionDir);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to create DB session — photos will not be tracked");
+                _sessionDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                    "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                Directory.CreateDirectory(_sessionDir);
+                _camera.SessionDirectory = _sessionDir;
+            }
         }
 
         // --- Lifecycle -----------------------------------------------------------
@@ -151,8 +194,23 @@ namespace Photobooth.Views
                 try
                 {
                     Log.Information("Taking photo {N}/3", i);
-                    path = await _camera.TakePictureAsync();
+                    var rawPath = await _camera.TakePictureAsync();
+
+                    var date    = DateTime.Today.ToString("yyyyMMdd");
+                    var sid     = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
+                    var stem    = Path.GetFileNameWithoutExtension(rawPath);
+                    var ext     = Path.GetExtension(rawPath);
+                    var dest    = Path.Combine(_sessionDir, $"{stem}_{date}_s{sid}_p{i}{ext}");
+                    File.Move(rawPath, dest, overwrite: true);
+                    path = dest;
+
                     _capturedPaths.Add(path);
+
+                    if (_sessionId.HasValue)
+                    {
+                        try { App.Events.RecordPhoto(_sessionId.Value, i, path); }
+                        catch (Exception dbEx) { Log.Error(dbEx, "Failed to record photo {N} in DB", i); }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -198,7 +256,7 @@ namespace Photobooth.Views
             Dispatcher.Invoke(() =>
             {
                 var window = Window.GetWindow(this) as MainWindow;
-                window?.NavigateTo(new ResultsPage(_capturedPaths));
+                window?.NavigateTo(new ResultsPage(_capturedPaths, _sessionId ?? 0));
             });
         }
 
@@ -290,6 +348,12 @@ namespace Photobooth.Views
             _evfRunning = false;
             _evfWatchdog?.Dispose();
 
+            if (_sessionId.HasValue && _capturedPaths.Count == 0)
+            {
+                try { App.Events.AbandonSession(_sessionId.Value); _sessionId = null; }
+                catch (Exception ex) { Log.Error(ex, "Failed to abandon session on disconnect"); }
+            }
+
             Dispatcher.Invoke(() => DisconnectOverlay.Visibility = Visibility.Visible);
         }
 
@@ -307,6 +371,13 @@ namespace Photobooth.Views
             Log.Information("User navigated back to GreetingPage");
             _evfWatchdog?.Dispose();
             _evfRunning = false;
+
+            if (_sessionId.HasValue && _capturedPaths.Count == 0)
+            {
+                try { App.Events.AbandonSession(_sessionId.Value); }
+                catch (Exception ex) { Log.Error(ex, "Failed to abandon session on back"); }
+            }
+
             var window = Window.GetWindow(this) as MainWindow;
             window?.NavigateTo(new GreetingPage());
         }
