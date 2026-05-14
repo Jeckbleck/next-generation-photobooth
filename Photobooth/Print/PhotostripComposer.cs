@@ -110,41 +110,53 @@ namespace Photobooth.Print
         {
             using var template = Image.FromFile(templatePath);
 
-            var canvas = new Bitmap(template.Width, template.Height, PixelFormat.Format32bppArgb);
-            canvas.SetResolution(template.HorizontalResolution, template.VerticalResolution);
+            // Step 1 — compose a single strip at the template's native resolution
+            using var single = new Bitmap(template.Width, template.Height, PixelFormat.Format32bppArgb);
+            single.SetResolution(template.HorizontalResolution, template.VerticalResolution);
 
-            using var g = Graphics.FromImage(canvas);
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.SmoothingMode     = SmoothingMode.HighQuality;
-            g.PixelOffsetMode   = PixelOffsetMode.HighQuality;
-
-            // Photos go behind — drawn first so the template frame overlays them
-            foreach (var slot in slots)
+            using (var g = Graphics.FromImage(single))
             {
-                int photoIndex = slot.Index - 1;
-                if (photoIndex < 0 || photoIndex >= photoPaths.Count) continue;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode     = SmoothingMode.HighQuality;
+                g.PixelOffsetMode   = PixelOffsetMode.HighQuality;
 
-                var slotRect = new Rectangle(
-                    (int)(slot.X      * template.Width),
-                    (int)(slot.Y      * template.Height),
-                    (int)(slot.Width  * template.Width),
-                    (int)(slot.Height * template.Height));
+                // Photos behind so the template frame overlays them
+                foreach (var slot in slots)
+                {
+                    int photoIndex = slot.Index - 1;
+                    if (photoIndex < 0 || photoIndex >= photoPaths.Count) continue;
 
-                try
-                {
-                    using var photo = Image.FromFile(photoPaths[photoIndex]);
-                    g.SetClip(slotRect);
-                    g.DrawImage(photo, FillRect(photo.Width, photo.Height, slotRect));
-                    g.ResetClip();
+                    var slotRect = new Rectangle(
+                        (int)(slot.X      * template.Width),
+                        (int)(slot.Y      * template.Height),
+                        (int)(slot.Width  * template.Width),
+                        (int)(slot.Height * template.Height));
+
+                    try
+                    {
+                        using var photo = Image.FromFile(photoPaths[photoIndex]);
+                        g.SetClip(slotRect);
+                        g.DrawImage(photo, FillRect(photo.Width, photo.Height, slotRect));
+                        g.ResetClip();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Could not load photo {Index} for template composition", slot.Index);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Could not load photo {Index} for template composition", slot.Index);
-                }
+
+                // Template frame on top
+                g.DrawImage(template, 0, 0, template.Width, template.Height);
             }
 
-            // Template drawn on top so its frame and graphics overlay the photos
-            g.DrawImage(template, 0, 0, template.Width, template.Height);
+            // Step 2 — duplicate side by side so the DNP 2-inch cut produces two identical strips
+            var canvas = new Bitmap(template.Width * 2, template.Height, PixelFormat.Format32bppArgb);
+            canvas.SetResolution(template.HorizontalResolution, template.VerticalResolution);
+
+            using var gc = Graphics.FromImage(canvas);
+            gc.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            gc.DrawImage(single, 0,              0);
+            gc.DrawImage(single, template.Width, 0);
 
             return canvas;
         }
