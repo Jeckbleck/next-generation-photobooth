@@ -29,27 +29,53 @@
                     Content="Clear All"
                     Style="{StaticResource GhostButton}"
                     Padding="12,6" FontSize="12"
-                    Margin="0,0,0,4"
+                    Margin="0,0,8,4"
                     IsEnabled="False"
                     Click="Clear_Click"/>
+            <Button x:Name="ZoomInButton"
+                    Content="＋"
+                    Style="{StaticResource GhostButton}"
+                    Padding="10,6" FontSize="12"
+                    Margin="0,0,4,4"
+                    Click="ZoomIn_Click"/>
+            <Button x:Name="ZoomOutButton"
+                    Content="－"
+                    Style="{StaticResource GhostButton}"
+                    Padding="10,6" FontSize="12"
+                    Margin="0,0,8,4"
+                    Click="ZoomOut_Click"/>
+            <TextBlock x:Name="ZoomLabel"
+                       Text="100%"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
         </WrapPanel>
 
-        <!-- Canvas area -->
-        <Border BorderBrush="#334" BorderThickness="1"
-                Background="#080D14"
-                HorizontalAlignment="Left"
-                Width="300" Height="450">
-            <Canvas x:Name="DesignerCanvas"
-                    Width="300" Height="450"
-                    ClipToBounds="True"
-                    Background="Transparent">
-                <Image x:Name="TemplateImage"
-                       Canvas.Left="0" Canvas.Top="0"
-                       Width="300" Height="450"
-                       Stretch="Fill"
-                       IsHitTestVisible="False"/>
-            </Canvas>
-        </Border>
+        <!-- Canvas area — ScrollViewer allows panning when zoomed in -->
+        <ScrollViewer x:Name="CanvasScroller"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalAlignment="Left"
+                      MaxWidth="450" MaxHeight="450">
+            <Border BorderBrush="#334" BorderThickness="1"
+                    Background="#080D14"
+                    HorizontalAlignment="Left">
+                <Canvas x:Name="DesignerCanvas"
+                        Width="150" Height="450"
+                        ClipToBounds="True"
+                        Background="Transparent"
+                        MouseWheel="DesignerCanvas_MouseWheel">
+                    <Canvas.LayoutTransform>
+                        <ScaleTransform x:Name="ZoomTransform" ScaleX="1" ScaleY="1"/>
+                    </Canvas.LayoutTransform>
+                    <Image x:Name="TemplateImage"
+                           Canvas.Left="0" Canvas.Top="0"
+                           Width="150" Height="450"
+                           Stretch="Uniform"
+                           IsHitTestVisible="False"/>
+                </Canvas>
+            </Border>
+        </ScrollViewer>
 
         <!-- Status / hint -->
         <TextBlock x:Name="StatusText"

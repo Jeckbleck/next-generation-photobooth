@@ -17,11 +17,16 @@ namespace Photobooth.Views
 {
     public partial class StripDesignerControl : UserControl
     {
-        private const double CanvasW     = 300;
+        private const double CanvasW     = 150;
         private const double CanvasH     = 450;
         private const int    MaxSlots    = 3;
         private const double HandleSize  = 12;
         private const double MinSlotSize = 40;
+        private const double ZoomStep    = 0.25;
+        private const double ZoomMin     = 0.5;
+        private const double ZoomMax     = 4.0;
+
+        private double _zoom = 1.0;
 
         private string? _templateDir;
         private string? _eventSlug;
@@ -350,6 +355,37 @@ namespace Photobooth.Views
         {
             _resizing = null;
             slot.Handles[handle].ReleaseMouseCapture();
+        }
+
+        // --- Zoom ----------------------------------------------------------------
+
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            _zoom = Math.Min(_zoom + ZoomStep, ZoomMax);
+            ApplyZoom();
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            _zoom = Math.Max(_zoom - ZoomStep, ZoomMin);
+            ApplyZoom();
+        }
+
+        private void DesignerCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == 0) return;
+            e.Handled = true;
+            _zoom = e.Delta > 0
+                ? Math.Min(_zoom + ZoomStep, ZoomMax)
+                : Math.Max(_zoom - ZoomStep, ZoomMin);
+            ApplyZoom();
+        }
+
+        private void ApplyZoom()
+        {
+            ZoomTransform.ScaleX = _zoom;
+            ZoomTransform.ScaleY = _zoom;
+            ZoomLabel.Text = $"{_zoom:P0}";
         }
 
         // --- Helpers -------------------------------------------------------------
