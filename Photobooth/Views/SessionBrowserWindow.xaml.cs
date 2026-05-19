@@ -1,9 +1,7 @@
 using System.IO;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using Photobooth.Data.Models;
 using Photobooth.Print;
 using Serilog;
 
@@ -160,31 +158,6 @@ namespace Photobooth.Views
             PrintStatusText.Text            = string.Empty;
         }
 
-        private (string? templatePath, List<StripSlotDefinition> slots) LoadTemplateConfig()
-        {
-            var ev = App.Events.GetById(_eventId);
-            if (ev is null) return (null, new());
-
-            var templatePath = ev.PhotostripTemplatePath;
-            if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
-                return (null, new());
-
-            var jsonPath = Path.Combine(App.FileStorage.GetStripTemplatePath(ev.Slug), "template.json");
-            if (!File.Exists(jsonPath)) return (null, new());
-
-            try
-            {
-                var config = JsonSerializer.Deserialize<StripTemplateConfig>(File.ReadAllText(jsonPath));
-                if (config is null || config.Slots.Count == 0) return (null, new());
-                return (templatePath, config.Slots);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Could not read strip template config for event {Id}", _eventId);
-                return (null, new());
-            }
-        }
-
         private async void PrintButton_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedPhotoPaths.Count == 0)
@@ -196,46 +169,11 @@ namespace Photobooth.Views
             PrintButton.IsEnabled = false;
             PrintStatusText.Text  = "Printing…";
 
-            if (_selectedSessionId > 0)
-            {
-                try
-                {
-                    App.Events.RecordPrint(_selectedSessionId);
-                }
-                catch (InvalidOperationException limitEx)
-                {
-                    Log.Warning(limitEx, "Print limit reached for session {Id}", _selectedSessionId);
-                    PrintStatusText.Text  = "Print limit reached for this session.";
-                    PrintButton.IsEnabled = true;
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Could not record print for session {Id}", _selectedSessionId);
-                }
-            }
+            var result = await PrintHelper.PrintSessionAsync(_selectedSessionId, _eventId, _selectedPhotoPaths);
+            PrintStatusText.Text = result.Message;
 
-            try
-            {
-                var paths    = _selectedPhotoPaths;
-                var branding = App.Settings.BrandingText;
-                (string? templatePath, List<StripSlotDefinition> slots) = LoadTemplateConfig();
-
-                using var strip = await Task.Run(() =>
-                    templatePath is not null && slots.Count > 0
-                        ? PhotostripComposer.ComposeFromTemplate(templatePath, slots, paths)
-                        : PhotostripComposer.Compose(paths, branding));
-
-                await App.Printer.PrintStripAsync(strip);
-                PrintStatusText.Text = "Strip sent to printer!";
-                Log.Information("Print submitted from session browser for session {Id}", _selectedSessionId);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Print failed in session browser for session {Id}", _selectedSessionId);
-                PrintStatusText.Text  = "Print failed — please see staff.";
+            if (result.CanRetry)
                 PrintButton.IsEnabled = true;
-            }
         }
 
         private void CloseWindow_Click(object sender, RoutedEventArgs e) => Close();
