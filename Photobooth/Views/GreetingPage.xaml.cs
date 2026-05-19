@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -5,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using Photobooth.Camera;
 using Serilog;
 
 namespace Photobooth.Views
@@ -75,7 +77,9 @@ namespace Photobooth.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            App.Camera.CameraDisconnected -= OnCameraDisconnected;
+            App.Camera.CameraDisconnected    -= OnCameraDisconnected;
+            App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            StopInlinePreview();
         }
 
         private void UpdateCameraStatus()
@@ -505,6 +509,14 @@ namespace Photobooth.Views
 
         private void SelectTab(int index)
         {
+            // Leaving camera tab — clean up preview and property listener
+            if (ContentPanels[1].Visibility == Visibility.Visible && index != 1)
+            {
+                App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+                StopInlinePreview();
+                CameraPreviewPanel.Visibility = Visibility.Collapsed;
+            }
+
             for (int i = 0; i < NavButtons.Length; i++)
             {
                 NavButtons[i].Style = (Style)FindResource(
@@ -512,8 +524,184 @@ namespace Photobooth.Views
                 ContentPanels[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
             }
 
+            if (index == 1)
+            {
+                LoadCameraSettings();
+                CameraPreviewPanel.Visibility = Visibility.Visible;
+                InlinePreviewImage.Source = null;
+                InlinePreviewStatusText.Text  = "Starting camera preview…";
+                InlinePreviewStatusText.Visibility = Visibility.Visible;
+                StartInlinePreview();
+            }
             if (index == 2) LoadStripDesigner();
             if (index == 7) PopulateAboutTab();
+        }
+
+        // --- Camera settings tab -------------------------------------------------
+
+        private bool _settingCameraControls;
+
+        private void LoadCameraSettings()
+        {
+            if (!App.Camera.IsConnected)
+            {
+                CameraModelLabel.Text       = "No camera connected";
+                CameraSettingStatusText.Text = "Connect a camera and retry.";
+                IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
+                    WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = false;
+                return;
+            }
+
+            CameraModelLabel.Text       = App.Camera.ModelName ?? "Camera";
+            CameraSettingStatusText.Text = "Loading valid values from camera…";
+            IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
+                WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = true;
+
+            App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            App.Camera.CameraPropertyChanged += OnCameraPropertyChanged;
+
+            RefreshCameraDropdown(IsoComboBox,          EDSDKLib.EDSDK.PropID_ISOSpeed,     CameraPropertyMaps.Iso,          CameraPropertyMaps.LookupIso);
+            RefreshCameraDropdown(TvComboBox,           EDSDKLib.EDSDK.PropID_Tv,           CameraPropertyMaps.Tv,           CameraPropertyMaps.LookupTv);
+            RefreshCameraDropdown(AvComboBox,           EDSDKLib.EDSDK.PropID_Av,           CameraPropertyMaps.Av,           CameraPropertyMaps.LookupAv);
+            RefreshCameraDropdown(WhiteBalanceComboBox, EDSDKLib.EDSDK.PropID_WhiteBalance, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
+            RefreshCameraDropdown(ImageQualityComboBox, EDSDKLib.EDSDK.PropID_ImageQuality, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
+
+            // Request fresh descriptors — UI will update via OnCameraPropertyChanged
+            App.Camera.RequestPropertyDescs();
+        }
+
+        private void RefreshCameraDropdown(ComboBox cb, uint propId,
+            Dictionary<uint, string> map, Func<uint, string> fallback)
+        {
+            _settingCameraControls = true;
+            try
+            {
+                uint currentValue    = App.Camera.GetPropertyValue(propId) ?? 0xFFFFFFFF;
+                int[]? desc          = App.Camera.GetPropertyDesc(propId);
+
+                cb.Items.Clear();
+
+                IEnumerable<uint> values = (desc != null && desc.Length > 0)
+                    ? desc.Select(v => (uint)v)
+                    : map.Keys;
+
+                foreach (uint v in values)
+                {
+                    string label = map.TryGetValue(v, out var s) ? s : fallback(v);
+                    cb.Items.Add(new ComboBoxItem { Content = label, Tag = v });
+                }
+
+                foreach (ComboBoxItem item in cb.Items)
+                {
+                    if (item.Tag is uint v && v == currentValue)
+                    {
+                        cb.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                _settingCameraControls = false;
+            }
+        }
+
+        private void OnCameraPropertyChanged(object? sender, uint propId)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (PanelCamera.Visibility != Visibility.Visible) return;
+
+                switch (propId)
+                {
+                    case EDSDKLib.EDSDK.PropID_ISOSpeed:
+                        RefreshCameraDropdown(IsoComboBox, propId, CameraPropertyMaps.Iso, CameraPropertyMaps.LookupIso);
+                        break;
+                    case EDSDKLib.EDSDK.PropID_Tv:
+                        RefreshCameraDropdown(TvComboBox, propId, CameraPropertyMaps.Tv, CameraPropertyMaps.LookupTv);
+                        break;
+                    case EDSDKLib.EDSDK.PropID_Av:
+                        RefreshCameraDropdown(AvComboBox, propId, CameraPropertyMaps.Av, CameraPropertyMaps.LookupAv);
+                        break;
+                    case EDSDKLib.EDSDK.PropID_WhiteBalance:
+                        RefreshCameraDropdown(WhiteBalanceComboBox, propId, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
+                        break;
+                    case EDSDKLib.EDSDK.PropID_ImageQuality:
+                        RefreshCameraDropdown(ImageQualityComboBox, propId, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
+                        break;
+                }
+
+                CameraSettingStatusText.Text = string.Empty;
+            });
+        }
+
+        private void CameraComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_settingCameraControls) return;
+            if (sender is not ComboBox cb) return;
+            if (cb.SelectedItem is not ComboBoxItem item) return;
+            if (item.Tag is not uint value) return;
+
+            uint propId = cb == IsoComboBox          ? EDSDKLib.EDSDK.PropID_ISOSpeed
+                        : cb == TvComboBox            ? EDSDKLib.EDSDK.PropID_Tv
+                        : cb == AvComboBox            ? EDSDKLib.EDSDK.PropID_Av
+                        : cb == WhiteBalanceComboBox  ? EDSDKLib.EDSDK.PropID_WhiteBalance
+                        : cb == ImageQualityComboBox  ? EDSDKLib.EDSDK.PropID_ImageQuality
+                        : 0u;
+
+            if (propId == 0) return;
+            Log.Information("Camera property 0x{PropId:X8} → 0x{Value:X8}", propId, value);
+            App.Camera.SetProperty(propId, value);
+        }
+
+        // --- Inline live preview -------------------------------------------------
+
+        private bool _inlineEvfRunning;
+        private bool _inlineEvfFramePending;
+        private System.Threading.Timer? _inlineEvfWatchdog;
+
+        private void StartInlinePreview()
+        {
+            if (!App.Camera.IsConnected) return;
+            _inlineEvfRunning = true;
+            App.Camera.EvfFrameReady += OnInlineEvfFrame;
+            App.Camera.StartLiveView();
+            RequestInlineEvfFrame();
+
+            _inlineEvfWatchdog = new System.Threading.Timer(_ =>
+            {
+                if (!_inlineEvfRunning) return;
+                _inlineEvfFramePending = false;
+                RequestInlineEvfFrame();
+            }, null, 200, 100);
+        }
+
+        private void StopInlinePreview()
+        {
+            _inlineEvfRunning = false;
+            _inlineEvfWatchdog?.Dispose();
+            _inlineEvfWatchdog = null;
+            App.Camera.EvfFrameReady -= OnInlineEvfFrame;
+            App.Camera.StopLiveView();
+        }
+
+        private void RequestInlineEvfFrame()
+        {
+            if (!_inlineEvfRunning || _inlineEvfFramePending) return;
+            _inlineEvfFramePending = true;
+            App.Camera.RequestEvfFrame();
+        }
+
+        private void OnInlineEvfFrame(object? sender, System.Windows.Media.Imaging.BitmapSource frame)
+        {
+            _inlineEvfFramePending = false;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
+            {
+                InlinePreviewImage.Source = frame;
+                InlinePreviewStatusText.Visibility = Visibility.Collapsed;
+                InlinePreviewInfoText.Text = App.Camera.ModelName ?? string.Empty;
+            });
+            RequestInlineEvfFrame();
         }
 
         // --- Strip designer tab --------------------------------------------------

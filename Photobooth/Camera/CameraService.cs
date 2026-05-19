@@ -22,11 +22,13 @@ namespace Photobooth.Camera
         public event EventHandler<BitmapSource>? EvfFrameReady;
         public event EventHandler? CameraDisconnected;
         public event EventHandler<string>? Error;
+        public event EventHandler<uint>? CameraPropertyChanged;
 
         private bool _sdkInitialized;
         private IntPtr _cameraRef;
 
         public bool IsConnected { get; private set; }
+        public string? ModelName => _model?.ModelName;
 
         public string SessionDirectory { get; set; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
@@ -177,6 +179,43 @@ namespace Photobooth.Camera
             }
         }
 
+        // --- Settings API --------------------------------------------------------
+
+        public void SetProperty(uint propertyID, uint value)
+        {
+            if (_model == null || _processor == null) return;
+            _processor.PostCommand(new SetPropertyCommand(ref _model, propertyID, value));
+        }
+
+        public uint? GetPropertyValue(uint propertyID)
+        {
+            if (_model == null) return null;
+            uint v = _model.GetPropertyValue(propertyID);
+            return v == 0xffffffff ? null : v;
+        }
+
+        public int[]? GetPropertyDesc(uint propertyID)
+        {
+            if (_model == null) return null;
+            return _model.PropertyDescs.TryGetValue(propertyID, out var desc) ? desc : null;
+        }
+
+        public void RequestPropertyDescs()
+        {
+            if (_model == null || _processor == null) return;
+            foreach (uint propId in new[]
+            {
+                EDSDKLib.EDSDK.PropID_ISOSpeed,
+                EDSDKLib.EDSDK.PropID_Tv,
+                EDSDKLib.EDSDK.PropID_Av,
+                EDSDKLib.EDSDK.PropID_WhiteBalance,
+                EDSDKLib.EDSDK.PropID_ImageQuality,
+            })
+            {
+                _processor.PostCommand(new GetPropertyDescCommand(ref _model, propId));
+            }
+        }
+
         // --- IObserver -----------------------------------------------------------
 
         public void Update(Observable observable, CameraEvent e)
@@ -193,6 +232,11 @@ namespace Photobooth.Camera
 
                 case CameraEvent.Type.DEVICE_BUSY:
                     Log.Warning("Camera reported device busy");
+                    break;
+
+                case CameraEvent.Type.PROPERTY_CHANGED:
+                case CameraEvent.Type.PROPERTY_DESC_CHANGED:
+                    CameraPropertyChanged?.Invoke(this, (uint)e.Arg);
                     break;
 
                 case CameraEvent.Type.ERROR:

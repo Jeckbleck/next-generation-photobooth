@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace Photobooth.Camera.Commands
 {
@@ -16,6 +17,8 @@ namespace Photobooth.Camera.Commands
 
             if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
             {
+                if (desc.NumElements > 0)
+                    _model.SetPropertyDesc(_propertyID, desc.PropDesc.Take(desc.NumElements).ToArray());
                 _model.NotifyObservers(new CameraEvent(CameraEvent.Type.PROPERTY_DESC_CHANGED, (IntPtr)_propertyID));
             }
             else if (err == EDSDKLib.EDSDK.EDS_ERR_DEVICE_BUSY)

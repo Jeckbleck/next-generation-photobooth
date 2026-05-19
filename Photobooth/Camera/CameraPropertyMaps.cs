@@ -1,0 +1,187 @@
+using System.Collections.Generic;
+
+namespace Photobooth.Camera
+{
+    internal static class CameraPropertyMaps
+    {
+        internal static readonly Dictionary<uint, string> Iso = new()
+        {
+            [0x00000000] = "Auto",
+            [0x00000040] = "50",
+            [0x00000048] = "100",
+            [0x0000004B] = "125",
+            [0x0000004D] = "160",
+            [0x00000050] = "200",
+            [0x00000053] = "250",
+            [0x00000055] = "320",
+            [0x00000058] = "400",
+            [0x0000005B] = "500",
+            [0x0000005D] = "640",
+            [0x00000060] = "800",
+            [0x00000063] = "1000",
+            [0x00000065] = "1250",
+            [0x00000068] = "1600",
+            [0x0000006B] = "2000",
+            [0x0000006D] = "2500",
+            [0x00000070] = "3200",
+            [0x00000073] = "4000",
+            [0x00000075] = "5000",
+            [0x00000078] = "6400",
+            [0x0000007B] = "8000",
+            [0x0000007D] = "10000",
+            [0x00000080] = "12800",
+            [0x00000088] = "25600",
+            [0x00000090] = "51200",
+            [0x00000098] = "102400",
+        };
+
+        internal static readonly Dictionary<uint, string> Tv = new()
+        {
+            [0x0000000C] = "Bulb",
+            [0x00000010] = "30\"",
+            [0x00000013] = "25\"",
+            [0x00000015] = "20\"",
+            [0x00000018] = "15\"",
+            [0x0000001B] = "13\"",
+            [0x0000001D] = "10\"",
+            [0x00000020] = "8\"",
+            [0x00000023] = "6\"",
+            [0x00000025] = "5\"",
+            [0x00000028] = "4\"",
+            [0x0000002B] = "3.2\"",
+            [0x0000002D] = "2.5\"",
+            [0x00000030] = "2\"",
+            [0x00000033] = "1.6\"",
+            [0x00000035] = "1.3\"",
+            [0x00000038] = "1\"",
+            [0x0000003B] = "0.8\"",
+            [0x0000003D] = "0.6\"",
+            [0x00000040] = "0.5\"",
+            [0x00000043] = "0.4\"",
+            [0x00000045] = "0.3\"",
+            [0x00000048] = "1/4",
+            [0x0000004B] = "1/5",
+            [0x0000004D] = "1/6",
+            [0x00000050] = "1/8",
+            [0x00000053] = "1/10",
+            [0x00000055] = "1/13",
+            [0x00000058] = "1/15",
+            [0x0000005B] = "1/20",
+            [0x0000005D] = "1/25",
+            [0x00000060] = "1/30",
+            [0x00000063] = "1/40",
+            [0x00000065] = "1/50",
+            [0x00000068] = "1/60",
+            [0x0000006B] = "1/80",
+            [0x0000006D] = "1/100",
+            [0x00000070] = "1/125",
+            [0x00000073] = "1/160",
+            [0x00000075] = "1/200",
+            [0x00000078] = "1/250",
+            [0x0000007B] = "1/320",
+            [0x0000007D] = "1/400",
+            [0x00000080] = "1/500",
+            [0x00000083] = "1/640",
+            [0x00000085] = "1/800",
+            [0x00000088] = "1/1000",
+            [0x0000008B] = "1/1250",
+            [0x0000008D] = "1/1600",
+            [0x00000090] = "1/2000",
+            [0x00000093] = "1/2500",
+            [0x00000095] = "1/3200",
+            [0x00000098] = "1/4000",
+            [0x0000009B] = "1/5000",
+            [0x0000009D] = "1/6400",
+            [0x000000A0] = "1/8000",
+        };
+
+        internal static readonly Dictionary<uint, string> Av = new()
+        {
+            [0x00000008] = "f/1",
+            [0x0000000B] = "f/1.1",
+            [0x0000000C] = "f/1.2",
+            [0x0000000D] = "f/1.2",
+            [0x00000010] = "f/1.4",
+            [0x00000013] = "f/1.6",
+            [0x00000014] = "f/1.8",
+            [0x00000015] = "f/1.8",
+            [0x00000018] = "f/2",
+            [0x0000001B] = "f/2.2",
+            [0x0000001C] = "f/2.5",
+            [0x0000001D] = "f/2.5",
+            [0x00000020] = "f/2.8",
+            [0x00000023] = "f/3.2",
+            [0x00000024] = "f/3.5",
+            [0x00000025] = "f/3.5",
+            [0x00000028] = "f/4",
+            [0x0000002B] = "f/4.5",
+            [0x0000002C] = "f/4.5",
+            [0x0000002D] = "f/5",
+            [0x00000030] = "f/5.6",
+            [0x00000033] = "f/6.3",
+            [0x00000034] = "f/6.7",
+            [0x00000035] = "f/7.1",
+            [0x00000038] = "f/8",
+            [0x0000003B] = "f/9",
+            [0x0000003C] = "f/9.5",
+            [0x0000003D] = "f/10",
+            [0x00000040] = "f/11",
+            [0x00000043] = "f/13",
+            [0x00000044] = "f/13",
+            [0x00000045] = "f/14",
+            [0x00000048] = "f/16",
+            [0x0000004B] = "f/18",
+            [0x0000004C] = "f/19",
+            [0x0000004D] = "f/20",
+            [0x00000050] = "f/22",
+            [0x00000053] = "f/25",
+            [0x00000054] = "f/27",
+            [0x00000055] = "f/29",
+            [0x00000058] = "f/32",
+        };
+
+        internal static readonly Dictionary<uint, string> WhiteBalance = new()
+        {
+            [0x00000000] = "Auto",
+            [0x00000001] = "Daylight",
+            [0x00000002] = "Cloudy",
+            [0x00000003] = "Tungsten",
+            [0x00000004] = "Fluorescent",
+            [0x00000005] = "Flash",
+            [0x00000006] = "Custom",
+            [0x00000008] = "Shade",
+            [0x00000009] = "Color Temperature",
+            [0x0000000A] = "Custom WB 1",
+            [0x0000000C] = "Custom WB 2",
+            [0x0000000D] = "Custom WB 3",
+        };
+
+        // ImageQuality values are compound: [size1][quality1][size2][quality2]
+        // size: 0x00=Large, 0x01=Med, 0x02=Small, 0x05=Med2, 0x06=S2, 0x07=S3
+        // quality: 0x10=Fine JPEG, 0x13=Normal JPEG, 0x64=RAW
+        internal static readonly Dictionary<uint, string> ImageQuality = new()
+        {
+            [0x0010FF0F] = "JPEG Large Fine",
+            [0x0013FF0F] = "JPEG Large Normal",
+            [0x0110FF0F] = "JPEG Medium Fine",
+            [0x0113FF0F] = "JPEG Medium Normal",
+            [0x0210FF0F] = "JPEG Small Fine",
+            [0x0213FF0F] = "JPEG Small Normal",
+            [0x0510FF0F] = "JPEG Small1 Fine",
+            [0x0513FF0F] = "JPEG Small1 Normal",
+            [0x0610FF0F] = "JPEG Small2",
+            [0x0710FF0F] = "JPEG Small3",
+            [0x00640F0F] = "RAW",
+            [0x00648010] = "RAW + JPEG Large Fine",
+            [0x00648013] = "RAW + JPEG Large Normal",
+            [0x00648110] = "RAW + JPEG Medium Fine",
+            [0x00648210] = "RAW + JPEG Small Fine",
+        };
+
+        internal static string LookupIso(uint v) => Iso.TryGetValue(v, out var s) ? s : $"ISO {v}";
+        internal static string LookupTv(uint v) => Tv.TryGetValue(v, out var s) ? s : $"Tv 0x{v:X}";
+        internal static string LookupAv(uint v) => Av.TryGetValue(v, out var s) ? s : $"Av 0x{v:X}";
+        internal static string LookupWb(uint v) => WhiteBalance.TryGetValue(v, out var s) ? s : $"WB {v}";
+        internal static string LookupIq(uint v) => ImageQuality.TryGetValue(v, out var s) ? s : $"Quality 0x{v:X8}";
+    }
+}

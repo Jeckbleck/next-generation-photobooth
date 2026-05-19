@@ -209,12 +209,13 @@
             <Rectangle Fill="#B0000000"/>
 
             <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="12" Width="780" Height="600"
+                    CornerRadius="12" Width="1100" Height="640"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="185"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Sidebar -->
@@ -492,28 +493,45 @@
                                 <StackPanel x:Name="PanelCamera" Visibility="Collapsed">
                                     <TextBlock Text="Camera Settings" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
+                                    <!-- Camera status bar -->
+                                    <Border Background="#0D1B2A" CornerRadius="6" Padding="12,10" Margin="0,0,0,20">
+                                        <StackPanel>
+                                            <TextBlock x:Name="CameraModelLabel" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" FontWeight="SemiBold"/>
+                                            <TextBlock x:Name="CameraSettingStatusText" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+
                                     <TextBlock Text="EXPOSURE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="ISO" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="Auto" IsSelected="True"/><ComboBoxItem Content="100"/><ComboBoxItem Content="200"/><ComboBoxItem Content="400"/><ComboBoxItem Content="800"/><ComboBoxItem Content="1600"/>
+                                        <ComboBox x:Name="IsoComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
+                                            </ComboBox.ItemContainerStyle>
                                         </ComboBox>
                                     </Grid>
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Shutter speed" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="1/60"/><ComboBoxItem Content="1/100"/><ComboBoxItem Content="1/125" IsSelected="True"/><ComboBoxItem Content="1/200"/><ComboBoxItem Content="1/250"/>
+                                        <ComboBox x:Name="TvComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
+                                            </ComboBox.ItemContainerStyle>
                                         </ComboBox>
                                     </Grid>
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Aperture" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="f/2.8"/><ComboBoxItem Content="f/4"/><ComboBoxItem Content="f/5.6"/><ComboBoxItem Content="f/8" IsSelected="True"/><ComboBoxItem Content="f/11"/>
+                                        <ComboBox x:Name="AvComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
+                                            </ComboBox.ItemContainerStyle>
                                         </ComboBox>
                                     </Grid>
 
@@ -523,8 +541,11 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="White balance" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="Auto" IsSelected="True"/><ComboBoxItem Content="Daylight"/><ComboBoxItem Content="Cloudy"/><ComboBoxItem Content="Tungsten"/><ComboBoxItem Content="Flash"/>
+                                        <ComboBox x:Name="WhiteBalanceComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
+                                            </ComboBox.ItemContainerStyle>
                                         </ComboBox>
                                     </Grid>
 
@@ -534,8 +555,11 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Image quality" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="JPEG Fine" IsSelected="True"/><ComboBoxItem Content="JPEG Normal"/><ComboBoxItem Content="RAW + JPEG"/>
+                                        <ComboBox x:Name="ImageQualityComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
+                                            </ComboBox.ItemContainerStyle>
                                         </ComboBox>
                                     </Grid>
                                 </StackPanel>
@@ -857,6 +881,48 @@
                                     Click="CloseSettingsContent_Click"/>
                         </StackPanel>
                     </Grid>
+
+                    <!-- Inline camera preview (column 2 — auto-width, shown only on Camera tab) -->
+                    <Border x:Name="CameraPreviewPanel" Grid.Column="2"
+                            Width="380" Background="#070E1A"
+                            Visibility="Collapsed">
+                        <Grid Margin="16,28,16,16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="LIVE PREVIEW"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       FontSize="11" FontWeight="Bold"
+                                       Margin="0,0,0,10"/>
+
+                            <Border Grid.Row="1" Background="#000" CornerRadius="6"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <Image x:Name="InlinePreviewImage"
+                                           Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="LowQuality"/>
+                                    <TextBlock x:Name="InlinePreviewStatusText"
+                                               Text="Starting camera preview…"
+                                               Foreground="#55FFFFFF"
+                                               FontSize="13"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Grid.Row="2"
+                                       x:Name="InlinePreviewInfoText"
+                                       Foreground="#44FFFFFF"
+                                       FontSize="11"
+                                       Margin="0,8,0,0"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

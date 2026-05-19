@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 
 namespace Photobooth.Camera
 {
     public class CameraModel : Observable
     {
         private const uint Unknown = 0xffffffff;
+
+        public Dictionary<uint, int[]> PropertyDescs { get; } = new();
 
         public IntPtr Camera { get; set; }
         public string? ModelName { get; set; }
@@ -131,5 +134,18 @@ namespace Photobooth.Camera
 
         public EDSDKLib.EDSDK.EdsPoint GetZoomPosition() =>
             new() { x = ZoomRect.x, y = ZoomRect.y };
+
+        public void SetPropertyDesc(uint propertyID, int[] values)
+            => PropertyDescs[propertyID] = values;
+
+        public uint GetPropertyValue(uint propertyID) => propertyID switch
+        {
+            EDSDKLib.EDSDK.PropID_ISOSpeed     => Iso,
+            EDSDKLib.EDSDK.PropID_Tv           => Tv,
+            EDSDKLib.EDSDK.PropID_Av           => Av,
+            EDSDKLib.EDSDK.PropID_WhiteBalance => WhiteBalance,
+            EDSDKLib.EDSDK.PropID_ImageQuality => ImageQuality,
+            _                                  => Unknown,
+        };
     }
 }
