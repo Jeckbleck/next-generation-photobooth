@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Photobooth.Camera;
+using Photobooth.Helpers;
 using Serilog;
 
 namespace Photobooth.Views
@@ -295,14 +296,7 @@ namespace Photobooth.Views
                     {
                         try
                         {
-                            var bmp = new BitmapImage();
-                            bmp.BeginInit();
-                            bmp.UriSource        = new Uri(p.FilePath!);
-                            bmp.CacheOption      = BitmapCacheOption.OnLoad;
-                            bmp.DecodePixelWidth = 80;
-                            bmp.EndInit();
-                            bmp.Freeze();
-                            return (System.Windows.Media.ImageSource?)bmp;
+                            return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(p.FilePath!, decodeWidth: 80);
                         }
                         catch { return null; }
                     })
@@ -702,6 +696,65 @@ namespace Photobooth.Views
                 InlinePreviewInfoText.Text = App.Camera.ModelName ?? string.Empty;
             });
             RequestInlineEvfFrame();
+        }
+
+        private async void TakeTestShot_Click(object sender, RoutedEventArgs e)
+        {
+            if (!App.Camera.IsConnected) return;
+
+            TakeTestShotButton.IsEnabled = false;
+            ResumePreviewButton.Visibility = Visibility.Collapsed;
+
+            // Pause live view before firing shutter
+            _inlineEvfRunning = false;
+            _inlineEvfWatchdog?.Dispose();
+            _inlineEvfWatchdog = null;
+            App.Camera.EvfFrameReady -= OnInlineEvfFrame;
+            App.Camera.StopLiveView();
+
+            InlinePreviewStatusText.Text = "Capturing…";
+            InlinePreviewStatusText.Visibility = Visibility.Visible;
+            InlinePreviewInfoText.Text = string.Empty;
+
+            try
+            {
+                string path = await App.Camera.TakePictureAsync();
+
+                var bitmap = BitmapHelper.LoadFromFile(path);
+
+                InlinePreviewImage.Source          = bitmap;
+                InlinePreviewStatusText.Visibility = Visibility.Collapsed;
+                InlinePreviewInfoText.Text         = $"Saved: {System.IO.Path.GetFileName(path)}";
+                ResumePreviewButton.Visibility     = Visibility.Visible;
+
+                Log.Information("Test shot saved: {Path}", path);
+            }
+            catch (OperationCanceledException)
+            {
+                InlinePreviewStatusText.Text   = "Capture timed out.";
+                ResumePreviewButton.Visibility = Visibility.Visible;
+                Log.Warning("Test shot timed out");
+            }
+            catch (Exception ex)
+            {
+                InlinePreviewStatusText.Text   = $"Error: {ex.Message}";
+                ResumePreviewButton.Visibility = Visibility.Visible;
+                Log.Error(ex, "Test shot failed");
+            }
+            finally
+            {
+                TakeTestShotButton.IsEnabled = true;
+            }
+        }
+
+        private void ResumePreview_Click(object sender, RoutedEventArgs e)
+        {
+            ResumePreviewButton.Visibility    = Visibility.Collapsed;
+            InlinePreviewImage.Source         = null;
+            InlinePreviewStatusText.Text      = "Starting camera preview…";
+            InlinePreviewStatusText.Visibility = Visibility.Visible;
+            InlinePreviewInfoText.Text        = string.Empty;
+            StartInlinePreview();
         }
 
         // --- Strip designer tab --------------------------------------------------

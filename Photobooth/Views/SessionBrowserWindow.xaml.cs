@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using Photobooth.Helpers;
 using Photobooth.Print;
 using Serilog;
 
@@ -67,14 +68,7 @@ namespace Photobooth.Views
                 {
                     try
                     {
-                        var bmp = new BitmapImage();
-                        bmp.BeginInit();
-                        bmp.UriSource        = new Uri(path);
-                        bmp.CacheOption      = BitmapCacheOption.OnLoad;
-                        bmp.DecodePixelWidth = 150;
-                        bmp.EndInit();
-                        bmp.Freeze();
-                        return (System.Windows.Media.ImageSource?)bmp;
+                        return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150);
                     }
                     catch { return null; }
                 })
@@ -134,13 +128,7 @@ namespace Photobooth.Views
             }
             try
             {
-                var bmp = new BitmapImage();
-                bmp.BeginInit();
-                bmp.UriSource   = new Uri(_selectedPhotoPaths[index]);
-                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                bmp.EndInit();
-                bmp.Freeze();
-                target.Source = bmp;
+                target.Source = BitmapHelper.LoadFromFile(_selectedPhotoPaths[index]);
             }
             catch (Exception ex)
             {

@@ -891,6 +891,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0"
@@ -918,9 +919,27 @@
                                        x:Name="InlinePreviewInfoText"
                                        Foreground="#44FFFFFF"
                                        FontSize="11"
-                                       Margin="0,8,0,0"
+                                       Margin="0,6,0,0"
                                        TextAlignment="Center"
                                        TextWrapping="Wrap"/>
+
+                            <!-- Test shot buttons -->
+                            <StackPanel Grid.Row="3" Margin="0,10,0,0">
+                                <Button x:Name="TakeTestShotButton"
+                                        Content="Take Test Shot"
+                                        Style="{StaticResource GhostButton}"
+                                        HorizontalAlignment="Stretch"
+                                        Padding="0,9" FontSize="13"
+                                        Click="TakeTestShot_Click"/>
+                                <Button x:Name="ResumePreviewButton"
+                                        Content="↺  Resume Preview"
+                                        Style="{StaticResource GhostButton}"
+                                        HorizontalAlignment="Stretch"
+                                        Padding="0,9" FontSize="13"
+                                        Margin="0,6,0,0"
+                                        Visibility="Collapsed"
+                                        Click="ResumePreview_Click"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
                 </Grid>
