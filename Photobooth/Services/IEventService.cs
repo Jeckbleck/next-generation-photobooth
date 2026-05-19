@@ -76,5 +76,8 @@ namespace Photobooth.Services
 
         /// <summary>Returns the <paramref name="count"/> most recent photos for the event, newest first.</summary>
         List<Photo> GetRecentPhotos(int eventId, int count = 9);
+
+        /// <summary>Returns all sessions for the event with their photos loaded, newest first.</summary>
+        List<Session> GetSessionsWithPhotos(int eventId);
     }
 }

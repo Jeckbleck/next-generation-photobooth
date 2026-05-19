@@ -186,6 +186,9 @@ namespace Photobooth.Services
         public List<Photo> GetRecentPhotos(int eventId, int count = 9) =>
             _repo.GetRecentPhotos(eventId, count);
 
+        public List<Session> GetSessionsWithPhotos(int eventId) =>
+            _repo.GetSessionsWithPhotos(eventId);
+
         // --- Private helpers -----------------------------------------------------
 
         private Event Require(int id) =>

@@ -350,33 +350,90 @@
                                                Visibility="Collapsed" Margin="0,0,0,14"/>
                                     <Rectangle Height="0" Margin="0,0,0,6"/>
 
-                                    <TextBlock Text="SESSION PREVIEW" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="SESSION PREVIEW" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <Button x:Name="OpenSessionBrowserButton" Grid.Column="1"
+                                                Width="26" Height="26" Padding="0" Cursor="Hand"
+                                                ToolTip="View all sessions"
+                                                Click="OpenSessionBrowser_Click">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="PlusBorder"
+                                                            Background="#141F2E" CornerRadius="4"
+                                                            BorderBrush="#334" BorderThickness="1"
+                                                            Width="26" Height="26">
+                                                        <TextBlock Text="+" Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   FontSize="16" FontWeight="Light"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="PlusBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                                            <Setter TargetName="PlusBorder" Property="Background" Value="#1A2B44"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </Grid>
+                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,12"/>
 
                                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,20">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Border Background="#0D1B2A" CornerRadius="6" Width="100" Height="82" Margin="0,0,8,4" BorderBrush="#1E2F4A" BorderThickness="1">
-                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <TextBlock Text="Session 1" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="3 photos" Foreground="#555577" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <Border Background="#0D1B2A" CornerRadius="6" Width="100" Height="82" Margin="0,0,8,4" BorderBrush="#1E2F4A" BorderThickness="1">
-                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <TextBlock Text="Session 2" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="3 photos" Foreground="#555577" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <Border Background="#0D1B2A" CornerRadius="6" Width="100" Height="82" Margin="0,0,8,4" BorderBrush="#1E2F4A" BorderThickness="1">
-                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <TextBlock Text="Session 3" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="3 photos" Foreground="#555577" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <Border Background="#141F2E" CornerRadius="6" Width="100" Height="82" Margin="0,0,0,4" BorderBrush="#1E2F4A" BorderThickness="1" Cursor="Hand">
-                                                <TextBlock Text="+" Foreground="{StaticResource TextSecondaryBrush}" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </StackPanel>
+                                        <ItemsControl x:Name="SessionPreviewList">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Cursor="Hand" Padding="0" BorderThickness="0"
+                                                            Background="Transparent"
+                                                            Click="SessionPreviewCard_Click">
+                                                        <Button.Template>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border x:Name="CardBorder"
+                                                                        Background="#0D1B2A" CornerRadius="6"
+                                                                        Margin="0,0,8,4" BorderBrush="#1E2F4A"
+                                                                        BorderThickness="1" Width="110" Padding="8,8">
+                                                                    <StackPanel>
+                                                                        <TextBlock Text="{Binding Date}"
+                                                                                   Foreground="#777799" FontSize="10"
+                                                                                   Margin="0,0,0,6"
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                        <ItemsControl ItemsSource="{Binding Thumbnails}">
+                                                                            <ItemsControl.ItemsPanel>
+                                                                                <ItemsPanelTemplate>
+                                                                                    <StackPanel Orientation="Horizontal"/>
+                                                                                </ItemsPanelTemplate>
+                                                                            </ItemsControl.ItemsPanel>
+                                                                            <ItemsControl.ItemTemplate>
+                                                                                <DataTemplate>
+                                                                                    <Border CornerRadius="3" ClipToBounds="True" Margin="0,0,3,0">
+                                                                                        <Image Source="{Binding}" Width="28" Height="20"
+                                                                                               Stretch="UniformToFill"/>
+                                                                                    </Border>
+                                                                                </DataTemplate>
+                                                                            </ItemsControl.ItemTemplate>
+                                                                        </ItemsControl>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                                                        <Setter TargetName="CardBorder" Property="Background" Value="#111D30"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Button.Template>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
                                     </ScrollViewer>
 
                                     <TextBlock Text="SESSION DATA" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -407,22 +464,6 @@
                                             BorderBrush="{DynamicResource AccentBrush}"
                                             Margin="0,4,0,14"
                                             Click="ClearSessionData_Click"/>
-
-                                    <TextBlock Text="RECENT PHOTOS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,12"/>
-                                    <ItemsControl x:Name="RecentPhotosList" Margin="0,0,0,20">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <WrapPanel/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Image Source="{Binding}" Width="90" Height="60"
-                                                       Margin="0,0,6,6" Stretch="UniformToFill"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
 
                                     <TextBlock Text="SECURITY" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>

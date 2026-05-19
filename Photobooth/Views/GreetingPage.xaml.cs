@@ -253,14 +253,14 @@ namespace Photobooth.Views
 
         private void ClearEventFields()
         {
-            EventNameBox.Text              = string.Empty;
-            PaywallToggle.IsChecked        = false;
-            SaveImagesToggle.IsChecked     = true;
-            PrintLimitBox.Text             = string.Empty;
-            SessionCountText.Text          = "—";
-            PhotoCountText.Text            = "—";
-            RecentPhotosList.ItemsSource   = null;
-            ArchiveEventButton.IsEnabled   = false;
+            EventNameBox.Text               = string.Empty;
+            PaywallToggle.IsChecked         = false;
+            SaveImagesToggle.IsChecked      = true;
+            PrintLimitBox.Text              = string.Empty;
+            SessionCountText.Text           = "—";
+            PhotoCountText.Text             = "—";
+            SessionPreviewList.ItemsSource  = null;
+            ArchiveEventButton.IsEnabled    = false;
         }
 
         private void RefreshSessionStats(int eventId)
@@ -268,32 +268,76 @@ namespace Photobooth.Views
             var (sessions, photos) = App.Events.GetStats(eventId);
             SessionCountText.Text = sessions.ToString();
             PhotoCountText.Text   = photos.ToString();
-            RefreshPhotoPreview(eventId);
+            RefreshSessionPreview(eventId);
         }
 
-        private void RefreshPhotoPreview(int eventId)
+        private sealed class SessionPreviewItem
         {
-            var photos = App.Events.GetRecentPhotos(eventId, 9);
-            var thumbnails = photos
-                .Where(p => p.FilePath != null && File.Exists(p.FilePath))
-                .Select(p =>
-                {
-                    try
+            public int    SessionId  { get; init; }
+            public string Date       { get; init; } = "";
+            public List<System.Windows.Media.ImageSource> Thumbnails { get; init; } = new();
+        }
+
+        private void RefreshSessionPreview(int eventId)
+        {
+            var sessions = App.Events.GetSessionsWithPhotos(eventId);
+
+            var items = sessions.Select(s =>
+            {
+                var thumbs = s.Photos
+                    .Where(p => p.FilePath != null && File.Exists(p.FilePath))
+                    .OrderBy(p => p.Sequence)
+                    .Select(p =>
                     {
-                        var bmp = new BitmapImage();
-                        bmp.BeginInit();
-                        bmp.UriSource        = new Uri(p.FilePath!);
-                        bmp.CacheOption      = BitmapCacheOption.OnLoad;
-                        bmp.DecodePixelWidth = 180;
-                        bmp.EndInit();
-                        bmp.Freeze();
-                        return (System.Windows.Media.ImageSource?)bmp;
-                    }
-                    catch { return null; }
-                })
-                .Where(b => b != null)
-                .ToList();
-            RecentPhotosList.ItemsSource = thumbnails;
+                        try
+                        {
+                            var bmp = new BitmapImage();
+                            bmp.BeginInit();
+                            bmp.UriSource        = new Uri(p.FilePath!);
+                            bmp.CacheOption      = BitmapCacheOption.OnLoad;
+                            bmp.DecodePixelWidth = 80;
+                            bmp.EndInit();
+                            bmp.Freeze();
+                            return (System.Windows.Media.ImageSource?)bmp;
+                        }
+                        catch { return null; }
+                    })
+                    .Where(b => b != null)
+                    .Cast<System.Windows.Media.ImageSource>()
+                    .ToList();
+
+                return new SessionPreviewItem
+                {
+                    SessionId  = s.Id,
+                    Date       = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
+                    Thumbnails = thumbs,
+                };
+            }).ToList();
+
+            SessionPreviewList.ItemsSource = items;
+        }
+
+        private void SessionPreviewCard_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+            if (((Button)sender).DataContext is not SessionPreviewItem item) return;
+            OpenSessionBrowserAt(item.SessionId);
+        }
+
+        private void OpenSessionBrowser_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+            OpenSessionBrowserAt(null);
+        }
+
+        private void OpenSessionBrowserAt(int? sessionId)
+        {
+            var browser = new SessionBrowserWindow(_selectedEventId!.Value, sessionId)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            browser.ShowDialog();
+            RefreshSessionStats(_selectedEventId.Value);
         }
 
         private void SaveEvent_Click(object sender, RoutedEventArgs e)
