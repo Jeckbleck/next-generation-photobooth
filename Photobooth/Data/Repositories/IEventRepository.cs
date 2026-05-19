@@ -76,6 +76,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Returns the <paramref name="count"/> most recent photos for the event, newest session first.</summary>
         List<Photo> GetRecentPhotos(int eventId, int count);
 
+        /// <summary>Returns all sessions for the event with their photos eagerly loaded, newest first.</summary>
+        List<Session> GetSessionsWithPhotos(int eventId);
+
         /// <summary>Persists all pending changes to the database.</summary>
         void SaveChanges();
     }

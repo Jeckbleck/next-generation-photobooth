@@ -1,0 +1,204 @@
+<Window x:Class="Photobooth.Views.SessionBrowserWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Session Browser"
+        Width="900" Height="660"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBrush}"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header bar -->
+        <Border Grid.Row="0" Background="#0D1424" BorderBrush="#1E2F4A" BorderThickness="0,0,0,1">
+            <Grid Margin="20,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BackButton"
+                            Visibility="Collapsed"
+                            Background="Transparent" BorderThickness="0"
+                            Padding="0" Margin="0,0,14,0"
+                            Cursor="Hand"
+                            Click="BackButton_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="Transparent" Padding="2">
+                                    <TextBlock Text="← All Sessions"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               FontSize="13" FontWeight="SemiBold"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Opacity" Value="0.75"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <TextBlock x:Name="HeaderTitle"
+                               Text="Session Browser"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="15" FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Width="32" Height="32"
+                        Click="CloseWindow_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="CloseBorder" Background="Transparent" CornerRadius="4">
+                                <TextBlock Text="✕" Foreground="#777799"
+                                           FontSize="14" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CloseBorder" Property="Background" Value="#1A2B44"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Sessions list panel -->
+        <ScrollViewer Grid.Row="1" x:Name="SessionsScrollViewer"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,20">
+                <TextBlock x:Name="EmptyText"
+                           Text="No sessions recorded for this event yet."
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="14" HorizontalAlignment="Center"
+                           Margin="0,60,0,0" Visibility="Collapsed"/>
+                <ItemsControl x:Name="SessionCardsControl">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Width="262" Margin="0,0,16,16"
+                                    Cursor="Hand"
+                                    Click="SessionCard_Click">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="CardBorder"
+                                                Background="#0D1B2A" CornerRadius="8"
+                                                BorderBrush="#1E2F4A" BorderThickness="1"
+                                                Padding="14,12">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="CardBorder" Property="Background" Value="#111D30"/>
+                                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Label}"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       FontSize="13" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Date}"
+                                                       Foreground="#555577"
+                                                       FontSize="11" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1"
+                                                Background="#1E2F4A" CornerRadius="4"
+                                                Padding="6,3" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding PhotoLabel}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       FontSize="10"/>
+                                        </Border>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Thumbnails}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" ClipToBounds="True" Margin="0,0,5,0">
+                                                    <Image Source="{Binding}" Width="70" Height="52"
+                                                           Stretch="UniformToFill"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Session detail panel -->
+        <Grid Grid.Row="1" x:Name="DetailPanel" Visibility="Collapsed" Margin="24,20,24,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                <TextBlock x:Name="DetailLabel"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           FontSize="18" FontWeight="Bold"/>
+                <TextBlock x:Name="DetailDate"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="#0D1B2A" CornerRadius="8" ClipToBounds="True">
+                    <Image x:Name="DetailPhoto1" Stretch="Uniform"/>
+                </Border>
+                <Border Grid.Column="2" Background="#0D1B2A" CornerRadius="8" ClipToBounds="True">
+                    <Image x:Name="DetailPhoto2" Stretch="Uniform"/>
+                </Border>
+                <Border Grid.Column="4" Background="#0D1B2A" CornerRadius="8" ClipToBounds="True">
+                    <Image x:Name="DetailPhoto3" Stretch="Uniform"/>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="PrintStatusText"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+                <Button x:Name="PrintButton" Grid.Column="1"
+                        Content="Print Strip"
+                        Style="{StaticResource KioskButton}"
+                        FontSize="14" FontWeight="SemiBold"
+                        Padding="24,10"
+                        Click="PrintButton_Click"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

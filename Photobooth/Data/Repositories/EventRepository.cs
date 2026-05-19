@@ -123,6 +123,13 @@ namespace Photobooth.Data.Repositories
                .Take(count)
                .ToList();
 
+        public List<Session> GetSessionsWithPhotos(int eventId) =>
+            _db.Sessions
+               .Include(s => s.Photos)
+               .Where(s => s.EventId == eventId)
+               .OrderByDescending(s => s.CreatedAt)
+               .ToList();
+
         public void SaveChanges() => _db.SaveChanges();
     }
 }
