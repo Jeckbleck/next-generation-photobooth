@@ -1,7 +1,9 @@
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using Photobooth.Data.Models;
 using Photobooth.Print;
 using Serilog;
 
@@ -158,6 +160,31 @@ namespace Photobooth.Views
             PrintStatusText.Text            = string.Empty;
         }
 
+        private (string? templatePath, List<StripSlotDefinition> slots) LoadTemplateConfig()
+        {
+            var ev = App.Events.GetById(_eventId);
+            if (ev is null) return (null, new());
+
+            var templatePath = ev.PhotostripTemplatePath;
+            if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
+                return (null, new());
+
+            var jsonPath = Path.Combine(App.FileStorage.GetStripTemplatePath(ev.Slug), "template.json");
+            if (!File.Exists(jsonPath)) return (null, new());
+
+            try
+            {
+                var config = JsonSerializer.Deserialize<StripTemplateConfig>(File.ReadAllText(jsonPath));
+                if (config is null || config.Slots.Count == 0) return (null, new());
+                return (templatePath, config.Slots);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Could not read strip template config for event {Id}", _eventId);
+                return (null, new());
+            }
+        }
+
         private async void PrintButton_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedPhotoPaths.Count == 0)
@@ -192,7 +219,13 @@ namespace Photobooth.Views
             {
                 var paths    = _selectedPhotoPaths;
                 var branding = App.Settings.BrandingText;
-                using var strip = await Task.Run(() => PhotostripComposer.Compose(paths, branding));
+                (string? templatePath, List<StripSlotDefinition> slots) = LoadTemplateConfig();
+
+                using var strip = await Task.Run(() =>
+                    templatePath is not null && slots.Count > 0
+                        ? PhotostripComposer.ComposeFromTemplate(templatePath, slots, paths)
+                        : PhotostripComposer.Compose(paths, branding));
+
                 await App.Printer.PrintStripAsync(strip);
                 PrintStatusText.Text = "Strip sent to printer!";
                 Log.Information("Print submitted from session browser for session {Id}", _selectedSessionId);
