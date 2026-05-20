@@ -75,6 +75,9 @@ namespace Photobooth.Services
         /// <summary>Records a captured photo path for the session and persists.</summary>
         void RecordPhoto(int sessionId, int sequence, string filePath);
 
+        /// <summary>Sets the enhanced file path on the matching photo and persists.</summary>
+        void SetEnhancedPhoto(int sessionId, int sequence, string enhancedPath);
+
         /// <summary>Returns the <paramref name="count"/> most recent photos for the event, newest first.</summary>
         List<Photo> GetRecentPhotos(int eventId, int count = 9);
 

@@ -33,6 +33,23 @@
         <!-- Footer -->
         <Grid Grid.Row="2" Margin="40,24,40,40">
             <StackPanel HorizontalAlignment="Center">
+                <!-- AI enhancement status — visible only in AI flow -->
+                <Border x:Name="AIStatusPanel"
+                        Background="#0D1B2A"
+                        CornerRadius="8"
+                        Padding="20,12"
+                        Margin="0,0,0,14"
+                        Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="AIStatusDot" Width="8" Height="8"
+                                 Fill="{DynamicResource AccentBrush}"
+                                 VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock x:Name="AIStatusText"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="15" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
                 <TextBlock x:Name="PrintStatusText"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="14" TextAlignment="Center"

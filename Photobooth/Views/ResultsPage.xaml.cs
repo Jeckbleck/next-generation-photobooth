@@ -15,6 +15,8 @@ namespace Photobooth.Views
     {
         private readonly List<string> _paths;
         private readonly int          _sessionId;
+        private readonly bool         _aiFlow;
+        private readonly string?      _aiStyleId;
         private Timer?  _timer;
         private int     _secondsLeft = 5;
         private Bitmap? _strip;
@@ -24,16 +26,29 @@ namespace Photobooth.Views
             InitializeComponent();
             _paths     = photoPaths;
             _sessionId = sessionId;
+            _aiFlow    = App.AIFlowActive;
+            _aiStyleId = App.AISelectedStyleId;
+            App.AIFlowActive = false;
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
-            Log.Information("Navigated to ResultsPage with {Count} photo(s), session {SessionId}",
-                photoPaths.Count, sessionId);
+            Log.Information("Navigated to ResultsPage with {Count} photo(s), session {SessionId}, AI={AI}",
+                photoPaths.Count, sessionId, _aiFlow);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            StartCountdown();
             _ = ComposeAndDisplayAsync();
+
+            if (_aiFlow)
+            {
+                AIStatusPanel.Visibility = Visibility.Visible;
+                AIStatusText.Text        = "Enhancing your photos…";
+                _ = RunAIEnhancementAsync();
+            }
+            else
+            {
+                StartCountdown();
+            }
 
             if (App.Settings.AutoPrint)
                 _ = PrintAsync();
@@ -48,6 +63,49 @@ namespace Photobooth.Views
         {
             _strip?.Dispose();
             _strip = null;
+        }
+
+        // --- AI enhancement ------------------------------------------------------
+
+        private async Task RunAIEnhancementAsync()
+        {
+            try
+            {
+                var eventId = App.Settings.ActiveEventId ?? 0;
+                var ev      = App.Events.GetById(eventId);
+                var outDir  = ev is not null
+                    ? App.FileStorage.GetEnhancedPath(ev.Slug)
+                    : Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(_paths[0])!)!, "Enhanced");
+
+                var enhancedPaths = await App.AIClient.AugmentImagesAsync(_paths, _aiStyleId!, outDir);
+                Log.Information("AI enhancement complete — {Count} image(s) in {Dir}", enhancedPaths.Count, outDir);
+
+                // Persist enhanced paths to DB (sequence is 1-based, matching ShootPage)
+                if (_sessionId > 0)
+                {
+                    for (int i = 0; i < enhancedPaths.Count; i++)
+                        App.Events.SetEnhancedPhoto(_sessionId, i + 1, enhancedPaths[i]);
+                }
+
+                AIStatusText.Text = "Composing enhanced strip…";
+
+                _strip?.Dispose();
+                _strip = await PrintHelper.ComposeStripAsync(eventId, enhancedPaths);
+                var source = await Task.Run(() => BitmapToSource(_strip));
+                StripPreview.Source = source;
+
+                AIStatusText.Text = "Enhancement complete!";
+                AIStatusDot.Fill  = System.Windows.Media.Brushes.LimeGreen;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "AI enhancement failed");
+                AIStatusText.Text = "Enhancement failed — showing original photos.";
+            }
+            finally
+            {
+                StartCountdown();
+            }
         }
 
         // --- Strip composition ---------------------------------------------------

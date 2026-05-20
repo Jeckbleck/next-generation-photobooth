@@ -191,6 +191,12 @@ namespace Photobooth.Services
             Log.Debug("Recorded photo {Sequence} for session {SessionId}: {Path}", sequence, sessionId, filePath);
         }
 
+        public void SetEnhancedPhoto(int sessionId, int sequence, string enhancedPath)
+        {
+            _repo.SetEnhancedPhoto(sessionId, sequence, enhancedPath);
+            Log.Debug("Enhanced photo {Sequence} for session {SessionId}: {Path}", sequence, sessionId, enhancedPath);
+        }
+
         public List<Photo> GetRecentPhotos(int eventId, int count = 9) =>
             _repo.GetRecentPhotos(eventId, count);
 

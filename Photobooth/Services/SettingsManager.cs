@@ -69,6 +69,29 @@ namespace Photobooth.Services
             Save();
         }
 
+        public bool   AIEnhancementEnabled => _settings.AIEnhancementEnabled;
+        public string AIServerUrl          => _settings.AIServerUrl;
+        public string AIApiKey             => _settings.AIApiKey;
+
+        public void SetAIEnhancementEnabled(bool value)
+        {
+            _settings.AIEnhancementEnabled = value;
+            Save();
+            Log.Debug("AI enhancement → {Value}", value);
+        }
+
+        public void SetAIServerUrl(string url)
+        {
+            _settings.AIServerUrl = url;
+            Save();
+        }
+
+        public void SetAIApiKey(string key)
+        {
+            _settings.AIApiKey = key;
+            Save();
+        }
+
         public void SetStorageRoot(string path)
         {
             _settings.StorageRoot = path;
@@ -131,11 +154,14 @@ namespace Photobooth.Services
 
     public class AppSettings
     {
-        public string  PinHash       { get; set; } = SettingsManager.HashPin("1234");
-        public int?    ActiveEventId { get; set; }
-        public string  StorageRoot   { get; set; } = SettingsManager.DefaultStorageRoot;
-        public string? PrinterName   { get; set; }
-        public bool    AutoPrint     { get; set; } = true;
-        public string  BrandingText  { get; set; } = "THE NEXT GENERATION PHOTOBOOTH";
+        public string  PinHash               { get; set; } = SettingsManager.HashPin("1234");
+        public int?    ActiveEventId         { get; set; }
+        public string  StorageRoot           { get; set; } = SettingsManager.DefaultStorageRoot;
+        public string? PrinterName           { get; set; }
+        public bool    AutoPrint             { get; set; } = true;
+        public string  BrandingText          { get; set; } = "THE NEXT GENERATION PHOTOBOOTH";
+        public bool    AIEnhancementEnabled  { get; set; } = false;
+        public string  AIServerUrl           { get; set; } = "http://localhost:8000";
+        public string  AIApiKey              { get; set; } = "";
     }
 }

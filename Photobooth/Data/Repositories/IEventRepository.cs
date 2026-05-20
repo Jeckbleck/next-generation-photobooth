@@ -73,6 +73,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Stages a new photo record for the session. Caller must call SaveChanges.</summary>
         void AddPhoto(int sessionId, int sequence, string filePath);
 
+        /// <summary>Sets the enhanced file path and marks IsEnhanced on the matching photo. Saves immediately.</summary>
+        void SetEnhancedPhoto(int sessionId, int sequence, string enhancedPath);
+
         /// <summary>Returns the <paramref name="count"/> most recent photos for the event, newest session first.</summary>
         List<Photo> GetRecentPhotos(int eventId, int count);
 

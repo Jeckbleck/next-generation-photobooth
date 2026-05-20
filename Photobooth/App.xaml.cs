@@ -17,11 +17,17 @@ namespace Photobooth
 
         // --- Public API — one entry point per layer boundary --------------------
 
-        public static CameraService       Camera      { get; } = new CameraService();
-        public static SettingsManager     Settings    { get; } = new SettingsManager();
-        public static IFileStorageService FileStorage { get; } = new FileStorageService(Settings);
-        public static IEventService       Events      { get; } = new EventService(_eventRepo, FileStorage);
-        public static PrintService        Printer     { get; } = new PrintService(Settings);
+        public static CameraService         Camera      { get; } = new CameraService();
+        public static SettingsManager       Settings    { get; } = new SettingsManager();
+        public static IFileStorageService   FileStorage { get; } = new FileStorageService(Settings);
+        public static IEventService         Events      { get; } = new EventService(_eventRepo, FileStorage);
+        public static PrintService          Printer     { get; } = new PrintService(Settings);
+        public static AIEnhancementClient   AIClient    { get; } = new AIEnhancementClient();
+
+        // --- AI flow state (reset after each session) --------------------------
+
+        public static bool   AIFlowActive      { get; set; } = false;
+        public static string AISelectedStyleId { get; set; } = "";
 
         protected override void OnStartup(StartupEventArgs e)
         {

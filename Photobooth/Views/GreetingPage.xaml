@@ -107,6 +107,15 @@
                     HorizontalAlignment="Center"
                     Click="StartSession_Click"/>
 
+            <Button x:Name="AIEnhancementButton"
+                    Content="✦ AI ENHANCEMENT"
+                    Style="{StaticResource GhostButton}"
+                    HorizontalAlignment="Center"
+                    Padding="28,12" FontSize="16"
+                    Margin="0,14,0,0"
+                    Visibility="Collapsed"
+                    Click="AIEnhancement_Click"/>
+
             <!-- Shown only when no camera is detected -->
             <TextBlock x:Name="CameraStatusText"
                        Text="No camera connected"
@@ -770,24 +779,24 @@
                                     <TextBlock Text="CONNECTION" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
-                                    <CheckBox Content="Enable AI Enhancement" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,10"/>
-                                    <TextBlock Text="Server URL" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <TextBox Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,20" Text="http://localhost:8000"/>
-
-                                    <TextBlock Text="STYLE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-                                    <Grid Margin="0,0,0,20">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Style preset" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="Natural" IsSelected="True"/><ComboBoxItem Content="Vivid"/><ComboBoxItem Content="B&amp;W Film"/><ComboBoxItem Content="Vintage"/>
-                                        </ComboBox>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Enable AI Enhancement" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                                            <TextBlock Text="Show style picker before each session" Foreground="#445566" FontSize="11" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ToggleButton x:Name="AIEnableToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center" Click="AIEnableToggle_Click"/>
                                     </Grid>
 
+                                    <TextBlock Text="Server URL" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,10,0,4"/>
+                                    <TextBox x:Name="AIServerUrlBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8" LostFocus="AIServerUrl_LostFocus"/>
+
+                                    <TextBlock Text="API Key" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="AIApiKeyBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,20" LostFocus="AIApiKey_LostFocus"/>
+
                                     <StackPanel Orientation="Horizontal">
-                                        <Ellipse Width="8" Height="8" Fill="#555577" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                        <TextBlock Text="Not connected — AI processing disabled" Foreground="#555577" FontSize="13"/>
+                                        <Ellipse x:Name="AIStatusDot" Width="8" Height="8" Fill="#555577" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock x:Name="AIStatusText" Text="Not connected — AI processing disabled" Foreground="#555577" FontSize="13"/>
                                     </StackPanel>
                                 </StackPanel>
 

@@ -47,6 +47,7 @@ namespace Photobooth.Views
             App.Camera.CameraDisconnected += OnCameraDisconnected;
             UpdateCameraStatus();
             ApplyActiveEventAppearance();
+            UpdateAIEnhancementButton();
         }
 
         private void ApplyActiveEventAppearance()
@@ -93,6 +94,13 @@ namespace Photobooth.Views
             NoEventText.Visibility      = hasEvent  ? Visibility.Collapsed : Visibility.Visible;
         }
 
+        private void UpdateAIEnhancementButton()
+        {
+            AIEnhancementButton.Visibility = App.Settings.AIEnhancementEnabled
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
         private void OnCameraDisconnected(object? sender, System.EventArgs e)
         {
             Dispatcher.Invoke(UpdateCameraStatus);
@@ -133,6 +141,25 @@ namespace Photobooth.Views
             Log.Information("Session started by user");
             var window = Window.GetWindow(this) as MainWindow;
             window?.NavigateTo(new ShootPage());
+        }
+
+        private void AIEnhancement_Click(object sender, RoutedEventArgs e)
+        {
+            if (!App.Camera.IsConnected)
+            {
+                UpdateCameraStatus();
+                return;
+            }
+
+            if (!App.Settings.ActiveEventId.HasValue)
+            {
+                UpdateCameraStatus();
+                return;
+            }
+
+            Log.Information("AI Enhancement flow started by user");
+            var window = Window.GetWindow(this) as MainWindow;
+            window?.NavigateTo(new StylePickerPage());
         }
 
         // --- Settings overlay (PIN gate) -----------------------------------------
@@ -182,6 +209,9 @@ namespace Photobooth.Views
             RefreshStoragePath();
             PopulatePrinterDropdown();
             AutoPrintToggle.IsChecked = App.Settings.AutoPrint;
+            AIEnableToggle.IsChecked  = App.Settings.AIEnhancementEnabled;
+            AIServerUrlBox.Text       = App.Settings.AIServerUrl;
+            AIApiKeyBox.Text          = App.Settings.AIApiKey;
             SelectTab(0);
         }
 
@@ -822,6 +852,24 @@ namespace Photobooth.Views
         private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
         {
             App.Settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
+        }
+
+        private void AIEnableToggle_Click(object sender, RoutedEventArgs e)
+        {
+            App.Settings.SetAIEnhancementEnabled(AIEnableToggle.IsChecked == true);
+            UpdateAIEnhancementButton();
+        }
+
+        private void AIServerUrl_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var url = AIServerUrlBox.Text.Trim();
+            if (!string.IsNullOrEmpty(url))
+                App.Settings.SetAIServerUrl(url);
+        }
+
+        private void AIApiKey_LostFocus(object sender, RoutedEventArgs e)
+        {
+            App.Settings.SetAIApiKey(AIApiKeyBox.Text.Trim());
         }
 
         private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)

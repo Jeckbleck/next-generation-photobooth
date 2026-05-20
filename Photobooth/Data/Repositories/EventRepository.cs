@@ -115,6 +115,15 @@ namespace Photobooth.Data.Repositories
             });
         }
 
+        public void SetEnhancedPhoto(int sessionId, int sequence, string enhancedPath)
+        {
+            var photo = _db.Photos.FirstOrDefault(p => p.SessionId == sessionId && p.Sequence == sequence);
+            if (photo is null) return;
+            photo.EnhancedFilePath = enhancedPath;
+            photo.IsEnhanced       = true;
+            _db.SaveChanges();
+        }
+
         public List<Photo> GetRecentPhotos(int eventId, int count) =>
             _db.Photos
                .Where(p => p.Session.EventId == eventId && p.FilePath != null)
