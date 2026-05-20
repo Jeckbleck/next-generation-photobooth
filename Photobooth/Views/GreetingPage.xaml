@@ -792,11 +792,15 @@
                                     <TextBox x:Name="AIServerUrlBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8" LostFocus="AIServerUrl_LostFocus"/>
 
                                     <TextBlock Text="API Key" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="AIApiKeyBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,20" LostFocus="AIApiKey_LostFocus"/>
+                                    <TextBox x:Name="AIApiKeyBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,12" LostFocus="AIApiKey_LostFocus"/>
+
+                                    <Button Content="Test Connection" Click="TestAIConnection_Click"
+                                            Style="{StaticResource GhostButton}" HorizontalAlignment="Left"
+                                            Padding="12,6" FontSize="12" Margin="0,0,0,12"/>
 
                                     <StackPanel Orientation="Horizontal">
                                         <Ellipse x:Name="AIStatusDot" Width="8" Height="8" Fill="#555577" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                        <TextBlock x:Name="AIStatusText" Text="Not connected — AI processing disabled" Foreground="#555577" FontSize="13"/>
+                                        <TextBlock x:Name="AIStatusText" Text="Not tested" Foreground="#555577" FontSize="13"/>
                                     </StackPanel>
                                 </StackPanel>
 

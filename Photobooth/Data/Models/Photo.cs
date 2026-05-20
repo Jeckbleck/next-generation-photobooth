@@ -6,10 +6,10 @@ namespace Photobooth.Data.Models
         public int     SessionId        { get; set; }
         public int     Sequence         { get; set; }  // 1, 2, or 3
 
-        public string? FilePath         { get; set; }
-        public string? EnhancedFilePath { get; set; }
-        public bool    IsEnhanced       { get; set; } = false;
+        public string? FilePath   { get; set; }
+        public bool    IsEnhanced { get; set; } = false;
 
-        public Session Session { get; set; } = null!;
+        public Session                       Session          { get; set; } = null!;
+        public ICollection<EnhancedVariant>  EnhancedVariants { get; set; } = new List<EnhancedVariant>();
     }
 }

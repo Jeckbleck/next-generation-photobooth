@@ -558,6 +558,7 @@ namespace Photobooth.Views
                 StartInlinePreview();
             }
             if (index == 2) LoadStripDesigner();
+            if (index == 5) _ = TestAIConnectionAsync();
             if (index == 7) PopulateAboutTab();
         }
 
@@ -864,7 +865,35 @@ namespace Photobooth.Views
         {
             var url = AIServerUrlBox.Text.Trim();
             if (!string.IsNullOrEmpty(url))
+            {
                 App.Settings.SetAIServerUrl(url);
+                _ = TestAIConnectionAsync();
+            }
+        }
+
+        private void TestAIConnection_Click(object sender, RoutedEventArgs e) => _ = TestAIConnectionAsync();
+
+        private async Task TestAIConnectionAsync()
+        {
+            AIStatusDot.Fill            = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
+            AIStatusText.Text           = "Testing…";
+            AIStatusText.Foreground     = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
+
+            try
+            {
+                var styles = await App.AIClient.GetStylesAsync();
+                AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+                AIStatusText.Text       = $"Connected — {styles.Count} style{(styles.Count == 1 ? "" : "s")} available";
+                AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+                Log.Information("AI connection test OK — {Count} style(s)", styles.Count);
+            }
+            catch (Exception ex)
+            {
+                AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
+                AIStatusText.Text       = $"Could not connect: {ex.Message}";
+                AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
+                Log.Warning(ex, "AI connection test failed");
+            }
         }
 
         private void AIApiKey_LostFocus(object sender, RoutedEventArgs e)

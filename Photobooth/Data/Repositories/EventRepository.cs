@@ -115,12 +115,31 @@ namespace Photobooth.Data.Repositories
             });
         }
 
-        public void SetEnhancedPhoto(int sessionId, int sequence, string enhancedPath)
+        public void AddOrUpdateEnhancedVariant(int sessionId, int sequence, string styleId, string styleName, string filePath)
         {
-            var photo = _db.Photos.FirstOrDefault(p => p.SessionId == sessionId && p.Sequence == sequence);
+            var photo = _db.Photos
+                .Include(p => p.EnhancedVariants)
+                .FirstOrDefault(p => p.SessionId == sessionId && p.Sequence == sequence);
             if (photo is null) return;
-            photo.EnhancedFilePath = enhancedPath;
-            photo.IsEnhanced       = true;
+
+            var existing = photo.EnhancedVariants.FirstOrDefault(v => v.StyleId == styleId);
+            if (existing is not null)
+            {
+                existing.FilePath   = filePath;
+                existing.StyleName  = styleName;
+                existing.CreatedAt  = DateTime.UtcNow;
+            }
+            else
+            {
+                photo.EnhancedVariants.Add(new EnhancedVariant
+                {
+                    StyleId   = styleId,
+                    StyleName = styleName,
+                    FilePath  = filePath,
+                });
+            }
+
+            photo.IsEnhanced = true;
             _db.SaveChanges();
         }
 
@@ -135,6 +154,7 @@ namespace Photobooth.Data.Repositories
         public List<Session> GetSessionsWithPhotos(int eventId) =>
             _db.Sessions
                .Include(s => s.Photos)
+                   .ThenInclude(p => p.EnhancedVariants)
                .Where(s => s.EventId == eventId)
                .OrderByDescending(s => s.CreatedAt)
                .ToList();

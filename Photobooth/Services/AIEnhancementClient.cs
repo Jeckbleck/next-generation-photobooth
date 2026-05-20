@@ -65,14 +65,16 @@ namespace Photobooth.Services
 
             Directory.CreateDirectory(outputDir);
 
+            var safeStyle  = string.Concat(styleId.Select(c => char.IsLetterOrDigit(c) || c == '-' ? c : '_'));
             var savedPaths = new List<string>();
             for (int i = 0; i < result.Images.Count; i++)
             {
+                var stem     = Path.GetFileNameWithoutExtension(photoPaths[i]);
                 var imgBytes = Convert.FromBase64String(result.Images[i].AugmentedB64);
-                var outPath  = Path.Combine(outputDir, $"enhanced_{i + 1}.png");
+                var outPath  = Path.Combine(outputDir, $"{stem}_{safeStyle}_enhanced.png");
                 await File.WriteAllBytesAsync(outPath, imgBytes);
                 savedPaths.Add(outPath);
-                Log.Debug("AI-enhanced image {I} saved to {Path}", i + 1, outPath);
+                Log.Debug("AI-enhanced image {I} ({Style}) saved to {Path}", i + 1, styleId, outPath);
             }
 
             return savedPaths;

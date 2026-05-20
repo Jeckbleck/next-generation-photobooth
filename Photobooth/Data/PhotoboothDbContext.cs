@@ -9,9 +9,10 @@ namespace Photobooth.Data
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Photobooth", "photobooth.db");
 
-        public DbSet<Event>   Events   { get; set; }
-        public DbSet<Session> Sessions { get; set; }
-        public DbSet<Photo>   Photos   { get; set; }
+        public DbSet<Event>           Events           { get; set; }
+        public DbSet<Session>         Sessions         { get; set; }
+        public DbSet<Photo>           Photos           { get; set; }
+        public DbSet<EnhancedVariant> EnhancedVariants { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
             => options.UseSqlite($"Data Source={DbPath}");
@@ -36,10 +37,20 @@ namespace Photobooth.Data
 
             model.Entity<Photo>(p =>
             {
-                // Deleting a session removes its photos
                 p.HasOne(x => x.Session)
                  .WithMany(x => x.Photos)
                  .HasForeignKey(x => x.SessionId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            model.Entity<EnhancedVariant>(v =>
+            {
+                // Unique per photo+style — re-enhancing the same style updates in place
+                v.HasIndex(x => new { x.PhotoId, x.StyleId }).IsUnique();
+
+                v.HasOne(x => x.Photo)
+                 .WithMany(x => x.EnhancedVariants)
+                 .HasForeignKey(x => x.PhotoId)
                  .OnDelete(DeleteBehavior.Cascade);
             });
         }

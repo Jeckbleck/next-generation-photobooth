@@ -17,6 +17,7 @@ namespace Photobooth.Views
         private readonly int          _sessionId;
         private readonly bool         _aiFlow;
         private readonly string?      _aiStyleId;
+        private readonly string?      _aiStyleName;
         private Timer?  _timer;
         private int     _secondsLeft = 5;
         private Bitmap? _strip;
@@ -26,8 +27,9 @@ namespace Photobooth.Views
             InitializeComponent();
             _paths     = photoPaths;
             _sessionId = sessionId;
-            _aiFlow    = App.AIFlowActive;
-            _aiStyleId = App.AISelectedStyleId;
+            _aiFlow      = App.AIFlowActive;
+            _aiStyleId   = App.AISelectedStyleId;
+            _aiStyleName = App.AISelectedStyleName;
             App.AIFlowActive = false;
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
@@ -84,7 +86,7 @@ namespace Photobooth.Views
                 if (_sessionId > 0)
                 {
                     for (int i = 0; i < enhancedPaths.Count; i++)
-                        App.Events.SetEnhancedPhoto(_sessionId, i + 1, enhancedPaths[i]);
+                        App.Events.RecordEnhancedVariant(_sessionId, i + 1, _aiStyleId!, _aiStyleName ?? _aiStyleId!, enhancedPaths[i]);
                 }
 
                 AIStatusText.Text = "Composing enhanced strip…";

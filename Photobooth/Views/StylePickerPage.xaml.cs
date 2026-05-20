@@ -45,8 +45,9 @@ namespace Photobooth.Views
         {
             if (StylesListBox.SelectedItem is not AugmentationStyle style) return;
 
-            App.AIFlowActive      = true;
-            App.AISelectedStyleId = style.Id;
+            App.AIFlowActive        = true;
+            App.AISelectedStyleId   = style.Id;
+            App.AISelectedStyleName = style.Name;
 
             Log.Information("AI style selected: {StyleId} ({StyleName})", style.Id, style.Name);
             var window = Window.GetWindow(this) as MainWindow;

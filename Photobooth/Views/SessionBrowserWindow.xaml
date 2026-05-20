@@ -8,6 +8,85 @@
         ResizeMode="NoResize"
         WindowStyle="None">
 
+    <Window.Resources>
+        <Style x:Key="VariantRow" TargetType="ListBoxItem">
+            <Setter Property="Margin"           Value="0,2,0,2"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Padding"          Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="RowBorder"
+                                CornerRadius="6" Padding="8,4"
+                                Background="Transparent"
+                                BorderThickness="2,0,0,0"
+                                BorderBrush="Transparent">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="RowBorder" Property="Background"  Value="#111D30"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsSelected"  Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="RowBorder" Property="Background" Value="#0A1520"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="OverlayStyleCard" TargetType="ListBoxItem">
+            <Setter Property="Margin"           Value="6"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Padding"          Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="CardBorder"
+                                Width="190" Height="90"
+                                CornerRadius="8"
+                                Background="#0D1B2A"
+                                BorderThickness="2" BorderBrush="#1E2F4A"
+                                Padding="14,10">
+                            <StackPanel>
+                                <TextBlock x:Name="CardTitle"
+                                           Text="{Binding Name}"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding Description}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="11" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="CardBorder" Property="Background"  Value="#1A2B44"/>
+                                <Setter TargetName="CardTitle"  Property="Foreground"  Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsSelected"  Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="#445566"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="52"/>
@@ -153,6 +232,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,16">
@@ -183,22 +263,184 @@
                 </Border>
             </Grid>
 
-            <Grid Grid.Row="2" Margin="0,16,0,0">
+            <!-- AI-enhanced tray — hidden when no enhanced images exist -->
+            <Border x:Name="EnhancedTray"
+                    Grid.Row="2"
+                    Background="#0A1520"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="#1E2F4A"
+                    Padding="14,10"
+                    Margin="0,12,0,0"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="✦" Foreground="{DynamicResource AccentBrush}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="AI Enhanced"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button x:Name="ShowOriginalsButton"
+                                Content="← Originals"
+                                HorizontalAlignment="Right"
+                                Background="Transparent" BorderThickness="0"
+                                Foreground="{StaticResource TextSecondaryBrush}"
+                                FontSize="11" Cursor="Hand"
+                                Padding="0" Visibility="Collapsed"
+                                Click="ShowOriginalsButton_Click"/>
+                    </Grid>
+
+                    <!-- One row per style variant -->
+                    <ListBox x:Name="VariantsList"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             ItemContainerStyle="{StaticResource VariantRow}"
+                             SelectionChanged="VariantsList_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="76"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding StyleName}"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               FontSize="11" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <ItemsControl Grid.Column="1" ItemsSource="{Binding Thumbs}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="3" ClipToBounds="True" Margin="0,0,4,0">
+                                                    <Image Source="{Binding}" Width="62" Height="46" Stretch="UniformToFill"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="3" Margin="0,16,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="PrintStatusText"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            FontSize="13" VerticalAlignment="Center"
                            TextWrapping="Wrap"/>
-                <Button x:Name="PrintButton" Grid.Column="1"
+                <Button x:Name="EnhanceButton" Grid.Column="1"
+                        Content="✦ Enhance"
+                        Style="{StaticResource GhostButton}"
+                        FontSize="14" FontWeight="SemiBold"
+                        Padding="20,10" Margin="0,0,10,0"
+                        Click="EnhanceButton_Click"/>
+                <Button x:Name="PrintButton" Grid.Column="2"
                         Content="Print Strip"
                         Style="{StaticResource KioskButton}"
                         FontSize="14" FontWeight="SemiBold"
                         Padding="24,10"
                         Click="PrintButton_Click"/>
             </Grid>
+        </Grid>
+        <!-- AI Enhancement overlay -->
+        <Grid x:Name="EnhanceOverlay"
+              Grid.Row="0" Grid.RowSpan="2"
+              Visibility="Collapsed">
+
+            <!-- Dim backdrop -->
+            <Border Background="#CC0A1020"/>
+
+            <!-- Centred card -->
+            <Border MaxWidth="700" MaxHeight="530"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#0D1B2A" CornerRadius="12"
+                    BorderBrush="#1E2F4A" BorderThickness="1"
+                    Padding="28,24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="CHOOSE YOUR STYLE"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   FontSize="22" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <Rectangle Height="2" Width="100"
+                                   Fill="{DynamicResource AccentBrush}"
+                                   HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <!-- Loading / error -->
+                    <TextBlock x:Name="StyleLoadingText"
+                               Grid.Row="1"
+                               Text="Loading styles…"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="15" TextAlignment="Center"
+                               VerticalAlignment="Center"/>
+
+                    <!-- Styles grid -->
+                    <ScrollViewer x:Name="OverlayStylesScroller"
+                                  Grid.Row="1"
+                                  Visibility="Collapsed"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ListBox x:Name="OverlayStylesList"
+                                 Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ItemContainerStyle="{StaticResource OverlayStyleCard}"
+                                 SelectionChanged="OverlayStylesList_SelectionChanged">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel HorizontalAlignment="Center"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                        </ListBox>
+                    </ScrollViewer>
+
+                    <!-- Progress / result state -->
+                    <StackPanel x:Name="EnhanceProgressPanel"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <TextBlock x:Name="EnhanceProgressText"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="16" TextAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- Footer buttons -->
+                    <Grid Grid.Row="2" Margin="0,20,0,0">
+                        <Button Content="Cancel"
+                                Style="{StaticResource GhostButton}"
+                                HorizontalAlignment="Left"
+                                Padding="20,10" FontSize="14"
+                                Click="EnhanceCancel_Click"/>
+                        <Button x:Name="EnhanceConfirmButton"
+                                Content="ENHANCE →"
+                                Style="{StaticResource KioskButton}"
+                                HorizontalAlignment="Right"
+                                Padding="20,10" FontSize="14"
+                                IsEnabled="False"
+                                Click="EnhanceConfirm_Click"/>
+                    </Grid>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>

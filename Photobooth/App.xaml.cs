@@ -26,8 +26,9 @@ namespace Photobooth
 
         // --- AI flow state (reset after each session) --------------------------
 
-        public static bool   AIFlowActive      { get; set; } = false;
-        public static string AISelectedStyleId { get; set; } = "";
+        public static bool   AIFlowActive        { get; set; } = false;
+        public static string AISelectedStyleId   { get; set; } = "";
+        public static string AISelectedStyleName { get; set; } = "";
 
         protected override void OnStartup(StartupEventArgs e)
         {
