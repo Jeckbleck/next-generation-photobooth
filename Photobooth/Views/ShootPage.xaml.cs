@@ -20,6 +20,7 @@ namespace Photobooth.Views
         private bool _evfRunning;
         private bool _evfFramePending;
         private bool _sequenceAborted;
+        private CancellationTokenSource _sessionCts = new();
         private DateTime _lastEvfFrameTime;
         private System.Threading.Timer? _evfWatchdog;
 
@@ -107,6 +108,7 @@ namespace Photobooth.Views
             Log.Information("ShootPage unloaded — stopping EVF");
             _evfWatchdog?.Dispose();
             _evfRunning = false;
+            _sessionCts.Cancel();
             _camera.StopLiveView();
 
             _camera.EvfFrameReady      -= OnEvfFrame;
@@ -175,7 +177,8 @@ namespace Photobooth.Views
         private async Task AutoStartAsync()
         {
             // Brief pause so the EVF feed is visible before the countdown starts
-            await Task.Delay(1500);
+            try { await Task.Delay(1500, _sessionCts.Token); }
+            catch (OperationCanceledException) { return; }
             if (!_evfRunning || _shooting) return;
             await RunSequenceAsync();
         }
@@ -185,13 +188,18 @@ namespace Photobooth.Views
             _capturedPaths.Clear();
             _sequenceAborted = false;
             ResetDots();
+            var ct = _sessionCts.Token;
 
             Log.Information("Photo sequence started");
 
             for (int i = 1; i <= 3; i++)
             {
+                if (ct.IsCancellationRequested) return;
+
                 StatusText.Text = $"Photo {i} of 3 — get ready!";
-                await RunCountdown(3);
+                await RunCountdown(3, ct);
+
+                if (ct.IsCancellationRequested) return;
 
                 _shooting = true;
                 StatusText.Text = "Please wait…";
@@ -200,7 +208,7 @@ namespace Photobooth.Views
                 try
                 {
                     Log.Information("Taking photo {N}/3", i);
-                    var rawPath = await _camera.TakePictureAsync();
+                    var rawPath = await _camera.TakePictureAsync(ct);
 
                     var date    = DateTime.Today.ToString("yyyyMMdd");
                     var sid     = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
@@ -227,6 +235,11 @@ namespace Photobooth.Views
                         Log.Warning("Photo {N} cancelled — camera disconnected mid-shoot", i);
                         return;
                     }
+                    if (ct.IsCancellationRequested)
+                    {
+                        // User pressed Back — Back_Click handles cleanup
+                        return;
+                    }
                     // 30-second timeout elapsed without a download completing
                     Log.Error("Photo {N} timed out waiting for download", i);
                     StatusText.Text = "Camera timed out — check the USB connection and try again.";
@@ -242,7 +255,7 @@ namespace Photobooth.Views
                 }
 
                 await HoldFlash();
-                await ShowCapturedPreview(path);
+                await ShowCapturedPreview(path, ct);
                 LightUpDot(i);
 
                 if (i < 3)
@@ -251,6 +264,8 @@ namespace Photobooth.Views
                     RequestNextEvfFrame();
                 }
             }
+
+            if (ct.IsCancellationRequested) return;
 
             Log.Information("Sequence complete — {Count} photos", _capturedPaths.Count);
             await FadeOutFlash();
@@ -264,13 +279,13 @@ namespace Photobooth.Views
 
         // --- Countdown -----------------------------------------------------------
 
-        private async Task RunCountdown(int seconds)
+        private async Task RunCountdown(int seconds, CancellationToken ct = default)
         {
             CountdownText.Visibility = Visibility.Visible;
             for (int s = seconds; s >= 1; s--)
             {
                 CountdownText.Text = s.ToString();
-                await Task.Delay(1000);
+                await Task.Delay(1000, ct);
             }
             CountdownText.Visibility = Visibility.Collapsed;
         }
@@ -295,7 +310,7 @@ namespace Photobooth.Views
             return tcs.Task;
         }
 
-        private async Task ShowCapturedPreview(string path)
+        private async Task ShowCapturedPreview(string path, CancellationToken ct = default)
         {
             try
             {
@@ -308,12 +323,13 @@ namespace Photobooth.Views
                     b.EndInit();
                     b.Freeze();
                     return b;
-                });
+                }, ct);
 
                 await Dispatcher.InvokeAsync(() => EvfImage.Source = bmp);
                 await FadeOutFlash();
-                await Task.Delay(1000);
+                await Task.Delay(1000, ct);
             }
+            catch (OperationCanceledException) { /* session torn down — stop silently */ }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to load captured preview for {Path}", path);
@@ -370,13 +386,20 @@ namespace Photobooth.Views
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
-            Log.Information("User navigated back to GreetingPage");
+            Log.Information("User navigated back — aborting session");
+            _sessionCts.Cancel();
             _evfWatchdog?.Dispose();
             _evfRunning = false;
 
-            if (_sessionId.HasValue && _capturedPaths.Count == 0)
+            foreach (var p in _capturedPaths)
             {
-                try { App.Events.AbandonSession(_sessionId.Value); }
+                try { File.Delete(p); }
+                catch (Exception ex) { Log.Warning(ex, "Failed to delete abandoned photo {Path}", p); }
+            }
+
+            if (_sessionId.HasValue)
+            {
+                try { App.Events.AbandonSession(_sessionId.Value); _sessionId = null; }
                 catch (Exception ex) { Log.Error(ex, "Failed to abandon session on back"); }
             }
 
