@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Photobooth/Photobooth.csproj --runtime win-x86
+
+      - name: Build
+        run: dotnet build Photobooth/Photobooth.csproj -c Release --no-restore
+
+      - name: Publish (self-contained win-x86)
+        run: >-
+          dotnet publish Photobooth/Photobooth.csproj
+          -c Release
+          -r win-x86
+          --self-contained true
+          --no-restore
+          -o ./publish
+
+      # Bundle install.ps1 so the ZIP is ready to deploy to a kiosk as-is
+      - name: Add install script to package
+        run: Copy-Item scripts/install.ps1 ./publish/
+
+      - name: Create release ZIP
+        run: Compress-Archive -Path ./publish/* -DestinationPath photobooth-${{ github.sha }}.zip
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: photobooth-${{ github.sha }}
+          path: photobooth-${{ github.sha }}.zip
+          retention-days: 30

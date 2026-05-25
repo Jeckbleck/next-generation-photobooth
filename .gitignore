@@ -18,6 +18,11 @@ project.assets.json
 # Logs (runtime output, not source)
 Logs/
 
+# Distribution outputs
+publish/
+.publish-temp/
+releases/
+
 # OS
 Thumbs.db
 Desktop.ini
