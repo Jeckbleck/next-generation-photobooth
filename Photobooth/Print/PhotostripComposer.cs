@@ -135,9 +135,25 @@ namespace Photobooth.Print
                     try
                     {
                         using var photo = Image.FromFile(photoPaths[photoIndex]);
-                        g.SetClip(slotRect);
-                        g.DrawImage(photo, FillRect(photo.Width, photo.Height, slotRect));
-                        g.ResetClip();
+
+                        Bitmap? rotated = null;
+                        Image   drawPhoto = photo;
+                        if (slot.Rotation != 0)
+                        {
+                            rotated   = RotateBitmap((Bitmap)photo, slot.Rotation);
+                            drawPhoto = rotated;
+                        }
+
+                        try
+                        {
+                            g.SetClip(slotRect);
+                            g.DrawImage(drawPhoto, FillRect(drawPhoto.Width, drawPhoto.Height, slotRect));
+                            g.ResetClip();
+                        }
+                        finally
+                        {
+                            rotated?.Dispose();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -170,6 +186,27 @@ namespace Photobooth.Print
                 slot.X + (slot.Width  - w) / 2,
                 slot.Y + (slot.Height - h) / 2,
                 w, h);
+        }
+
+        // Rotates a bitmap clockwise by the given degrees (must be 90, 180, or 270).
+        private static Bitmap RotateBitmap(Bitmap source, int degrees)
+        {
+            bool swap = degrees % 180 != 0;
+            int newW = swap ? source.Height : source.Width;
+            int newH = swap ? source.Width  : source.Height;
+
+            var bmp = new Bitmap(newW, newH, PixelFormat.Format32bppArgb);
+            bmp.SetResolution(source.HorizontalResolution, source.VerticalResolution);
+
+            using var g = Graphics.FromImage(bmp);
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode   = PixelOffsetMode.HighQuality;
+            g.TranslateTransform(newW / 2f, newH / 2f);
+            g.RotateTransform(degrees);
+            g.TranslateTransform(-source.Width / 2f, -source.Height / 2f);
+            g.DrawImage(source, 0, 0);
+
+            return bmp;
         }
 
         // --- Legacy fallback -----------------------------------------------------

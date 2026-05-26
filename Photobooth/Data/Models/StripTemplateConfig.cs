@@ -7,10 +7,11 @@ namespace Photobooth.Data.Models
 
     public class StripSlotDefinition
     {
-        public int    Index  { get; set; }  // 1-based, matches photo capture order
-        public double X      { get; set; }  // normalised 0–1 relative to canvas width
-        public double Y      { get; set; }  // normalised 0–1 relative to canvas height
-        public double Width  { get; set; }
-        public double Height { get; set; }
+        public int    Index    { get; set; }  // 1-based, matches photo capture order
+        public double X        { get; set; }  // normalised 0–1 relative to canvas width
+        public double Y        { get; set; }  // normalised 0–1 relative to canvas height
+        public double Width    { get; set; }
+        public double Height   { get; set; }
+        public int    Rotation { get; set; }  // clockwise degrees: 0, 90, 180, 270
     }
 }

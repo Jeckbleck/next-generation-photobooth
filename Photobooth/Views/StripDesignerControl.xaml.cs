@@ -8,10 +8,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Rectangle = System.Windows.Shapes.Rectangle;
 using Microsoft.Win32;
 using Photobooth.Data.Models;
 using Serilog;
+using Line      = System.Windows.Shapes.Line;
+using Rectangle = System.Windows.Shapes.Rectangle;
 
 namespace Photobooth.Views
 {
@@ -25,13 +26,17 @@ namespace Photobooth.Views
         private const double ZoomStep    = 0.25;
         private const double ZoomMin     = 0.5;
         private const double ZoomMax     = 4.0;
+        private const double GuideStep   = 7.5;    // 5 % of canvas width = one grid cell
 
-        private double _zoom = 1.0;
+        private double _zoom = 2.0;
+        private bool   _guidelinesVisible;
 
         private string? _templateDir;
         private string? _eventSlug;
         private int?    _eventId;
-        private readonly List<SlotControl> _slots = new();
+
+        private readonly List<SlotControl> _slots      = new();
+        private readonly List<Line>        _guideLines = new();
 
         // Drag state
         private SlotControl? _dragging;
@@ -43,9 +48,15 @@ namespace Photobooth.Views
         private Point        _resizeOrigin;
         private Rect         _resizeStartRect;
 
+        // Pan state
+        private bool   _panning;
+        private Point  _panStart;
+        private double _panHOrig, _panVOrig;
+
         public StripDesignerControl()
         {
             InitializeComponent();
+            ApplyZoom();
             UpdateStatus();
         }
 
@@ -67,11 +78,9 @@ namespace Photobooth.Views
 
             UploadButton.IsEnabled = true;
 
-            // Load template image from the DB-stored path
             if (!string.IsNullOrEmpty(templateImagePath) && File.Exists(templateImagePath))
                 LoadTemplateImage(templateImagePath);
 
-            // Load slot definitions from the event's Strip template folder
             var jsonPath = JsonPath();
             if (!File.Exists(jsonPath)) { UpdateStatus(); return; }
 
@@ -144,11 +153,12 @@ namespace Photobooth.Views
                 {
                     Slots = _slots.Select(s => new StripSlotDefinition
                     {
-                        Index  = s.Index,
-                        X      = s.Left   / CanvasW,
-                        Y      = s.Top    / CanvasH,
-                        Width  = s.Width  / CanvasW,
-                        Height = s.Height / CanvasH,
+                        Index    = s.Index,
+                        X        = s.Left     / CanvasW,
+                        Y        = s.Top      / CanvasH,
+                        Width    = s.Width    / CanvasW,
+                        Height   = s.Height   / CanvasH,
+                        Rotation = s.Rotation,
                     }).OrderBy(s => s.Index).ToList(),
                 };
 
@@ -176,17 +186,70 @@ namespace Photobooth.Views
             UpdateStatus();
         }
 
+        // --- Guidelines toggle ---------------------------------------------------
+
+        private void GuidelinesToggle_Click(object sender, RoutedEventArgs e)
+        {
+            _guidelinesVisible = GuidelinesToggle.IsChecked == true;
+            if (_guidelinesVisible)
+                BuildGuidelines();
+            else
+                ClearGuidelines();
+        }
+
+        private void BuildGuidelines()
+        {
+            ClearGuidelines();
+            var brush = new SolidColorBrush(Color.FromArgb(55, 255, 255, 255));
+
+            for (double x = GuideStep; x < CanvasW; x += GuideStep)
+            {
+                var line = new Line
+                {
+                    X1 = x, Y1 = 0, X2 = x, Y2 = CanvasH,
+                    Stroke = brush, StrokeThickness = 0.5,
+                    StrokeDashArray  = new DoubleCollection { 4, 4 },
+                    IsHitTestVisible = false,
+                };
+                Panel.SetZIndex(line, 1);
+                DesignerCanvas.Children.Add(line);
+                _guideLines.Add(line);
+            }
+
+            for (double y = GuideStep; y < CanvasH; y += GuideStep)
+            {
+                var line = new Line
+                {
+                    X1 = 0, Y1 = y, X2 = CanvasW, Y2 = y,
+                    Stroke = brush, StrokeThickness = 0.5,
+                    StrokeDashArray  = new DoubleCollection { 4, 4 },
+                    IsHitTestVisible = false,
+                };
+                Panel.SetZIndex(line, 1);
+                DesignerCanvas.Children.Add(line);
+                _guideLines.Add(line);
+            }
+        }
+
+        private void ClearGuidelines()
+        {
+            foreach (var line in _guideLines)
+                DesignerCanvas.Children.Remove(line);
+            _guideLines.Clear();
+        }
+
         // --- Slot creation -------------------------------------------------------
 
         private void CreateSlot(StripSlotDefinition def)
         {
             var slot = new SlotControl
             {
-                Index  = def.Index,
-                Left   = def.X      * CanvasW,
-                Top    = def.Y      * CanvasH,
-                Width  = def.Width  * CanvasW,
-                Height = def.Height * CanvasH,
+                Index    = def.Index,
+                Left     = def.X      * CanvasW,
+                Top      = def.Y      * CanvasH,
+                Width    = def.Width  * CanvasW,
+                Height   = def.Height * CanvasH,
+                Rotation = def.Rotation,
             };
 
             BuildSlotVisuals(slot);
@@ -198,7 +261,7 @@ namespace Photobooth.Views
         {
             var accent = AccentColor();
 
-            // Body — the draggable slot rectangle
+            // Body — draggable slot rectangle
             var body = new Border
             {
                 Background      = new SolidColorBrush(Color.FromArgb(90, accent.R, accent.G, accent.B)),
@@ -206,6 +269,8 @@ namespace Photobooth.Views
                 BorderThickness = new Thickness(2),
                 CornerRadius    = new CornerRadius(2),
                 Cursor          = Cursors.SizeAll,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = new RotateTransform(slot.Rotation),
                 Child           = new TextBlock
                 {
                     Text                = slot.Index.ToString(),
@@ -220,11 +285,30 @@ namespace Photobooth.Views
             body.MouseLeftButtonDown += (_, e) => { SlotBody_Down(slot, e);  e.Handled = true; };
             body.MouseMove           += (_, e) => SlotBody_Move(slot, e);
             body.MouseLeftButtonUp   += (_, e) => { SlotBody_Up(slot);        e.Handled = true; };
-            Panel.SetZIndex(body, 1);
+            Panel.SetZIndex(body, 2);
             DesignerCanvas.Children.Add(body);
             slot.Body = body;
 
-            // Delete button — separate canvas child so it never competes with drag
+            // Rotate button — top-left corner of slot
+            var rot = new Button
+            {
+                Content         = "↻",
+                Width           = 22,
+                Height          = 22,
+                FontSize        = 13,
+                Foreground      = Brushes.White,
+                Background      = new SolidColorBrush(Color.FromArgb(200, 40, 80, 200)),
+                BorderThickness = new Thickness(0),
+                Cursor          = Cursors.Arrow,
+                Padding         = new Thickness(0),
+                ToolTip         = "Rotate 90°",
+            };
+            rot.Click += (_, _) => RotateSlot(slot);
+            Panel.SetZIndex(rot, 4);
+            DesignerCanvas.Children.Add(rot);
+            slot.RotateBtn = rot;
+
+            // Delete button — top-right corner of slot
             var del = new Button
             {
                 Content         = "×",
@@ -238,7 +322,7 @@ namespace Photobooth.Views
                 Padding         = new Thickness(0),
             };
             del.Click += (_, _) => RemoveSlot(slot);
-            Panel.SetZIndex(del, 3);
+            Panel.SetZIndex(del, 4);
             DesignerCanvas.Children.Add(del);
             slot.DeleteBtn = del;
 
@@ -260,7 +344,7 @@ namespace Photobooth.Views
                 handle.MouseLeftButtonDown += (_, e) => { Handle_Down(slot, hi, e); e.Handled = true; };
                 handle.MouseMove           += (_, e) => { Handle_Move(slot, hi, e); e.Handled = true; };
                 handle.MouseLeftButtonUp   += (_, e) => { Handle_Up(slot, hi);      e.Handled = true; };
-                Panel.SetZIndex(handle, 2);
+                Panel.SetZIndex(handle, 3);
                 DesignerCanvas.Children.Add(handle);
                 slot.Handles[h] = handle;
             }
@@ -274,6 +358,9 @@ namespace Photobooth.Views
             Canvas.SetTop(slot.Body,  slot.Top);
             slot.Body.Width  = slot.Width;
             slot.Body.Height = slot.Height;
+
+            Canvas.SetLeft(slot.RotateBtn, slot.Left + 3);
+            Canvas.SetTop(slot.RotateBtn,  slot.Top  + 3);
 
             Canvas.SetLeft(slot.DeleteBtn, slot.Left + slot.Width - 24);
             Canvas.SetTop(slot.DeleteBtn,  slot.Top  + 3);
@@ -289,6 +376,15 @@ namespace Photobooth.Views
             Canvas.SetTop(slot.Handles[3],  slot.Top  + slot.Height - hs);
         }
 
+        // --- Rotation ------------------------------------------------------------
+
+        private void RotateSlot(SlotControl slot)
+        {
+            slot.Rotation = (slot.Rotation + 90) % 360;
+            ((RotateTransform)slot.Body.RenderTransform).Angle = slot.Rotation;
+            Log.Debug("Slot {Index} rotated to {Deg}°", slot.Index, slot.Rotation);
+        }
+
         // --- Drag ----------------------------------------------------------------
 
         private void SlotBody_Down(SlotControl slot, MouseButtonEventArgs e)
@@ -302,9 +398,19 @@ namespace Photobooth.Views
         private void SlotBody_Move(SlotControl slot, MouseEventArgs e)
         {
             if (_dragging != slot || !slot.Body.IsMouseCaptured) return;
-            var pos  = e.GetPosition(DesignerCanvas);
-            slot.Left = Math.Clamp(pos.X - _dragOffset.X, 0, CanvasW - slot.Width);
-            slot.Top  = Math.Clamp(pos.Y - _dragOffset.Y, 0, CanvasH - slot.Height);
+            var pos = e.GetPosition(DesignerCanvas);
+
+            double rawX = Math.Clamp(pos.X - _dragOffset.X, 0, CanvasW - slot.Width);
+            double rawY = Math.Clamp(pos.Y - _dragOffset.Y, 0, CanvasH - slot.Height);
+
+            if (_guidelinesVisible)
+            {
+                rawX = Math.Clamp(Math.Round(rawX / GuideStep) * GuideStep, 0, CanvasW - slot.Width);
+                rawY = Math.Clamp(Math.Round(rawY / GuideStep) * GuideStep, 0, CanvasH - slot.Height);
+            }
+
+            slot.Left = rawX;
+            slot.Top  = rawY;
             LayoutSlot(slot);
         }
 
@@ -342,6 +448,33 @@ namespace Photobooth.Views
                 case 1: ri = Math.Max(r.Right  + dx, r.Left   + MinSlotSize); t  = Math.Min(r.Top    + dy, r.Bottom - MinSlotSize); break;
                 case 2: l  = Math.Min(r.Left   + dx, r.Right  - MinSlotSize); b  = Math.Max(r.Bottom + dy, r.Top    + MinSlotSize); break;
                 case 3: ri = Math.Max(r.Right  + dx, r.Left   + MinSlotSize); b  = Math.Max(r.Bottom + dy, r.Top    + MinSlotSize); break;
+            }
+
+            // Snap the moving edge to nearest guide when guidelines are on
+            if (_guidelinesVisible)
+            {
+                switch (_resizeHandle)
+                {
+                    case 0:
+                        l = Math.Round(l  / GuideStep) * GuideStep;
+                        t = Math.Round(t  / GuideStep) * GuideStep;
+                        break;
+                    case 1:
+                        ri = Math.Round(ri / GuideStep) * GuideStep;
+                        t  = Math.Round(t  / GuideStep) * GuideStep;
+                        break;
+                    case 2:
+                        l = Math.Round(l  / GuideStep) * GuideStep;
+                        b = Math.Round(b  / GuideStep) * GuideStep;
+                        break;
+                    case 3:
+                        ri = Math.Round(ri / GuideStep) * GuideStep;
+                        b  = Math.Round(b  / GuideStep) * GuideStep;
+                        break;
+                }
+                // Re-enforce minimum size after snap
+                if (ri - l < MinSlotSize) { if (_resizeHandle is 0 or 2) l = ri - MinSlotSize; else ri = l + MinSlotSize; }
+                if (b  - t < MinSlotSize) { if (_resizeHandle is 0 or 1) t = b  - MinSlotSize; else b  = t + MinSlotSize; }
             }
 
             slot.Left   = Math.Max(0, l);
@@ -388,11 +521,48 @@ namespace Photobooth.Views
             ZoomLabel.Text = $"{_zoom:P0}";
         }
 
+        // --- Canvas scroll / pan -------------------------------------------------
+
+        private void CanvasScroller_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            CanvasContainer.MinWidth  = CanvasScroller.ViewportWidth;
+            CanvasContainer.MinHeight = CanvasScroller.ViewportHeight;
+        }
+
+        private void CanvasScroller_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Middle) return;
+            _panning  = true;
+            _panStart = e.GetPosition(CanvasScroller);
+            _panHOrig = CanvasScroller.HorizontalOffset;
+            _panVOrig = CanvasScroller.VerticalOffset;
+            CanvasScroller.CaptureMouse();
+            CanvasScroller.Cursor = Cursors.Hand;
+            e.Handled = true;
+        }
+
+        private void CanvasScroller_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_panning || !CanvasScroller.IsMouseCaptured) return;
+            var pos = e.GetPosition(CanvasScroller);
+            CanvasScroller.ScrollToHorizontalOffset(_panHOrig - (pos.X - _panStart.X));
+            CanvasScroller.ScrollToVerticalOffset  (_panVOrig - (pos.Y - _panStart.Y));
+        }
+
+        private void CanvasScroller_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Middle || !_panning) return;
+            _panning = false;
+            CanvasScroller.ReleaseMouseCapture();
+            CanvasScroller.Cursor = null;
+        }
+
         // --- Helpers -------------------------------------------------------------
 
         private void RemoveSlot(SlotControl slot)
         {
             DesignerCanvas.Children.Remove(slot.Body);
+            DesignerCanvas.Children.Remove(slot.RotateBtn);
             DesignerCanvas.Children.Remove(slot.DeleteBtn);
             foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             _slots.Remove(slot);
@@ -417,6 +587,7 @@ namespace Photobooth.Views
             foreach (var slot in _slots.ToList())
             {
                 DesignerCanvas.Children.Remove(slot.Body);
+                DesignerCanvas.Children.Remove(slot.RotateBtn);
                 DesignerCanvas.Children.Remove(slot.DeleteBtn);
                 foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             }
@@ -452,7 +623,7 @@ namespace Photobooth.Views
             }
             StatusText.Text = _slots.Count < MaxSlots
                 ? $"{_slots.Count} of {MaxSlots} slots placed — add more or Save."
-                : "All 3 slots placed. Drag to reposition, corners to resize, × to remove.";
+                : "All 3 slots placed. ↻ to rotate. Drag to reposition, corners to resize.";
         }
 
         private string JsonPath() => Path.Combine(_templateDir!, "template.json");
@@ -472,11 +643,13 @@ namespace Photobooth.Views
     {
         public int         Index     { get; set; }
         public Border      Body      { get; set; } = null!;
+        public Button      RotateBtn { get; set; } = null!;
         public Button      DeleteBtn { get; set; } = null!;
         public Rectangle[] Handles   { get; set; } = Array.Empty<Rectangle>();
         public double      Left      { get; set; }
         public double      Top       { get; set; }
         public double      Width     { get; set; }
         public double      Height    { get; set; }
+        public int         Rotation  { get; set; }
     }
 }

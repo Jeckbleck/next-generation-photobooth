@@ -581,11 +581,8 @@
                                     </Grid>
                                 </StackPanel>
 
-                                <!-- STRIP CUSTOMIZATION -->
-                                <StackPanel x:Name="PanelStrip" Visibility="Collapsed">
-                                    <TextBlock Text="Strip Designer" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
-                                    <local:StripDesignerControl x:Name="StripDesigner"/>
-                                </StackPanel>
+                                <!-- STRIP CUSTOMIZATION — canvas lives in StripDesignerPanel (full-width overlay) -->
+                                <StackPanel x:Name="PanelStrip" Visibility="Collapsed"/>
 
                                 <!-- PRINTER -->
                                 <StackPanel x:Name="PanelPrinter" Visibility="Collapsed">
@@ -963,6 +960,25 @@
                             </StackPanel>
                         </Grid>
                     </Border>
+
+                    <!-- Full-panel strip designer (col 1+2, shown only on Strip tab) -->
+                    <Grid x:Name="StripDesignerPanel"
+                          Grid.Column="1" Grid.ColumnSpan="2"
+                          Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <local:StripDesignerControl x:Name="StripDesigner"
+                                                    Grid.Row="0"
+                                                    Margin="28,28,28,0"/>
+                        <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="28,14,28,22">
+                            <Button Content="Close"
+                                    Style="{StaticResource KioskButton}"
+                                    Padding="24,10" FontSize="15"
+                                    Click="CloseSettingsContent_Click"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

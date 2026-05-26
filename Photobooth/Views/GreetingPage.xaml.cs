@@ -603,7 +603,17 @@ namespace Photobooth.Views
                 InlinePreviewStatusText.Visibility = Visibility.Visible;
                 StartInlinePreview();
             }
-            if (index == 2) LoadStripDesigner();
+
+            if (index == 2)
+            {
+                StripDesignerPanel.Visibility = Visibility.Visible;
+                LoadStripDesigner();
+            }
+            else
+            {
+                StripDesignerPanel.Visibility = Visibility.Collapsed;
+            }
+
             if (index == 5) _ = TestAIConnectionAsync();
             if (index == 7) PopulateAboutTab();
         }
