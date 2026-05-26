@@ -6,7 +6,7 @@
     Runs dotnet publish (win-x86, self-contained) then bundles the output plus
     install.ps1 into a single ZIP file under releases\.
 
-    The ZIP contains everything the target machine needs — no .NET runtime,
+    The ZIP contains everything the target machine needs - no .NET runtime,
     no Visual Studio, no dev tools.
 
 .PARAMETER Version
@@ -52,5 +52,5 @@ Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -Force
 Remove-Item -Recurse -Force $publishDir
 
 $size = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
-Write-Host "Done — photobooth-$Version.zip ($size MB)" -ForegroundColor Green
+Write-Host "Done - photobooth-$Version.zip ($size MB)" -ForegroundColor Green
 Write-Host "Distribute this file to each kiosk and run: powershell -ExecutionPolicy Bypass .\install.ps1"
