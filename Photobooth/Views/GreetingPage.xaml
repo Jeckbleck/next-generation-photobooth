@@ -96,9 +96,17 @@
                        HorizontalAlignment="Center"
                        Margin="0,0,0,24"/>
 
-            <TextBlock Text="Tap the button below to start your session"
+            <TextBlock x:Name="SubtitleText"
+                       Text="Tap the button below to start your session"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="18" TextAlignment="Center"
+                       Margin="0,0,0,40"/>
+
+            <TextBlock x:Name="PaywallText"
+                       Text="Insert payment to begin your session"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="18" TextAlignment="Center"
+                       Visibility="Collapsed"
                        Margin="0,0,0,40"/>
 
             <Button x:Name="StartButton"

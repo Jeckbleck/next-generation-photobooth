@@ -45,6 +45,8 @@ namespace Photobooth.Views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             App.Camera.CameraDisconnected += OnCameraDisconnected;
+            if (Window.GetWindow(this) is Window w)
+                w.PreviewKeyDown += OnWindowKeyDown;
             UpdateCameraStatus();
             ApplyActiveEventAppearance();
             UpdateAIEnhancementButton();
@@ -81,14 +83,37 @@ namespace Photobooth.Views
         {
             App.Camera.CameraDisconnected    -= OnCameraDisconnected;
             App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            if (Window.GetWindow(this) is Window w)
+                w.PreviewKeyDown -= OnWindowKeyDown;
             StopInlinePreview();
         }
 
         private void UpdateCameraStatus()
         {
-            bool connected  = App.Camera.IsConnected;
-            bool hasEvent   = App.Settings.ActiveEventId.HasValue;
-            StartButton.IsEnabled       = connected && hasEvent;
+            bool connected = App.Camera.IsConnected;
+            bool hasEvent  = App.Settings.ActiveEventId.HasValue;
+
+            bool paywallActive = false;
+            if (hasEvent)
+            {
+                var ev = App.Events.GetById(App.Settings.ActiveEventId!.Value);
+                paywallActive = ev?.PaywallEnabled == true;
+            }
+
+            if (paywallActive)
+            {
+                StartButton.Visibility  = Visibility.Collapsed;
+                SubtitleText.Visibility = Visibility.Collapsed;
+                PaywallText.Visibility  = Visibility.Visible;
+            }
+            else
+            {
+                StartButton.Visibility  = Visibility.Visible;
+                SubtitleText.Visibility = Visibility.Visible;
+                PaywallText.Visibility  = Visibility.Collapsed;
+                StartButton.IsEnabled   = connected && hasEvent;
+            }
+
             CameraStatusText.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
             RetryButton.Visibility      = connected ? Visibility.Collapsed : Visibility.Visible;
             NoEventText.Visibility      = hasEvent  ? Visibility.Collapsed : Visibility.Visible;
@@ -104,6 +129,27 @@ namespace Photobooth.Views
         private void OnCameraDisconnected(object? sender, System.EventArgs e)
         {
             Dispatcher.Invoke(UpdateCameraStatus);
+        }
+
+        private void OnWindowKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.F13) return;
+            if (SettingsOverlay.Visibility      == Visibility.Visible ||
+                SettingsContentPanel.Visibility == Visibility.Visible) return;
+            if (!App.Settings.ActiveEventId.HasValue) return;
+
+            var ev = App.Events.GetById(App.Settings.ActiveEventId.Value);
+            if (ev?.PaywallEnabled != true) return;
+
+            if (!App.Camera.IsConnected)
+            {
+                Log.Warning("Payment signal (F13) received but camera not connected — session blocked");
+                return;
+            }
+
+            Log.Information("Payment signal (F13) received — starting session");
+            var window = Window.GetWindow(this) as MainWindow;
+            window?.NavigateTo(new ShootPage());
         }
 
         // --- Greeting actions ----------------------------------------------------
