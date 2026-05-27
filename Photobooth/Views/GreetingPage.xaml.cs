@@ -340,15 +340,19 @@ namespace Photobooth.Views
             PrintLimitBox.Text              = string.Empty;
             SessionCountText.Text           = "—";
             PhotoCountText.Text             = "—";
+            PrintCountText.Text             = "—";
+            AICountText.Text                = "—";
             SessionPreviewList.ItemsSource  = null;
             ArchiveEventButton.IsEnabled    = false;
         }
 
         private void RefreshSessionStats(int eventId)
         {
-            var (sessions, photos) = App.Events.GetStats(eventId);
-            SessionCountText.Text = sessions.ToString();
-            PhotoCountText.Text   = photos.ToString();
+            var (sessions, photos, prints, ai) = App.Events.GetStats(eventId);
+            SessionCountText.Text   = sessions.ToString();
+            PhotoCountText.Text     = photos.ToString();
+            PrintCountText.Text     = prints.ToString();
+            AICountText.Text        = ai.ToString();
             RefreshSessionPreview(eventId);
         }
 

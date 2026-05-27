@@ -27,8 +27,9 @@ namespace Photobooth.Services
 
         public Event? GetById(int id) => _repo.FindById(id);
 
-        public (int Sessions, int Photos) GetStats(int eventId) =>
-            (_repo.CountSessions(eventId), _repo.CountPhotos(eventId));
+        public (int Sessions, int Photos, int Prints, int AIGenerations) GetStats(int eventId) =>
+            (_repo.CountSessions(eventId), _repo.CountPhotos(eventId),
+             _repo.CountPrints(eventId),   _repo.CountAIGenerations(eventId));
 
         // --- Mutations -----------------------------------------------------------
 

@@ -17,8 +17,8 @@ namespace Photobooth.Services
         /// <summary>Returns the event with the given id, or null if not found.</summary>
         Event? GetById(int id);
 
-        /// <summary>Returns session and photo counts for the given event.</summary>
-        (int Sessions, int Photos) GetStats(int eventId);
+        /// <summary>Returns session, photo, print and AI-generation counts for the given event.</summary>
+        (int Sessions, int Photos, int Prints, int AIGenerations) GetStats(int eventId);
 
         // --- Mutations -----------------------------------------------------------
 

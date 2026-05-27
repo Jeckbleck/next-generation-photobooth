@@ -28,6 +28,12 @@ namespace Photobooth.Data.Repositories
         public int CountPhotos(int eventId) =>
             _db.Photos.Count(p => p.Session.EventId == eventId);
 
+        public int CountPrints(int eventId) =>
+            _db.Sessions.Where(s => s.EventId == eventId).Sum(s => (int?)s.PrintCount) ?? 0;
+
+        public int CountAIGenerations(int eventId) =>
+            _db.EnhancedVariants.Count(v => v.Photo.Session.EventId == eventId);
+
         // --- Mutations -----------------------------------------------------------
 
         public void Add(Event ev) => _db.Events.Add(ev);

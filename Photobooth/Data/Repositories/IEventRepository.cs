@@ -25,6 +25,12 @@ namespace Photobooth.Data.Repositories
         /// <summary>Returns the total number of photos across all sessions of the event.</summary>
         int CountPhotos(int eventId);
 
+        /// <summary>Returns the total number of prints across all sessions of the event.</summary>
+        int CountPrints(int eventId);
+
+        /// <summary>Returns the total number of AI-enhanced variants across all sessions of the event.</summary>
+        int CountAIGenerations(int eventId);
+
         // --- Mutations -----------------------------------------------------------
 
         /// <summary>Adds a new event to the tracking context (call SaveChanges to persist).</summary>
