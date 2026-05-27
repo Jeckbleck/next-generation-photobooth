@@ -868,16 +868,36 @@ namespace Photobooth.Views
 
         private void PopulateAboutTab()
         {
-            AboutCameraStatus.Text = App.Camera.IsConnected ? "Connected" : "Not connected";
-            AboutPrinterStatus.Text = "—";
+            if (App.Camera.IsConnected)
+            {
+                AboutCameraModel.Text  = App.Camera.ModelName ?? "Canon camera";
+                AboutCameraStatus.Text = "Connected";
+            }
+            else
+            {
+                AboutCameraModel.Text  = "Not connected";
+                AboutCameraStatus.Text = "Supports Canon EOS cameras via EDSDK";
+            }
+
+            var printerName = App.Settings.PrinterName;
+            if (!string.IsNullOrEmpty(printerName))
+            {
+                AboutPrinterModel.Text  = printerName;
+                AboutPrinterStatus.Text = "Selected";
+            }
+            else
+            {
+                AboutPrinterModel.Text  = "Not selected";
+                AboutPrinterStatus.Text = "Supports DNP DS620A · any Windows printer";
+            }
 
             AboutLogPath.Text = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Photobooth", "logs");
+                "Photobooth", "Logs");
 
-            AboutSessionsPath.Text = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                "Photobooth");
+            AboutSessionsPath.Text = string.IsNullOrWhiteSpace(App.Settings.StorageRoot)
+                ? "(not configured)"
+                : App.Settings.StorageRoot;
         }
 
         // --- Printer tab ---------------------------------------------------------
