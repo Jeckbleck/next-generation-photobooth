@@ -719,7 +719,7 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Countdown" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <Slider x:Name="CountdownSlider" Grid.Column="1" Minimum="3" Maximum="10" Value="3"/>
+                                        <Slider x:Name="CountdownSlider" Grid.Column="1" Minimum="3" Maximum="10" Value="3" ValueChanged="CountdownSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding Value, ElementName=CountdownSlider, StringFormat='{}{0:0} s'}"
                                                    Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
@@ -731,7 +731,7 @@
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Preview hold" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <Slider x:Name="PreviewHoldSlider" Grid.Column="1" Minimum="1" Maximum="10" Value="5"/>
+                                        <Slider x:Name="PreviewHoldSlider" Grid.Column="1" Minimum="1" Maximum="10" Value="5" ValueChanged="PreviewHoldSlider_ValueChanged"/>
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding Value, ElementName=PreviewHoldSlider, StringFormat='{}{0:0} s'}"
                                                    Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>

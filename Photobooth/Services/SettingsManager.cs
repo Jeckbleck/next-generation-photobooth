@@ -69,6 +69,21 @@ namespace Photobooth.Services
             Save();
         }
 
+        public int CountdownSeconds    => _settings.CountdownSeconds;
+        public int PreviewHoldSeconds  => _settings.PreviewHoldSeconds;
+
+        public void SetCountdownSeconds(int value)
+        {
+            _settings.CountdownSeconds = Math.Clamp(value, 3, 10);
+            Save();
+        }
+
+        public void SetPreviewHoldSeconds(int value)
+        {
+            _settings.PreviewHoldSeconds = Math.Clamp(value, 1, 10);
+            Save();
+        }
+
         public bool   AIEnhancementEnabled => _settings.AIEnhancementEnabled;
         public string AIServerUrl          => _settings.AIServerUrl;
         public string AIApiKey             => _settings.AIApiKey;
@@ -160,6 +175,8 @@ namespace Photobooth.Services
         public string? PrinterName           { get; set; }
         public bool    AutoPrint             { get; set; } = true;
         public string  BrandingText          { get; set; } = "THE NEXT GENERATION PHOTOBOOTH";
+        public int     CountdownSeconds       { get; set; } = 3;
+        public int     PreviewHoldSeconds    { get; set; } = 5;
         public bool    AIEnhancementEnabled  { get; set; } = false;
         public string  AIServerUrl           { get; set; } = "http://localhost:8000";
         public string  AIApiKey              { get; set; } = "";

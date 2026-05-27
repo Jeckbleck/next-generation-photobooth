@@ -197,7 +197,7 @@ namespace Photobooth.Views
                 if (ct.IsCancellationRequested) return;
 
                 StatusText.Text = $"Photo {i} of 3 — get ready!";
-                await RunCountdown(3, ct);
+                await RunCountdown(App.Settings.CountdownSeconds, ct);
 
                 if (ct.IsCancellationRequested) return;
 

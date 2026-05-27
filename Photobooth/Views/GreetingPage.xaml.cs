@@ -614,6 +614,7 @@ namespace Photobooth.Views
                 StripDesignerPanel.Visibility = Visibility.Collapsed;
             }
 
+            if (index == 4) LoadDisplaySliders();
             if (index == 5) _ = TestAIConnectionAsync();
             if (index == 7) PopulateAboutTab();
         }
@@ -992,6 +993,24 @@ namespace Photobooth.Views
                 PrinterStatusText.Text = $"Active: {name}";
                 Log.Information("Printer selected: {Name}", name);
             }
+        }
+
+        // --- Display tab: sliders ------------------------------------------------
+
+        private void LoadDisplaySliders()
+        {
+            CountdownSlider.Value    = App.Settings.CountdownSeconds;
+            PreviewHoldSlider.Value  = App.Settings.PreviewHoldSeconds;
+        }
+
+        private void CountdownSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            App.Settings.SetCountdownSeconds((int)CountdownSlider.Value);
+        }
+
+        private void PreviewHoldSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            App.Settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
         }
 
         // --- Display tab: background image ---------------------------------------

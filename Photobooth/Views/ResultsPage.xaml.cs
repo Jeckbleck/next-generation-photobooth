@@ -19,7 +19,7 @@ namespace Photobooth.Views
         private readonly string?      _aiStyleId;
         private readonly string?      _aiStyleName;
         private Timer?  _timer;
-        private int     _secondsLeft = 5;
+        private int     _secondsLeft = App.Settings.PreviewHoldSeconds;
         private Bitmap? _strip;
 
         public ResultsPage(List<string> photoPaths, int sessionId)
