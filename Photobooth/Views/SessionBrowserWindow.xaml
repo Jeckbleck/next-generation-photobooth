@@ -284,11 +284,10 @@
                         </StackPanel>
                         <Button x:Name="ShowOriginalsButton"
                                 Content="← Originals"
+                                Style="{StaticResource GhostButton}"
                                 HorizontalAlignment="Right"
-                                Background="Transparent" BorderThickness="0"
-                                Foreground="{StaticResource TextSecondaryBrush}"
-                                FontSize="11" Cursor="Hand"
-                                Padding="0" Visibility="Collapsed"
+                                FontSize="11" Padding="8,4"
+                                Visibility="Collapsed"
                                 Click="ShowOriginalsButton_Click"/>
                     </Grid>
 

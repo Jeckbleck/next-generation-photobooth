@@ -38,23 +38,9 @@
                            FontSize="12"
                            VerticalAlignment="Center"/>
                 <Button Grid.Column="1" Content="Close"
+                        Style="{StaticResource GhostButton}"
                         Padding="18,7" FontSize="13"
-                        Background="#334155" Foreground="White"
-                        BorderThickness="0" Cursor="Hand"
-                        Click="Close_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#475569"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
+                        Click="Close_Click"/>
             </Grid>
         </Border>
     </Grid>

@@ -288,7 +288,6 @@
                                                 Style="{StaticResource GhostButton}"
                                                 HorizontalAlignment="Left"
                                                 Padding="18,7" FontSize="13"
-                                                Foreground="#FF6B6B" BorderBrush="#FF6B6B"
                                                 IsEnabled="False"
                                                 Click="ArchiveEvent_Click"/>
                                         <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -479,8 +478,6 @@
                                     <Button Content="Clear session data"
                                             Style="{StaticResource GhostButton}"
                                             HorizontalAlignment="Left" Padding="18,7" FontSize="13"
-                                            Foreground="{DynamicResource AccentBrush}"
-                                            BorderBrush="{DynamicResource AccentBrush}"
                                             Margin="0,4,0,14"
                                             Click="ClearSessionData_Click"/>
 
