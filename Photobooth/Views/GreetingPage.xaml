@@ -719,8 +719,10 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Countdown" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <Slider Grid.Column="1" Minimum="3" Maximum="10" Value="3" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="3 s" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                        <Slider x:Name="CountdownSlider" Grid.Column="1" Minimum="3" Maximum="10" Value="3"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Value, ElementName=CountdownSlider, StringFormat='{}{0:0} s'}"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                     </Grid>
 
                                     <TextBlock Text="SESSION" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -729,8 +731,10 @@
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Preview hold" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <Slider Grid.Column="1" Minimum="1" Maximum="10" Value="5" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="5 s" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                        <Slider x:Name="PreviewHoldSlider" Grid.Column="1" Minimum="1" Maximum="10" Value="5"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Value, ElementName=PreviewHoldSlider, StringFormat='{}{0:0} s'}"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                     </Grid>
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -745,7 +749,16 @@
 
                                     <TextBlock Text="FEATURES" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-                                    <CheckBox Content="Show attract screen when idle" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Show attract screen when idle"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="13" VerticalAlignment="Center"/>
+                                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                                    </Grid>
                                 </StackPanel>
 
                                 <!-- AI ENHANCEMENT -->
@@ -803,7 +816,16 @@
                                     <TextBlock Text="SCHEDULE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
-                                    <CheckBox Content="Enable automatic sync" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" Margin="0,0,0,10"/>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Enable automatic sync"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="13" VerticalAlignment="Center"/>
+                                        <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                                    </Grid>
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Sync when" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
