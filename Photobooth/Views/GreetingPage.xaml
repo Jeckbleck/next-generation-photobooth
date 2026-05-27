@@ -272,7 +272,7 @@
 
                                     <TextBlock Text="Select event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
                                     <ComboBox x:Name="EventsComboBox"
-                                              Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6" Margin="0,0,0,10"
+                                              Padding="8,6" Margin="0,0,0,10"
                                               SelectionChanged="EventsComboBox_SelectionChanged"/>
 
                                     <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
@@ -524,32 +524,20 @@
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="ISO" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="IsoComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                        <ComboBox x:Name="IsoComboBox" Grid.Column="1" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
                                     </Grid>
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Shutter speed" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="TvComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                        <ComboBox x:Name="TvComboBox" Grid.Column="1" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
                                     </Grid>
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Aperture" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="AvComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                        <ComboBox x:Name="AvComboBox" Grid.Column="1" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
                                     </Grid>
 
                                     <TextBlock Text="COLOR" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -558,12 +546,8 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="White balance" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="WhiteBalanceComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                        <ComboBox x:Name="WhiteBalanceComboBox" Grid.Column="1" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
                                     </Grid>
 
                                     <TextBlock Text="FILE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -572,12 +556,8 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Image quality" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="ImageQualityComboBox" Grid.Column="1" BorderBrush="#334" FontSize="13" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged">
-                                            <ComboBox.ItemContainerStyle>
-                                                <Style TargetType="ComboBoxItem"><Setter Property="Foreground" Value="Black"/></Style>
-                                            </ComboBox.ItemContainerStyle>
-                                        </ComboBox>
+                                        <ComboBox x:Name="ImageQualityComboBox" Grid.Column="1" Padding="8,6"
+                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
                                     </Grid>
                                 </StackPanel>
 
@@ -594,15 +574,8 @@
                                     <TextBlock x:Name="PrinterStatusText" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                     <ComboBox x:Name="PrinterDropdown"
                                               Width="320" HorizontalAlignment="Left"
-                                              Background="#0D1B2A" Foreground="White" BorderBrush="#334"
-                                              Padding="10,7" FontSize="13" Margin="0,0,0,4"
-                                              SelectionChanged="PrinterDropdown_SelectionChanged">
-                                        <ComboBox.ItemContainerStyle>
-                                            <Style TargetType="ComboBoxItem">
-                                                <Setter Property="Foreground" Value="Black"/>
-                                            </Style>
-                                        </ComboBox.ItemContainerStyle>
-                                    </ComboBox>
+                                              Margin="0,0,0,4"
+                                              SelectionChanged="PrinterDropdown_SelectionChanged"/>
                                     <TextBlock Text="Select the printer to use for photo strips." Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,20"/>
 
                                     <TextBlock Text="PAPER" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -616,8 +589,9 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Copies" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6" Width="70" HorizontalAlignment="Left">
-                                            <ComboBoxItem Content="1" IsSelected="True"/><ComboBoxItem Content="2"/>
+                                        <ComboBox Grid.Column="1" Padding="8,6" Width="70" HorizontalAlignment="Left">
+                                            <ComboBoxItem Content="1" IsSelected="True"/>
+                                            <ComboBoxItem Content="2"/>
                                         </ComboBox>
                                     </Grid>
 
@@ -764,8 +738,11 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Idle return" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="15 seconds"/><ComboBoxItem Content="30 seconds" IsSelected="True"/><ComboBoxItem Content="60 seconds"/><ComboBoxItem Content="Never"/>
+                                        <ComboBox Grid.Column="1" Padding="8,6">
+                                            <ComboBoxItem Content="15 seconds"/>
+                                            <ComboBoxItem Content="30 seconds" IsSelected="True"/>
+                                            <ComboBoxItem Content="60 seconds"/>
+                                            <ComboBoxItem Content="Never"/>
                                         </ComboBox>
                                     </Grid>
 
@@ -833,8 +810,11 @@
                                     <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Sync when" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox Grid.Column="1" Foreground="Black" BorderBrush="#334" FontSize="13" Padding="8,6">
-                                            <ComboBoxItem Content="After each session" IsSelected="True"/><ComboBoxItem Content="Every hour"/><ComboBoxItem Content="End of event"/><ComboBoxItem Content="Manually"/>
+                                        <ComboBox Grid.Column="1" Padding="8,6">
+                                            <ComboBoxItem Content="After each session" IsSelected="True"/>
+                                            <ComboBoxItem Content="Every hour"/>
+                                            <ComboBoxItem Content="End of event"/>
+                                            <ComboBoxItem Content="Manually"/>
                                         </ComboBox>
                                     </Grid>
 
