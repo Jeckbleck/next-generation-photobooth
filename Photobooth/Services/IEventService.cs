@@ -20,6 +20,9 @@ namespace Photobooth.Services
         /// <summary>Returns session, photo, print and AI-generation counts for the given event.</summary>
         (int Sessions, int Photos, int Prints, int AIGenerations) GetStats(int eventId);
 
+        /// <summary>Returns the total print count across all sessions for the event, always reading from the database.</summary>
+        int GetEventPrintCount(int eventId);
+
         // --- Mutations -----------------------------------------------------------
 
         /// <summary>
@@ -59,8 +62,8 @@ namespace Photobooth.Services
 
         /// <summary>
         /// Records that <paramref name="copies"/> prints were produced for a session.
-        /// Throws <see cref="InvalidOperationException"/> if the session's event has a
-        /// print limit and this call would exceed it.
+        /// Throws <see cref="InvalidOperationException"/> if the event has a
+        /// print limit and the total event print count would exceed it.
         /// </summary>
         void RecordPrint(int sessionId, int copies = 1);
 

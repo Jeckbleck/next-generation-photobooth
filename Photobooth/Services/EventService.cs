@@ -31,6 +31,8 @@ namespace Photobooth.Services
             (_repo.CountSessions(eventId), _repo.CountPhotos(eventId),
              _repo.CountPrints(eventId),   _repo.CountAIGenerations(eventId));
 
+        public int GetEventPrintCount(int eventId) => _repo.CountPrints(eventId);
+
         // --- Mutations -----------------------------------------------------------
 
         public Event Create(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
@@ -156,17 +158,19 @@ namespace Photobooth.Services
                 ?? throw new InvalidOperationException($"Session {sessionId} not found.");
 
             var ev = Require(session.EventId);
-            if (ev.PrintLimitPerSession.HasValue &&
-                session.PrintCount + copies > ev.PrintLimitPerSession.Value)
+            if (ev.PrintLimitPerSession.HasValue)
             {
-                throw new InvalidOperationException(
-                    $"Print limit of {ev.PrintLimitPerSession.Value} reached for this session.");
+                // CountPrints is an aggregate projection — always hits the DB, bypasses the
+                // identity map, so the total is always the true database value.
+                var currentTotal = _repo.CountPrints(session.EventId);
+                if (currentTotal + copies > ev.PrintLimitPerSession.Value)
+                    throw new InvalidOperationException(
+                        $"Print limit of {ev.PrintLimitPerSession.Value} reached for this event.");
             }
 
+            // AddPrints uses ExecuteUpdate (atomic SQL increment), no SaveChanges needed.
             _repo.AddPrints(sessionId, copies);
-            _repo.SaveChanges();
-            Log.Information("Session {SessionId} printed {Copies} cop(ies) — total: {Total}",
-                sessionId, copies, session.PrintCount + copies);
+            Log.Information("Session {SessionId} printed {Copies} cop(ies)", sessionId, copies);
         }
 
         // --- Session / photo lifecycle -------------------------------------------

@@ -31,6 +31,10 @@ namespace Photobooth.Data.Repositories
         public int CountPrints(int eventId) =>
             _db.Sessions.Where(s => s.EventId == eventId).Sum(s => (int?)s.PrintCount) ?? 0;
 
+        // Projection query — always hits the DB, bypasses the change-tracker cache.
+        public int GetPrintCount(int sessionId) =>
+            _db.Sessions.Where(s => s.Id == sessionId).Select(s => s.PrintCount).FirstOrDefault();
+
         public int CountAIGenerations(int eventId) =>
             _db.EnhancedVariants.Count(v => v.Photo.Session.EventId == eventId);
 
@@ -87,8 +91,11 @@ namespace Photobooth.Data.Repositories
 
         public void AddPrints(int sessionId, int copies)
         {
-            var session = _db.Sessions.Find(sessionId);
-            if (session is not null) session.PrintCount += copies;
+            // ExecuteUpdate issues "UPDATE … SET PrintCount = PrintCount + @copies" directly —
+            // atomic, bypasses the change-tracker, so stale cached values can never corrupt the count.
+            _db.Sessions
+               .Where(s => s.Id == sessionId)
+               .ExecuteUpdate(s => s.SetProperty(p => p.PrintCount, p => p.PrintCount + copies));
         }
 
         // --- Session / photo lifecycle -------------------------------------------

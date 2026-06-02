@@ -28,6 +28,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Returns the total number of prints across all sessions of the event.</summary>
         int CountPrints(int eventId);
 
+        /// <summary>Returns the current print count for a single session, always reading from the database.</summary>
+        int GetPrintCount(int sessionId);
+
         /// <summary>Returns the total number of AI-enhanced variants across all sessions of the event.</summary>
         int CountAIGenerations(int eventId);
 
