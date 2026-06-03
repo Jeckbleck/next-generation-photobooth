@@ -42,6 +42,9 @@ namespace Photobooth.Helpers
             var thumbPath = ThumbPathFor(sourcePath);
             try
             {
+                // Create the Thumbs folder on demand — handles events created before this
+                // feature existed where CreateEventFolders didn't make the subfolder yet.
+                Directory.CreateDirectory(Path.GetDirectoryName(thumbPath)!);
                 // Read bytes first so the file handle is released immediately.
                 // Image.FromFile holds a GDI+ lock for its lifetime, which blocks
                 // ShowCapturedPreview and PhotostripComposer from reading the same file.
@@ -72,10 +75,12 @@ namespace Photobooth.Helpers
             }
         }
 
-        // Derives the sidecar path from the original: photo.jpg → photo_thumb.jpg
+        // Derives the sidecar path: Photos/img.jpg → Photos/Thumbs/img.jpg
+        // The subfolder name makes the _thumb suffix redundant.
         private static string ThumbPathFor(string sourcePath) =>
             Path.Combine(
                 Path.GetDirectoryName(sourcePath)!,
-                Path.GetFileNameWithoutExtension(sourcePath) + "_thumb" + Path.GetExtension(sourcePath));
+                "Thumbs",
+                Path.GetFileName(sourcePath));
     }
 }

@@ -23,6 +23,9 @@ namespace Photobooth.Services
         /// <summary>Returns the Photos directory for the given event slug.</summary>
         string GetPhotosPath(string slug);
 
+        /// <summary>Returns the Photos/Thumbs directory for the given event slug.</summary>
+        string GetThumbsPath(string slug);
+
         /// <summary>Returns the Animated directory for the given event slug.</summary>
         string GetAnimatedPath(string slug);
 
