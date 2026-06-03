@@ -71,7 +71,7 @@ namespace Photobooth.Views
 
                     var thumbs = paths.Select(path =>
                     {
-                        try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150); }
+                        try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(path, fallbackDecodeWidth: 150); }
                         catch { return null; }
                     })
                     .Where(b => b != null)
@@ -96,7 +96,7 @@ namespace Photobooth.Views
 
                         var variantThumbs = variantPaths.Select(path =>
                         {
-                            try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150); }
+                            try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(path, fallbackDecodeWidth: 150); }
                             catch { return null; }
                         })
                         .Where(b => b != null)
@@ -345,7 +345,7 @@ namespace Photobooth.Views
 
                 var thumbs = enhancedPaths.Select(path =>
                 {
-                    try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150); }
+                    try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(path, fallbackDecodeWidth: 150); }
                     catch { return null; }
                 })
                 .Where(b => b != null)

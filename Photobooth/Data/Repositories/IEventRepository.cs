@@ -19,20 +19,16 @@ namespace Photobooth.Data.Repositories
         /// <summary>Returns the session with the given id, or null if not found.</summary>
         Session? FindSessionById(int id);
 
-        /// <summary>Returns the number of sessions belonging to the event.</summary>
-        int CountSessions(int eventId);
-
-        /// <summary>Returns the total number of photos across all sessions of the event.</summary>
-        int CountPhotos(int eventId);
+        /// <summary>
+        /// Returns session, photo, print, and AI-generation counts for the event in a single query.
+        /// </summary>
+        (int Sessions, int Photos, int Prints, int AIGenerations) GetStats(int eventId);
 
         /// <summary>Returns the total number of prints across all sessions of the event.</summary>
         int CountPrints(int eventId);
 
         /// <summary>Returns the current print count for a single session, always reading from the database.</summary>
         int GetPrintCount(int sessionId);
-
-        /// <summary>Returns the total number of AI-enhanced variants across all sessions of the event.</summary>
-        int CountAIGenerations(int eventId);
 
         // --- Mutations -----------------------------------------------------------
 

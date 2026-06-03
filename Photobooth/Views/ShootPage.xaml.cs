@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Photobooth.Helpers;
 using Serilog;
 
 namespace Photobooth.Views
@@ -217,6 +218,9 @@ namespace Photobooth.Views
                     var dest    = Path.Combine(_sessionDir, $"{stem}_{date}_s{sid}_p{i}{ext}");
                     File.Move(rawPath, dest, overwrite: true);
                     path = dest;
+
+                    // Thumbnail generated in background — gallery views use it on next open.
+                    _ = Task.Run(() => BitmapHelper.GenerateThumbnail(dest));
 
                     _capturedPaths.Add(path);
 

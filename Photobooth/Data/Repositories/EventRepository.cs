@@ -22,11 +22,28 @@ namespace Photobooth.Data.Repositories
         public Event?   FindById(int id)        => _db.Events.Find(id);
         public Session? FindSessionById(int id) => _db.Sessions.Find(id);
 
-        public int CountSessions(int eventId) =>
-            _db.Sessions.Count(s => s.EventId == eventId);
+        public (int Sessions, int Photos, int Prints, int AIGenerations) GetStats(int eventId)
+        {
+            // Single round-trip: fetch per-session aggregates as a flat projection,
+            // then sum client-side. EF Core translates Photos.Count() and
+            // Photos.SelectMany(EnhancedVariants).Count() as correlated subqueries.
+            var rows = _db.Sessions
+                .Where(s => s.EventId == eventId)
+                .Select(s => new
+                {
+                    s.PrintCount,
+                    Photos        = s.Photos.Count(),
+                    AIGenerations = s.Photos.SelectMany(p => p.EnhancedVariants).Count()
+                })
+                .ToList();
 
-        public int CountPhotos(int eventId) =>
-            _db.Photos.Count(p => p.Session.EventId == eventId);
+            return (
+                rows.Count,
+                rows.Sum(r => r.Photos),
+                rows.Sum(r => r.PrintCount),
+                rows.Sum(r => r.AIGenerations)
+            );
+        }
 
         public int CountPrints(int eventId) =>
             _db.Sessions.Where(s => s.EventId == eventId).Sum(s => (int?)s.PrintCount) ?? 0;
@@ -34,9 +51,6 @@ namespace Photobooth.Data.Repositories
         // Projection query — always hits the DB, bypasses the change-tracker cache.
         public int GetPrintCount(int sessionId) =>
             _db.Sessions.Where(s => s.Id == sessionId).Select(s => s.PrintCount).FirstOrDefault();
-
-        public int CountAIGenerations(int eventId) =>
-            _db.EnhancedVariants.Count(v => v.Photo.Session.EventId == eventId);
 
         // --- Mutations -----------------------------------------------------------
 

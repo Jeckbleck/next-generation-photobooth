@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -127,20 +126,28 @@ namespace Photobooth.Views
             }
         }
 
-        private static BitmapImage BitmapToSource(Bitmap bitmap)
+        private static System.Windows.Media.Imaging.BitmapSource BitmapToSource(Bitmap bitmap)
         {
-            using var stream = new MemoryStream();
-            bitmap.Save(stream, ImageFormat.Png);
-            stream.Position = 0;
-
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.StreamSource = stream;
-            image.CacheOption  = BitmapCacheOption.OnLoad;
-            image.EndInit();
-            image.Freeze();
-            return image;
+            // Direct GDI→WPF conversion via HBitmap handle — no PNG encode/decode roundtrip.
+            var hBitmap = bitmap.GetHbitmap();
+            try
+            {
+                var source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                    hBitmap,
+                    IntPtr.Zero,
+                    System.Windows.Int32Rect.Empty,
+                    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                source.Freeze();
+                return source;
+            }
+            finally
+            {
+                DeleteObject(hBitmap);
+            }
         }
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        private static extern bool DeleteObject(IntPtr hObject);
 
         // --- Printing ------------------------------------------------------------
 

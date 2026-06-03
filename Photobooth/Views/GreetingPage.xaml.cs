@@ -25,6 +25,7 @@ namespace Photobooth.Views
 
         private int?  _selectedEventId;
         private bool  _loadingEvents;
+        private int   _previewVersion;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -353,7 +354,7 @@ namespace Photobooth.Views
             PhotoCountText.Text     = photos.ToString();
             PrintCountText.Text     = prints.ToString();
             AICountText.Text        = ai.ToString();
-            RefreshSessionPreview(eventId);
+            _ = RefreshSessionPreviewAsync(eventId);
         }
 
         private sealed class SessionPreviewItem
@@ -363,34 +364,48 @@ namespace Photobooth.Views
             public List<System.Windows.Media.ImageSource> Thumbnails { get; init; } = new();
         }
 
-        private void RefreshSessionPreview(int eventId)
+        private async Task RefreshSessionPreviewAsync(int eventId)
         {
-            var sessions = App.Events.GetSessionsWithPhotos(eventId);
+            // Stamp this load; any older in-flight load will see a mismatched version and discard its result.
+            var version = ++_previewVersion;
 
-            var items = sessions.Select(s =>
+            // Clear immediately so the previous event's photos don't linger while the query runs.
+            SessionPreviewList.ItemsSource = null;
+
+            // DB query + thumbnail decoding on a background thread.
+            // BitmapHelper.LoadThumbnail freezes each BitmapImage, safe to cross thread boundary.
+            var items = await Task.Run(() =>
             {
-                var thumbs = s.Photos
-                    .Where(p => p.FilePath != null && File.Exists(p.FilePath))
-                    .OrderBy(p => p.Sequence)
-                    .Select(p =>
-                    {
-                        try
-                        {
-                            return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(p.FilePath!, decodeWidth: 80);
-                        }
-                        catch { return null; }
-                    })
-                    .Where(b => b != null)
-                    .Cast<System.Windows.Media.ImageSource>()
-                    .ToList();
+                var sessions = App.Events.GetSessionsWithPhotos(eventId);
 
-                return new SessionPreviewItem
+                return sessions.Select(s =>
                 {
-                    SessionId  = s.Id,
-                    Date       = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
-                    Thumbnails = thumbs,
-                };
-            }).ToList();
+                    var thumbs = s.Photos
+                        .Where(p => p.FilePath != null && File.Exists(p.FilePath))
+                        .OrderBy(p => p.Sequence)
+                        .Select(p =>
+                        {
+                            try
+                            {
+                                return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(p.FilePath!, fallbackDecodeWidth: 80);
+                            }
+                            catch { return null; }
+                        })
+                        .Where(b => b != null)
+                        .Cast<System.Windows.Media.ImageSource>()
+                        .ToList();
+
+                    return new SessionPreviewItem
+                    {
+                        SessionId  = s.Id,
+                        Date       = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
+                        Thumbnails = thumbs,
+                    };
+                }).ToList();
+            });
+
+            // Discard if a newer event was selected while this load was running.
+            if (_previewVersion != version) return;
 
             SessionPreviewList.ItemsSource = items;
         }
@@ -909,26 +924,39 @@ namespace Photobooth.Views
 
         private void PopulatePrinterDropdown()
         {
+            PrinterDropdown.IsEnabled        = false;
+            PrinterStatusText.Text           = "Loading printers…";
             PrinterDropdown.SelectionChanged -= PrinterDropdown_SelectionChanged;
             PrinterDropdown.Items.Clear();
             PrinterDropdown.Items.Add("(none)");
 
             string? saved = App.Settings.PrinterName;
-            int selectIndex = 0;
 
-            foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+            _ = Task.Run(() =>
             {
-                PrinterDropdown.Items.Add(name);
-                if (name == saved)
-                    selectIndex = PrinterDropdown.Items.Count - 1;
-            }
+                // InstalledPrinters calls into the Windows print spooler — can block for seconds.
+                var printers = new List<string>();
+                foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+                    printers.Add(name);
+                return printers;
+            }).ContinueWith(t =>
+            {
+                int selectIndex = 0;
+                foreach (var name in t.Result)
+                {
+                    PrinterDropdown.Items.Add(name);
+                    if (name == saved)
+                        selectIndex = PrinterDropdown.Items.Count - 1;
+                }
 
-            PrinterDropdown.SelectedIndex = selectIndex;
-            PrinterStatusText.Text = selectIndex == 0
-                ? "No printer selected."
-                : $"Active: {PrinterDropdown.SelectedItem}";
+                PrinterDropdown.SelectedIndex = selectIndex;
+                PrinterStatusText.Text = selectIndex == 0
+                    ? "No printer selected."
+                    : $"Active: {PrinterDropdown.SelectedItem}";
 
-            PrinterDropdown.SelectionChanged += PrinterDropdown_SelectionChanged;
+                PrinterDropdown.IsEnabled = true;
+                PrinterDropdown.SelectionChanged += PrinterDropdown_SelectionChanged;
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
