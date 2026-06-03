@@ -46,62 +46,30 @@ namespace Photobooth.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            LoadSessions();
-
-            if (_openSessionId.HasValue &&
-                SessionCardsControl.ItemsSource is IEnumerable<SessionCardItem> cards)
-            {
-                var target = cards.FirstOrDefault(c => c.SessionId == _openSessionId.Value);
-                if (target != null) OpenDetail(target);
-            }
+            _ = LoadSessionsAsync();
         }
 
-        private void LoadSessions()
+        private async Task LoadSessionsAsync()
         {
-            var sessions = App.Events.GetSessionsWithPhotos(_eventId);
-
-            if (sessions.Count == 0)
+            // DB query + all thumbnail decoding on a background thread.
+            // BitmapHelper.LoadFromFile freezes each BitmapImage before returning,
+            // so the frozen sources cross the thread boundary safely.
+            List<SessionCardItem>? items = await Task.Run(() =>
             {
-                EmptyText.Visibility = Visibility.Visible;
-                return;
-            }
+                var sessions = App.Events.GetSessionsWithPhotos(_eventId);
+                if (sessions.Count == 0) return null;
 
-            int total = sessions.Count;
-            var items = sessions.Select((s, idx) =>
-            {
-                var ordered = s.Photos.OrderBy(p => p.Sequence).ToList();
-
-                var paths = ordered
-                    .Where(p => p.FilePath != null && File.Exists(p.FilePath))
-                    .Select(p => p.FilePath!)
-                    .ToList();
-
-                var thumbs = paths.Select(path =>
+                int total = sessions.Count;
+                return sessions.Select((s, idx) =>
                 {
-                    try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150); }
-                    catch { return null; }
-                })
-                .Where(b => b != null)
-                .Cast<System.Windows.Media.ImageSource>()
-                .ToList();
+                    var ordered = s.Photos.OrderBy(p => p.Sequence).ToList();
 
-                // Collect distinct styles across all photos, ordered by first appearance
-                var styleIds = ordered
-                    .SelectMany(p => p.EnhancedVariants)
-                    .GroupBy(v => v.StyleId)
-                    .Select(g => (g.Key, g.First().StyleName))
-                    .ToList();
-
-                var variantRows = styleIds.Select(style =>
-                {
-                    var variantPaths = ordered
-                        .Select(p => p.EnhancedVariants
-                            .FirstOrDefault(v => v.StyleId == style.Key)?.FilePath)
-                        .Where(f => f != null && File.Exists(f))
-                        .Select(f => f!)
+                    var paths = ordered
+                        .Where(p => p.FilePath != null && File.Exists(p.FilePath))
+                        .Select(p => p.FilePath!)
                         .ToList();
 
-                    var variantThumbs = variantPaths.Select(path =>
+                    var thumbs = paths.Select(path =>
                     {
                         try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150); }
                         catch { return null; }
@@ -110,29 +78,68 @@ namespace Photobooth.Views
                     .Cast<System.Windows.Media.ImageSource>()
                     .ToList();
 
-                    return new VariantRowItem
+                    // Collect distinct styles across all photos, ordered by first appearance
+                    var styleIds = ordered
+                        .SelectMany(p => p.EnhancedVariants)
+                        .GroupBy(v => v.StyleId)
+                        .Select(g => (g.Key, g.First().StyleName))
+                        .ToList();
+
+                    var variantRows = styleIds.Select(style =>
                     {
-                        StyleId   = style.Key,
-                        StyleName = style.StyleName,
-                        Thumbs    = variantThumbs,
-                        Paths     = variantPaths,
+                        var variantPaths = ordered
+                            .Select(p => p.EnhancedVariants
+                                .FirstOrDefault(v => v.StyleId == style.Key)?.FilePath)
+                            .Where(f => f != null && File.Exists(f))
+                            .Select(f => f!)
+                            .ToList();
+
+                        var variantThumbs = variantPaths.Select(path =>
+                        {
+                            try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadFromFile(path, decodeWidth: 150); }
+                            catch { return null; }
+                        })
+                        .Where(b => b != null)
+                        .Cast<System.Windows.Media.ImageSource>()
+                        .ToList();
+
+                        return new VariantRowItem
+                        {
+                            StyleId   = style.Key,
+                            StyleName = style.StyleName,
+                            Thumbs    = variantThumbs,
+                            Paths     = variantPaths,
+                        };
+                    }).ToList();
+
+                    int n = s.Photos.Count;
+                    return new SessionCardItem
+                    {
+                        SessionId   = s.Id,
+                        Label       = $"Session {total - idx}",
+                        Date        = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
+                        PhotoLabel  = $"{n} photo{(n == 1 ? "" : "s")}",
+                        Thumbnails  = thumbs,
+                        PhotoPaths  = paths,
+                        VariantRows = variantRows,
                     };
                 }).ToList();
+            });
 
-                int n = s.Photos.Count;
-                return new SessionCardItem
-                {
-                    SessionId   = s.Id,
-                    Label       = $"Session {total - idx}",
-                    Date        = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
-                    PhotoLabel  = $"{n} photo{(n == 1 ? "" : "s")}",
-                    Thumbnails  = thumbs,
-                    PhotoPaths  = paths,
-                    VariantRows = variantRows,
-                };
-            }).ToList();
+            if (items is null)
+            {
+                EmptyText.Visibility = Visibility.Visible;
+                return;
+            }
 
             SessionCardsControl.ItemsSource = items;
+
+            // Auto-open a specific session if the caller requested it
+            if (_openSessionId.HasValue)
+            {
+                var target = items.FirstOrDefault(c => c.SessionId == _openSessionId.Value);
+                if (target != null) OpenDetail(target);
+            }
         }
 
         private void SessionCard_Click(object sender, RoutedEventArgs e)
@@ -163,9 +170,7 @@ namespace Photobooth.Views
                 PrintStatusText.Text  = string.Empty;
             }
 
-            LoadDetailPhoto(DetailPhoto1, _selectedPhotoPaths, 0);
-            LoadDetailPhoto(DetailPhoto2, _selectedPhotoPaths, 1);
-            LoadDetailPhoto(DetailPhoto3, _selectedPhotoPaths, 2);
+            LoadDetailPhotos(_selectedPhotoPaths);
 
             LoadEnhancedTray(item.VariantRows);
 
@@ -203,9 +208,7 @@ namespace Photobooth.Views
             VariantsList.SelectedItem      = null;
             VariantsList.SelectionChanged += VariantsList_SelectionChanged;
 
-            LoadDetailPhoto(DetailPhoto1, _selectedPhotoPaths, 0);
-            LoadDetailPhoto(DetailPhoto2, _selectedPhotoPaths, 1);
-            LoadDetailPhoto(DetailPhoto3, _selectedPhotoPaths, 2);
+            LoadDetailPhotos(_selectedPhotoPaths);
 
             ShowOriginalsButton.Visibility = Visibility.Collapsed;
             EnhancedTray.BorderBrush       = new System.Windows.Media.SolidColorBrush(
@@ -216,15 +219,21 @@ namespace Photobooth.Views
         {
             _showingEnhanced = true;
 
-            LoadDetailPhoto(DetailPhoto1, paths, 0);
-            LoadDetailPhoto(DetailPhoto2, paths, 1);
-            LoadDetailPhoto(DetailPhoto3, paths, 2);
+            LoadDetailPhotos(paths);
 
             ShowOriginalsButton.Visibility = Visibility.Visible;
             EnhancedTray.BorderBrush       = (System.Windows.Media.Brush)FindResource("AccentBrush");
         }
 
-        private void LoadDetailPhoto(Image target, List<string> paths, int index)
+        private void LoadDetailPhotos(List<string> paths)
+        {
+            _ = Task.WhenAll(
+                LoadDetailPhotoAsync(DetailPhoto1, paths, 0),
+                LoadDetailPhotoAsync(DetailPhoto2, paths, 1),
+                LoadDetailPhotoAsync(DetailPhoto3, paths, 2));
+        }
+
+        private async Task LoadDetailPhotoAsync(Image target, List<string> paths, int index)
         {
             if (index >= paths.Count)
             {
@@ -233,7 +242,8 @@ namespace Photobooth.Views
             }
             try
             {
-                target.Source = BitmapHelper.LoadFromFile(paths[index]);
+                var source = await Task.Run(() => BitmapHelper.LoadFromFile(paths[index], decodeWidth: 800));
+                target.Source = source;
             }
             catch (Exception ex)
             {
