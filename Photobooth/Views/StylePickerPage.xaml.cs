@@ -50,15 +50,13 @@ namespace Photobooth.Views
             App.AISelectedStyleName = style.Name;
 
             Log.Information("AI style selected: {StyleId} ({StyleName})", style.Id, style.Name);
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new ShootPage());
+            App.Flow.Trigger(FlowTrigger.StyleChosen);
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
             App.AIFlowActive = false;
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new GreetingPage());
+            App.Flow.Trigger(FlowTrigger.StyleCancelled);
         }
     }
 }

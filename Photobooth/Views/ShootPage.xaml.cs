@@ -275,10 +275,8 @@ namespace Photobooth.Views
             await FadeOutFlash();
 
             Dispatcher.Invoke(() =>
-            {
-                var window = Window.GetWindow(this) as MainWindow;
-                window?.NavigateTo(new ResultsPage(_capturedPaths, _sessionId ?? 0));
-            });
+                App.Flow.Trigger(FlowTrigger.ShotsDone,
+                    new FlowContext { PhotoPaths = _capturedPaths, SessionId = _sessionId ?? 0 }));
         }
 
         // --- Countdown -----------------------------------------------------------
@@ -407,8 +405,7 @@ namespace Photobooth.Views
                 catch (Exception ex) { Log.Error(ex, "Failed to abandon session on back"); }
             }
 
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new GreetingPage());
+            App.Flow.Trigger(FlowTrigger.SessionAborted);
         }
     }
 }

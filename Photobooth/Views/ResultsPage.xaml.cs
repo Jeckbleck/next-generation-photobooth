@@ -193,8 +193,7 @@ namespace Photobooth.Views
         private void ReturnToGreeting()
         {
             Log.Information("Returning to GreetingPage");
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new GreetingPage());
+            App.Flow.Trigger(FlowTrigger.PreviewDone);
         }
 
         // --- Button handlers -----------------------------------------------------

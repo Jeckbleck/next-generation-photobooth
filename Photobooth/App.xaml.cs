@@ -18,6 +18,7 @@ namespace Photobooth
 
         // --- Public API — one entry point per layer boundary --------------------
 
+        public static FlowController        Flow        { get; } = new FlowController();
         public static CameraService         Camera      { get; } = new CameraService();
         public static SettingsManager       Settings    { get; } = new SettingsManager();
         public static IFileStorageService   FileStorage { get; } = new FileStorageService(Settings);

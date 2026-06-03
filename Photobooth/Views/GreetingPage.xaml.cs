@@ -149,8 +149,7 @@ namespace Photobooth.Views
             }
 
             Log.Information("Payment signal (F13) received — starting session");
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new ShootPage());
+            App.Flow.Trigger(FlowTrigger.StartNormal);
         }
 
         // --- Greeting actions ----------------------------------------------------
@@ -186,8 +185,7 @@ namespace Photobooth.Views
             }
 
             Log.Information("Session started by user");
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new ShootPage());
+            App.Flow.Trigger(FlowTrigger.StartNormal);
         }
 
         private void AIEnhancement_Click(object sender, RoutedEventArgs e)
@@ -205,8 +203,7 @@ namespace Photobooth.Views
             }
 
             Log.Information("AI Enhancement flow started by user");
-            var window = Window.GetWindow(this) as MainWindow;
-            window?.NavigateTo(new StylePickerPage());
+            App.Flow.Trigger(FlowTrigger.StartAI);
         }
 
         // --- Settings overlay (PIN gate) -----------------------------------------
