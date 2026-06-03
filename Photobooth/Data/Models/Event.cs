@@ -17,6 +17,7 @@ namespace Photobooth.Data.Models
 
         public bool     PaywallEnabled          { get; set; } = false;
         public bool     SaveImagesEnabled       { get; set; } = true;
+        public int?     PrintLimitPerEvent      { get; set; }
         public int?     PrintLimitPerSession    { get; set; }
 
         [MaxLength(20)]

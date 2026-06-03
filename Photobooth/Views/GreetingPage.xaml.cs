@@ -302,7 +302,7 @@ namespace Photobooth.Views
                 var ev = App.Events.GetById(id);
                 if (ev is not null)
                 {
-                    PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerSession);
+                    PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
                     RefreshSessionStats(id);
                     LoadEventAppearance(ev);
                 }
@@ -324,12 +324,13 @@ namespace Photobooth.Views
             App.Settings.SetActiveEventId(id);
         }
 
-        private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
+        private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession)
         {
             EventNameBox.Text              = name;
             PaywallToggle.IsChecked        = paywallEnabled;
             SaveImagesToggle.IsChecked     = saveImagesEnabled;
-            PrintLimitBox.Text             = printLimit?.ToString() ?? string.Empty;
+            PrintLimitBox.Text             = printLimitPerEvent?.ToString()   ?? string.Empty;
+            SessionLimitBox.Text           = printLimitPerSession?.ToString() ?? string.Empty;
             ArchiveEventButton.IsEnabled   = true;
         }
 
@@ -339,6 +340,7 @@ namespace Photobooth.Views
             PaywallToggle.IsChecked         = false;
             SaveImagesToggle.IsChecked      = true;
             PrintLimitBox.Text              = string.Empty;
+            SessionLimitBox.Text            = string.Empty;
             SessionCountText.Text           = "—";
             PhotoCountText.Text             = "—";
             PrintCountText.Text             = "—";
@@ -438,7 +440,8 @@ namespace Photobooth.Views
             var name = EventNameBox.Text.Trim();
             if (string.IsNullOrEmpty(name)) return;
 
-            int? printLimit = int.TryParse(PrintLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
+            int? printLimitPerEvent   = int.TryParse(PrintLimitBox.Text.Trim(),   out int pe) && pe > 0 ? pe : null;
+            int? printLimitPerSession = int.TryParse(SessionLimitBox.Text.Trim(), out int ps) && ps > 0 ? ps : null;
 
             int savedId;
             if (_selectedEventId.HasValue)
@@ -446,7 +449,8 @@ namespace Photobooth.Views
                 App.Events.UpdateDetails(_selectedEventId.Value, name,
                     PaywallToggle.IsChecked == true,
                     SaveImagesToggle.IsChecked == true,
-                    printLimit);
+                    printLimitPerEvent,
+                    printLimitPerSession);
                 savedId = _selectedEventId.Value;
             }
             else
@@ -465,7 +469,8 @@ namespace Photobooth.Views
                 var ev = App.Events.Create(name,
                     PaywallToggle.IsChecked == true,
                     SaveImagesToggle.IsChecked == true,
-                    printLimit);
+                    printLimitPerEvent,
+                    printLimitPerSession);
                 savedId = ev.Id;
             }
 
@@ -528,10 +533,22 @@ namespace Photobooth.Views
         private void PrintLimitBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (!_selectedEventId.HasValue) return;
-
             int? limit = int.TryParse(PrintLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
-            App.Events.SetPrintLimit(_selectedEventId.Value, limit);
+            App.Events.SetEventPrintLimit(_selectedEventId.Value, limit);
             PrintLimitBox.Text = limit?.ToString() ?? string.Empty;
+        }
+
+        private void SessionLimitBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !e.Text.All(char.IsDigit);
+        }
+
+        private void SessionLimitBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedEventId.HasValue) return;
+            int? limit = int.TryParse(SessionLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
+            App.Events.SetSessionPrintLimit(_selectedEventId.Value, limit);
+            SessionLimitBox.Text = limit?.ToString() ?? string.Empty;
         }
 
         private void SelectEventById(int id)
@@ -557,7 +574,7 @@ namespace Photobooth.Views
             }
 
             SetSelectedEvent(id);
-            PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerSession);
+            PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
             RefreshSessionStats(id);
             LoadEventAppearance(ev);
         }

@@ -32,9 +32,11 @@ namespace Photobooth.Services
 
         public int GetEventPrintCount(int eventId) => _repo.CountPrints(eventId);
 
+        public int GetSessionPrintCount(int sessionId) => _repo.GetPrintCount(sessionId);
+
         // --- Mutations -----------------------------------------------------------
 
-        public Event Create(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
+        public Event Create(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Event name cannot be empty.", nameof(name));
@@ -48,7 +50,8 @@ namespace Photobooth.Services
                 Slug                 = GenerateSlug(name),
                 PaywallEnabled       = paywallEnabled,
                 SaveImagesEnabled    = saveImagesEnabled,
-                PrintLimitPerSession = printLimit,
+                PrintLimitPerEvent   = printLimitPerEvent,
+                PrintLimitPerSession = printLimitPerSession,
             };
 
             _repo.Add(ev);
@@ -58,7 +61,7 @@ namespace Photobooth.Services
             return ev;
         }
 
-        public void UpdateDetails(int id, string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimit)
+        public void UpdateDetails(int id, string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Event name cannot be empty.", nameof(name));
@@ -67,7 +70,8 @@ namespace Photobooth.Services
             ev.Name                 = name.Trim();
             ev.PaywallEnabled       = paywallEnabled;
             ev.SaveImagesEnabled    = saveImagesEnabled;
-            ev.PrintLimitPerSession = printLimit;
+            ev.PrintLimitPerEvent   = printLimitPerEvent;
+            ev.PrintLimitPerSession = printLimitPerSession;
 
             _repo.SaveChanges();
             Log.Information("Updated event '{Name}'", ev.Name);
@@ -87,11 +91,18 @@ namespace Photobooth.Services
             Log.Debug("Event {Id} save images → {Value}", id, enabled);
         }
 
-        public void SetPrintLimit(int id, int? limit)
+        public void SetEventPrintLimit(int id, int? limit)
+        {
+            Require(id).PrintLimitPerEvent = limit;
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} event print limit → {Value}", id, limit?.ToString() ?? "unlimited");
+        }
+
+        public void SetSessionPrintLimit(int id, int? limit)
         {
             Require(id).PrintLimitPerSession = limit;
             _repo.SaveChanges();
-            Log.Debug("Event {Id} print limit → {Value}", id, limit?.ToString() ?? "unlimited");
+            Log.Debug("Event {Id} session print limit → {Value}", id, limit?.ToString() ?? "unlimited");
         }
 
         public void ClearSessions(int id)
@@ -157,14 +168,25 @@ namespace Photobooth.Services
                 ?? throw new InvalidOperationException($"Session {sessionId} not found.");
 
             var ev = Require(session.EventId);
+
+            // Check event-level total print cap (aggregate across all sessions).
+            // CountPrints always hits the DB — bypasses the EF Core identity-map cache.
+            if (ev.PrintLimitPerEvent.HasValue)
+            {
+                var eventTotal = _repo.CountPrints(session.EventId);
+                if (eventTotal + copies > ev.PrintLimitPerEvent.Value)
+                    throw new InvalidOperationException(
+                        $"Event print limit of {ev.PrintLimitPerEvent.Value} reached.");
+            }
+
+            // Check per-session cap — prevents a single group printing excessively.
+            // GetPrintCount is also a projection query, always fresh from the DB.
             if (ev.PrintLimitPerSession.HasValue)
             {
-                // CountPrints is an aggregate projection — always hits the DB, bypasses the
-                // identity map, so the total is always the true database value.
-                var currentTotal = _repo.CountPrints(session.EventId);
-                if (currentTotal + copies > ev.PrintLimitPerSession.Value)
+                var sessionTotal = _repo.GetPrintCount(sessionId);
+                if (sessionTotal + copies > ev.PrintLimitPerSession.Value)
                     throw new InvalidOperationException(
-                        $"Print limit of {ev.PrintLimitPerSession.Value} reached for this event.");
+                        $"Session print limit of {ev.PrintLimitPerSession.Value} reached.");
             }
 
             // AddPrints uses ExecuteUpdate (atomic SQL increment), no SaveChanges needed.

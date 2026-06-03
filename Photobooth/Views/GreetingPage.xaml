@@ -330,8 +330,8 @@
                                         <ToggleButton x:Name="SaveImagesToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center" Click="Toggle_Click"/>
                                     </Grid>
 
-                                    <TextBlock Text="Print limit per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,4"/>
-                                    <Grid Margin="0,0,0,20">
+                                    <TextBlock Text="Print limit per event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,4"/>
+                                    <Grid Margin="0,0,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="80"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -341,7 +341,21 @@
                                                  Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
                                                  PreviewTextInput="PrintLimitBox_PreviewTextInput"
                                                  LostFocus="PrintLimitBox_LostFocus"/>
-                                        <TextBlock Grid.Column="1" Text="prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                        <TextBlock Grid.Column="1" Text="total prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    </Grid>
+
+                                    <TextBlock Text="Print limit per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="SessionLimitBox"
+                                                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                                                 Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
+                                                 PreviewTextInput="SessionLimitBox_PreviewTextInput"
+                                                 LostFocus="SessionLimitBox_LostFocus"/>
+                                        <TextBlock Grid.Column="1" Text="prints per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                     </Grid>
 
                                     <TextBlock Text="STORAGE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>

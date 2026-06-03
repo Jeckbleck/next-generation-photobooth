@@ -157,18 +157,25 @@ namespace Photobooth.Views
             DetailLabel.Text = item.Label;
             DetailDate.Text  = item.Date;
 
-            var ev    = App.Events.GetById(_eventId);
-            var limit = ev?.PrintLimitPerSession;
-            if (limit.HasValue && App.Events.GetEventPrintCount(_eventId) >= limit.Value)
+            var ev           = App.Events.GetById(_eventId);
+            bool blocked     = false;
+            string blockMsg  = string.Empty;
+
+            if (ev?.PrintLimitPerEvent.HasValue == true &&
+                App.Events.GetEventPrintCount(_eventId) >= ev.PrintLimitPerEvent.Value)
             {
-                PrintButton.IsEnabled = false;
-                PrintStatusText.Text  = $"Print limit of {limit.Value} reached for this event.";
+                blocked  = true;
+                blockMsg = $"Event print limit of {ev.PrintLimitPerEvent.Value} reached.";
             }
-            else
+            else if (ev?.PrintLimitPerSession.HasValue == true &&
+                     App.Events.GetSessionPrintCount(item.SessionId) >= ev.PrintLimitPerSession.Value)
             {
-                PrintButton.IsEnabled = true;
-                PrintStatusText.Text  = string.Empty;
+                blocked  = true;
+                blockMsg = $"Session print limit of {ev.PrintLimitPerSession.Value} reached.";
             }
+
+            PrintButton.IsEnabled = !blocked;
+            PrintStatusText.Text  = blockMsg;
 
             LoadDetailPhotos(_selectedPhotoPaths);
 

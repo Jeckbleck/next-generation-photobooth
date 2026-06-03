@@ -9,13 +9,21 @@ namespace Photobooth.Data
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Photobooth", "photobooth.db");
 
+        public PhotoboothDbContext() { }
+
+        public PhotoboothDbContext(DbContextOptions<PhotoboothDbContext> options) : base(options) { }
+
         public DbSet<Event>           Events           { get; set; }
         public DbSet<Session>         Sessions         { get; set; }
         public DbSet<Photo>           Photos           { get; set; }
         public DbSet<EnhancedVariant> EnhancedVariants { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite($"Data Source={DbPath}");
+        {
+            // Skip if options were already configured by the design-time factory or tests.
+            if (!options.IsConfigured)
+                options.UseSqlite($"Data Source={DbPath}");
+        }
 
         protected override void OnModelCreating(ModelBuilder model)
         {

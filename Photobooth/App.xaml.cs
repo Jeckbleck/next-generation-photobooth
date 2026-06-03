@@ -1,4 +1,5 @@
 using System.Windows;
+using Microsoft.EntityFrameworkCore;
 using Photobooth.Camera;
 using Photobooth.Print;
 using Photobooth.Data;
@@ -35,8 +36,8 @@ namespace Photobooth
             AppLogger.Initialize();
             base.OnStartup(e);
 
-            Log.Information("Initialising database");
-            _db.Database.EnsureCreated();
+            Log.Information("Initialising database — applying migrations");
+            _db.Database.Migrate();
 
             if (Settings.ActiveEventId.HasValue && _eventRepo.FindById(Settings.ActiveEventId.Value) is null)
             {
