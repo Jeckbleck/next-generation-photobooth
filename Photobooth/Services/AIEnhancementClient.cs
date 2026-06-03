@@ -16,12 +16,15 @@ namespace Photobooth.Services
 
     public class AIEnhancementClient
     {
+        private readonly SettingsManager _settings;
         private readonly HttpClient _http = new() { Timeout = TimeSpan.FromMinutes(5) };
 
         private static readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
 
-        private string BaseUrl => App.Settings.AIServerUrl.TrimEnd('/');
-        private string ApiKey  => App.Settings.AIApiKey;
+        public AIEnhancementClient(SettingsManager settings) => _settings = settings;
+
+        private string BaseUrl => _settings.AIServerUrl.TrimEnd('/');
+        private string ApiKey  => _settings.AIApiKey;
 
         private void AddApiKey(HttpRequestMessage req)
         {

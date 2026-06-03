@@ -11,6 +11,10 @@ namespace Photobooth.Views
 {
     public partial class SessionBrowserWindow : Window
     {
+        private readonly IEventService       _events;
+        private readonly AIEnhancementClient _aiClient;
+        private readonly IFileStorageService _fileStorage;
+
         private readonly int  _eventId;
         private readonly int? _openSessionId;
         private int           _selectedSessionId;
@@ -36,11 +40,19 @@ namespace Photobooth.Views
             public List<string>                           Paths  { get; init; } = new();
         }
 
-        public SessionBrowserWindow(int eventId, int? openSessionId = null)
+        public SessionBrowserWindow(
+            int                 eventId,
+            IEventService       events,
+            AIEnhancementClient aiClient,
+            IFileStorageService fileStorage,
+            int?                openSessionId = null)
         {
-            InitializeComponent();
             _eventId       = eventId;
             _openSessionId = openSessionId;
+            _events        = events;
+            _aiClient      = aiClient;
+            _fileStorage   = fileStorage;
+            InitializeComponent();
             Loaded        += OnLoaded;
         }
 
@@ -51,12 +63,9 @@ namespace Photobooth.Views
 
         private async Task LoadSessionsAsync()
         {
-            // DB query + all thumbnail decoding on a background thread.
-            // BitmapHelper.LoadFromFile freezes each BitmapImage before returning,
-            // so the frozen sources cross the thread boundary safely.
             List<SessionCardItem>? items = await Task.Run(() =>
             {
-                var sessions = App.Events.GetSessionsWithPhotos(_eventId);
+                var sessions = _events.GetSessionsWithPhotos(_eventId);
                 if (sessions.Count == 0) return null;
 
                 int total = sessions.Count;
@@ -78,7 +87,6 @@ namespace Photobooth.Views
                     .Cast<System.Windows.Media.ImageSource>()
                     .ToList();
 
-                    // Collect distinct styles across all photos, ordered by first appearance
                     var styleIds = ordered
                         .SelectMany(p => p.EnhancedVariants)
                         .GroupBy(v => v.StyleId)
@@ -134,7 +142,6 @@ namespace Photobooth.Views
 
             SessionCardsControl.ItemsSource = items;
 
-            // Auto-open a specific session if the caller requested it
             if (_openSessionId.HasValue)
             {
                 var target = items.FirstOrDefault(c => c.SessionId == _openSessionId.Value);
@@ -157,18 +164,18 @@ namespace Photobooth.Views
             DetailLabel.Text = item.Label;
             DetailDate.Text  = item.Date;
 
-            var ev           = App.Events.GetById(_eventId);
+            var ev           = _events.GetById(_eventId);
             bool blocked     = false;
             string blockMsg  = string.Empty;
 
             if (ev?.PrintLimitPerEvent.HasValue == true &&
-                App.Events.GetEventPrintCount(_eventId) >= ev.PrintLimitPerEvent.Value)
+                _events.GetEventPrintCount(_eventId) >= ev.PrintLimitPerEvent.Value)
             {
                 blocked  = true;
                 blockMsg = $"Event print limit of {ev.PrintLimitPerEvent.Value} reached.";
             }
             else if (ev?.PrintLimitPerSession.HasValue == true &&
-                     App.Events.GetSessionPrintCount(item.SessionId) >= ev.PrintLimitPerSession.Value)
+                     _events.GetSessionPrintCount(item.SessionId) >= ev.PrintLimitPerSession.Value)
             {
                 blocked  = true;
                 blockMsg = $"Session print limit of {ev.PrintLimitPerSession.Value} reached.";
@@ -178,7 +185,6 @@ namespace Photobooth.Views
             PrintStatusText.Text  = blockMsg;
 
             LoadDetailPhotos(_selectedPhotoPaths);
-
             LoadEnhancedTray(item.VariantRows);
 
             SessionsScrollViewer.Visibility = Visibility.Collapsed;
@@ -225,9 +231,7 @@ namespace Photobooth.Views
         private void SetEnhancedView(List<string> paths)
         {
             _showingEnhanced = true;
-
             LoadDetailPhotos(paths);
-
             ShowOriginalsButton.Visibility = Visibility.Visible;
             EnhancedTray.BorderBrush       = (System.Windows.Media.Brush)FindResource("AccentBrush");
         }
@@ -297,7 +301,6 @@ namespace Photobooth.Views
         {
             if (_selectedPhotoPaths.Count == 0) return;
 
-            // Reset overlay to loading state
             StyleLoadingText.Text              = "Loading styles…";
             StyleLoadingText.Visibility        = Visibility.Visible;
             OverlayStylesScroller.Visibility   = Visibility.Collapsed;
@@ -308,7 +311,7 @@ namespace Photobooth.Views
 
             try
             {
-                var styles = await App.AIClient.GetStylesAsync();
+                var styles = await _aiClient.GetStylesAsync();
                 OverlayStylesList.ItemsSource      = styles;
                 StyleLoadingText.Visibility        = Visibility.Collapsed;
                 OverlayStylesScroller.Visibility   = Visibility.Visible;
@@ -337,15 +340,15 @@ namespace Photobooth.Views
 
             try
             {
-                var ev     = App.Events.GetById(_eventId);
+                var ev     = _events.GetById(_eventId);
                 var outDir = ev is not null
-                    ? App.FileStorage.GetEnhancedPath(ev.Slug)
+                    ? _fileStorage.GetEnhancedPath(ev.Slug)
                     : Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(_selectedPhotoPaths[0])!)!, "Enhanced");
 
-                var enhancedPaths = await App.AIClient.AugmentImagesAsync(_selectedPhotoPaths, style.Id, outDir);
+                var enhancedPaths = await _aiClient.AugmentImagesAsync(_selectedPhotoPaths, style.Id, outDir);
 
                 for (int i = 0; i < enhancedPaths.Count; i++)
-                    App.Events.RecordEnhancedVariant(_selectedSessionId, i + 1, style.Id, style.Name, enhancedPaths[i]);
+                    _events.RecordEnhancedVariant(_selectedSessionId, i + 1, style.Id, style.Name, enhancedPaths[i]);
 
                 Log.Information("Session {Id} enhanced with style {Style} — {Count} image(s)",
                     _selectedSessionId, style.Id, enhancedPaths.Count);

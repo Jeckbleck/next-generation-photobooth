@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using Photobooth.Views;
 using Serilog;
 
@@ -35,9 +36,18 @@ namespace Photobooth
 
     public sealed class FlowController
     {
+        private readonly IServiceProvider _provider;
+
+        public FlowController(IServiceProvider provider) => _provider = provider;
+
         public BoothState   CurrentState  { get; private set; } = BoothState.Idle;
         public List<string> SessionPhotos { get; private set; } = new();
         public int          SessionId     { get; private set; }
+
+        // AI enhancement flow state — set by StylePickerPage before Shooting
+        public bool   AIFlowActive { get; set; }
+        public string AIStyleId    { get; set; } = string.Empty;
+        public string AIStyleName  { get; set; } = string.Empty;
 
         public event EventHandler<BoothState>? StateChanged;
 
@@ -79,10 +89,10 @@ namespace Photobooth
 
             Page page = state switch
             {
-                BoothState.Idle      => new GreetingPage(),
-                BoothState.StylePick => new StylePickerPage(),
-                BoothState.Shooting  => new ShootPage(),
-                BoothState.Preview   => new ResultsPage(SessionPhotos, SessionId),
+                BoothState.Idle      => _provider.GetRequiredService<GreetingPage>(),
+                BoothState.StylePick => _provider.GetRequiredService<StylePickerPage>(),
+                BoothState.Shooting  => _provider.GetRequiredService<ShootPage>(),
+                BoothState.Preview   => _provider.GetRequiredService<ResultsPage>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
             };
 

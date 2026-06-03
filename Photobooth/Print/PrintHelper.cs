@@ -1,7 +1,9 @@
 using System.Drawing;
 using System.IO;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Photobooth.Data.Models;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth.Print
@@ -27,14 +29,16 @@ namespace Photobooth.Print
         /// </summary>
         public static (string? templatePath, List<StripSlotDefinition> slots) LoadTemplateConfig(int eventId)
         {
-            var ev = App.Events.GetById(eventId);
+            var events = App.Services.GetRequiredService<IEventService>();
+            var ev = events.GetById(eventId);
             if (ev is null) return (null, new());
 
             var templatePath = ev.PhotostripTemplatePath;
             if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
                 return (null, new());
 
-            var jsonPath = Path.Combine(App.FileStorage.GetStripTemplatePath(ev.Slug), "template.json");
+            var fileStorage = App.Services.GetRequiredService<IFileStorageService>();
+            var jsonPath = Path.Combine(fileStorage.GetStripTemplatePath(ev.Slug), "template.json");
             if (!File.Exists(jsonPath)) return (null, new());
 
             try
@@ -60,7 +64,7 @@ namespace Photobooth.Print
         public static Task<Bitmap> ComposeStripAsync(int eventId, IReadOnlyList<string> photoPaths)
         {
             (string? templatePath, List<StripSlotDefinition> slots) = LoadTemplateConfig(eventId);
-            var branding = App.Settings.BrandingText;
+            var branding = App.Services.GetRequiredService<SettingsManager>().BrandingText;
 
             return Task.Run(() =>
                 templatePath is not null && slots.Count > 0
@@ -78,7 +82,7 @@ namespace Photobooth.Print
         {
             if (sessionId > 0)
             {
-                try { App.Events.RecordPrint(sessionId); }
+                try { App.Services.GetRequiredService<IEventService>().RecordPrint(sessionId); }
                 catch (InvalidOperationException limitEx)
                 {
                     Log.Warning(limitEx, "Print limit reached for session {Id}", sessionId);
@@ -92,7 +96,7 @@ namespace Photobooth.Print
 
             try
             {
-                await App.Printer.PrintStripAsync(strip);
+                await App.Services.GetRequiredService<PrintService>().PrintStripAsync(strip);
                 Log.Information("Print job submitted for session {Id}", sessionId);
                 return new PrintResult(PrintOutcome.Success, "Your strip is printing!");
             }

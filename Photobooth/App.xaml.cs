@@ -1,60 +1,71 @@
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Photobooth.Camera;
-using Photobooth.Print;
 using Photobooth.Data;
 using Photobooth.Data.Repositories;
+using Photobooth.Print;
 using Photobooth.Services;
+using Photobooth.Views;
 using Serilog;
 
 namespace Photobooth
 {
     public partial class App : Application
     {
-        // --- Internal infrastructure (not exposed to the presentation layer) -----
-
-        private static readonly PhotoboothDbContext _db        = new PhotoboothDbContext();
-        private static readonly IEventRepository    _eventRepo = new EventRepository(_db);
-
-        // --- Public API — one entry point per layer boundary --------------------
-
-        public static FlowController        Flow        { get; } = new FlowController();
-        public static CameraService         Camera      { get; } = new CameraService();
-        public static SettingsManager       Settings    { get; } = new SettingsManager();
-        public static IFileStorageService   FileStorage { get; } = new FileStorageService(Settings);
-        public static IEventService         Events      { get; } = new EventService(_eventRepo, FileStorage);
-        public static PrintService          Printer     { get; } = new PrintService(Settings);
-        public static AIEnhancementClient   AIClient    { get; } = new AIEnhancementClient();
-
-        // --- AI flow state (reset after each session) --------------------------
-
-        public static bool   AIFlowActive        { get; set; } = false;
-        public static string AISelectedStyleId   { get; set; } = "";
-        public static string AISelectedStyleName { get; set; } = "";
+        public static IServiceProvider Services { get; private set; } = null!;
 
         protected override void OnStartup(StartupEventArgs e)
         {
             AppLogger.Initialize();
             base.OnStartup(e);
 
-            Log.Information("Initialising database — applying migrations");
-            _db.Database.Migrate();
+            var sc = new ServiceCollection();
 
-            if (Settings.ActiveEventId.HasValue && _eventRepo.FindById(Settings.ActiveEventId.Value) is null)
+            // Infrastructure
+            sc.AddSingleton<SettingsManager>();
+            sc.AddSingleton<PhotoboothDbContext>();
+            sc.AddSingleton<IEventRepository, EventRepository>();
+
+            // Services
+            sc.AddSingleton<CameraService>();
+            sc.AddSingleton<IFileStorageService, FileStorageService>();
+            sc.AddSingleton<IEventService, EventService>();
+            sc.AddSingleton<PrintService>();
+            sc.AddSingleton<AIEnhancementClient>();
+
+            // Flow
+            sc.AddSingleton<FlowController>();
+
+            // Pages — transient so each navigation gets a fresh instance
+            sc.AddTransient<GreetingPage>();
+            sc.AddTransient<ShootPage>();
+            sc.AddTransient<StylePickerPage>();
+            sc.AddTransient<ResultsPage>();
+
+            Services = sc.BuildServiceProvider();
+
+            Log.Information("Initialising database — applying migrations");
+            Services.GetRequiredService<PhotoboothDbContext>().Database.Migrate();
+
+            var settings    = Services.GetRequiredService<SettingsManager>();
+            var eventRepo   = Services.GetRequiredService<IEventRepository>();
+
+            if (settings.ActiveEventId.HasValue && eventRepo.FindById(settings.ActiveEventId.Value) is null)
             {
-                Log.Warning("ActiveEventId {Id} not found in database — clearing stale reference", Settings.ActiveEventId.Value);
-                Settings.SetActiveEventId(null);
+                Log.Warning("ActiveEventId {Id} not found in database — clearing stale reference", settings.ActiveEventId.Value);
+                settings.SetActiveEventId(null);
             }
 
             Log.Information("App startup — initializing camera");
-            Camera.Initialize();
+            Services.GetRequiredService<CameraService>().Initialize();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             Log.Information("App shutting down");
-            Camera.Dispose();
-            _db.Dispose();
+            Services.GetRequiredService<CameraService>().Dispose();
+            Services.GetRequiredService<PhotoboothDbContext>().Dispose();
             AppLogger.Shutdown();
             base.OnExit(e);
         }

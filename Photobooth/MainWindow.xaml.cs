@@ -1,4 +1,5 @@
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using Photobooth.Views;
 
 namespace Photobooth
@@ -8,7 +9,7 @@ namespace Photobooth
         public MainWindow()
         {
             InitializeComponent();
-            RootFrame.Navigate(new GreetingPage());
+            RootFrame.Navigate(App.Services.GetRequiredService<GreetingPage>());
         }
 
         public void NavigateTo(System.Windows.Controls.Page page)

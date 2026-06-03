@@ -6,34 +6,63 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using Photobooth.Print;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth.Views
 {
     public partial class ResultsPage : Page
     {
+        private readonly IEventService       _events;
+        private readonly SettingsManager     _settings;
+        private readonly IFileStorageService _fileStorage;
+        private readonly AIEnhancementClient _aiClient;
+        private readonly PrintService        _printer;
+        private readonly FlowController      _flow;
+
         private readonly List<string> _paths;
         private readonly int          _sessionId;
         private readonly bool         _aiFlow;
         private readonly string?      _aiStyleId;
         private readonly string?      _aiStyleName;
+
         private Timer?  _timer;
-        private int     _secondsLeft = App.Settings.PreviewHoldSeconds;
+        private int     _secondsLeft;
         private Bitmap? _strip;
 
-        public ResultsPage(List<string> photoPaths, int sessionId)
+        public ResultsPage(
+            IEventService       events,
+            SettingsManager     settings,
+            IFileStorageService fileStorage,
+            AIEnhancementClient aiClient,
+            PrintService        printer,
+            FlowController      flow)
         {
+            _events      = events;
+            _settings    = settings;
+            _fileStorage = fileStorage;
+            _aiClient    = aiClient;
+            _printer     = printer;
+            _flow        = flow;
             InitializeComponent();
-            _paths     = photoPaths;
-            _sessionId = sessionId;
-            _aiFlow      = App.AIFlowActive;
-            _aiStyleId   = App.AISelectedStyleId;
-            _aiStyleName = App.AISelectedStyleName;
-            App.AIFlowActive = false;
+
+            // Snapshot session context from FlowController (set before Navigate was called)
+            _paths       = flow.SessionPhotos;
+            _sessionId   = flow.SessionId;
+            _aiFlow      = flow.AIFlowActive;
+            _aiStyleId   = flow.AIStyleId;
+            _aiStyleName = flow.AIStyleName;
+
+            // Reset AI state so a subsequent non-AI session starts clean
+            _flow.AIFlowActive = false;
+
+            _secondsLeft = _settings.PreviewHoldSeconds;
+
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
+
             Log.Information("Navigated to ResultsPage with {Count} photo(s), session {SessionId}, AI={AI}",
-                photoPaths.Count, sessionId, _aiFlow);
+                _paths.Count, _sessionId, _aiFlow);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -51,7 +80,7 @@ namespace Photobooth.Views
                 StartCountdown();
             }
 
-            if (App.Settings.AutoPrint)
+            if (_settings.AutoPrint)
                 _ = PrintAsync();
             else
             {
@@ -72,20 +101,19 @@ namespace Photobooth.Views
         {
             try
             {
-                var eventId = App.Settings.ActiveEventId ?? 0;
-                var ev      = App.Events.GetById(eventId);
+                var eventId = _settings.ActiveEventId ?? 0;
+                var ev      = _events.GetById(eventId);
                 var outDir  = ev is not null
-                    ? App.FileStorage.GetEnhancedPath(ev.Slug)
+                    ? _fileStorage.GetEnhancedPath(ev.Slug)
                     : Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(_paths[0])!)!, "Enhanced");
 
-                var enhancedPaths = await App.AIClient.AugmentImagesAsync(_paths, _aiStyleId!, outDir);
+                var enhancedPaths = await _aiClient.AugmentImagesAsync(_paths, _aiStyleId!, outDir);
                 Log.Information("AI enhancement complete — {Count} image(s) in {Dir}", enhancedPaths.Count, outDir);
 
-                // Persist enhanced paths to DB (sequence is 1-based, matching ShootPage)
                 if (_sessionId > 0)
                 {
                     for (int i = 0; i < enhancedPaths.Count; i++)
-                        App.Events.RecordEnhancedVariant(_sessionId, i + 1, _aiStyleId!, _aiStyleName ?? _aiStyleId!, enhancedPaths[i]);
+                        _events.RecordEnhancedVariant(_sessionId, i + 1, _aiStyleId!, _aiStyleName ?? _aiStyleId!, enhancedPaths[i]);
                 }
 
                 AIStatusText.Text = "Composing enhanced strip…";
@@ -115,7 +143,7 @@ namespace Photobooth.Views
         {
             try
             {
-                var eventId = App.Settings.ActiveEventId ?? 0;
+                var eventId = _settings.ActiveEventId ?? 0;
                 _strip = await PrintHelper.ComposeStripAsync(eventId, _paths);
                 var source = await Task.Run(() => BitmapToSource(_strip));
                 StripPreview.Source = source;
@@ -128,7 +156,6 @@ namespace Photobooth.Views
 
         private static System.Windows.Media.Imaging.BitmapSource BitmapToSource(Bitmap bitmap)
         {
-            // Direct GDI→WPF conversion via HBitmap handle — no PNG encode/decode roundtrip.
             var hBitmap = bitmap.GetHbitmap();
             try
             {
@@ -155,8 +182,7 @@ namespace Photobooth.Views
         {
             PrintStatusText.Text = "Printing your strip…";
 
-            // Reuse the strip already composed for display if available
-            var eventId = App.Settings.ActiveEventId ?? 0;
+            var eventId = _settings.ActiveEventId ?? 0;
             var strip   = _strip ?? await PrintHelper.ComposeStripAsync(eventId, _paths);
 
             var result = await PrintHelper.PrintSessionAsync(_sessionId, strip);
@@ -193,7 +219,7 @@ namespace Photobooth.Views
         private void ReturnToGreeting()
         {
             Log.Information("Returning to GreetingPage");
-            App.Flow.Trigger(FlowTrigger.PreviewDone);
+            _flow.Trigger(FlowTrigger.PreviewDone);
         }
 
         // --- Button handlers -----------------------------------------------------

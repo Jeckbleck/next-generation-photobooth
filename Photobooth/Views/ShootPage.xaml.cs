@@ -7,14 +7,20 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Photobooth.Camera;
 using Photobooth.Helpers;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth.Views
 {
     public partial class ShootPage : Page
     {
-        private readonly Camera.CameraService _camera = App.Camera;
+        private readonly CameraService       _camera;
+        private readonly IEventService       _events;
+        private readonly SettingsManager     _settings;
+        private readonly IFileStorageService _fileStorage;
+        private readonly FlowController      _flow;
 
         private readonly List<string> _capturedPaths = new();
         private bool _shooting;
@@ -28,9 +34,20 @@ namespace Photobooth.Views
         private int? _sessionId;
         private string _sessionDir = string.Empty;
 
-        public ShootPage()
+        public ShootPage(
+            CameraService       camera,
+            IEventService       events,
+            SettingsManager     settings,
+            IFileStorageService fileStorage,
+            FlowController      flow)
         {
+            _camera      = camera;
+            _events      = events;
+            _settings    = settings;
+            _fileStorage = fileStorage;
+            _flow        = flow;
             InitializeComponent();
+
             InitialiseSession();
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
@@ -38,7 +55,7 @@ namespace Photobooth.Views
 
         private void InitialiseSession()
         {
-            var eventId = App.Settings.ActiveEventId;
+            var eventId = _settings.ActiveEventId;
             if (!eventId.HasValue)
             {
                 Log.Warning("ShootPage opened with no active event — session will not be tracked");
@@ -50,7 +67,7 @@ namespace Photobooth.Views
                 return;
             }
 
-            var ev = App.Events.GetById(eventId.Value);
+            var ev = _events.GetById(eventId.Value);
             if (ev is null)
             {
                 Log.Warning("Active event {Id} not found — session will not be tracked", eventId.Value);
@@ -64,10 +81,10 @@ namespace Photobooth.Views
 
             try
             {
-                var session = App.Events.StartSession(ev.Id);
+                var session = _events.StartSession(ev.Id);
                 _sessionId = session.Id;
 
-                _sessionDir = App.FileStorage.GetPhotosPath(ev.Slug);
+                _sessionDir = _fileStorage.GetPhotosPath(ev.Slug);
                 Directory.CreateDirectory(_sessionDir);
                 _camera.SessionDirectory = _sessionDir;
 
@@ -92,7 +109,6 @@ namespace Photobooth.Views
             _camera.CameraDisconnected += OnCameraDisconnected;
             _camera.Error              += OnCameraError;
 
-            // Camera is initialized at app startup; just check it's still connected
             if (!_camera.IsConnected)
             {
                 Log.Warning("ShootPage loaded but camera not connected");
@@ -121,15 +137,11 @@ namespace Photobooth.Views
 
         private void StartEvf()
         {
-            _lastEvfFrameTime = DateTime.UtcNow; // start the stall clock from now, not epoch
+            _lastEvfFrameTime = DateTime.UtcNow;
             _evfRunning = true;
             _camera.StartLiveView();
             RequestNextEvfFrame();
 
-            // 50 ms safety-net: if a DownloadEvfCommand exhausted all its NOT_READY retries
-            // (rare) and returned without a frame, this ensures the loop restarts quickly
-            // rather than waiting for the 500 ms CommandProcessor retry path.
-            // Also provides the 5-second stall detection.
             _evfWatchdog = new System.Threading.Timer(_ =>
             {
                 if (!_evfRunning || _shooting) return;
@@ -162,8 +174,6 @@ namespace Photobooth.Views
         {
             _evfFramePending = false;
             _lastEvfFrameTime = DateTime.UtcNow;
-            // Render priority keeps EVF ahead of lower-priority UI work (layout, animations)
-            // and prevents decoded frames from queuing up behind other dispatcher callbacks.
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
             {
                 EvfImage.Source = frame;
@@ -177,7 +187,6 @@ namespace Photobooth.Views
 
         private async Task AutoStartAsync()
         {
-            // Brief pause so the EVF feed is visible before the countdown starts
             try { await Task.Delay(1500, _sessionCts.Token); }
             catch (OperationCanceledException) { return; }
             if (!_evfRunning || _shooting) return;
@@ -198,7 +207,7 @@ namespace Photobooth.Views
                 if (ct.IsCancellationRequested) return;
 
                 StatusText.Text = $"Photo {i} of 3 — get ready!";
-                await RunCountdown(App.Settings.CountdownSeconds, ct);
+                await RunCountdown(_settings.CountdownSeconds, ct);
 
                 if (ct.IsCancellationRequested) return;
 
@@ -219,14 +228,13 @@ namespace Photobooth.Views
                     File.Move(rawPath, dest, overwrite: true);
                     path = dest;
 
-                    // Thumbnail generated in background — gallery views use it on next open.
                     _ = Task.Run(() => BitmapHelper.GenerateThumbnail(dest));
 
                     _capturedPaths.Add(path);
 
                     if (_sessionId.HasValue)
                     {
-                        try { App.Events.RecordPhoto(_sessionId.Value, i, path); }
+                        try { _events.RecordPhoto(_sessionId.Value, i, path); }
                         catch (Exception dbEx) { Log.Error(dbEx, "Failed to record photo {N} in DB", i); }
                     }
                 }
@@ -235,23 +243,16 @@ namespace Photobooth.Views
                     _shooting = false;
                     if (_sequenceAborted)
                     {
-                        // Disconnect overlay already shown by OnCameraDisconnected
                         Log.Warning("Photo {N} cancelled — camera disconnected mid-shoot", i);
                         return;
                     }
-                    if (ct.IsCancellationRequested)
-                    {
-                        // User pressed Back — Back_Click handles cleanup
-                        return;
-                    }
-                    // 30-second timeout elapsed without a download completing
+                    if (ct.IsCancellationRequested) return;
                     Log.Error("Photo {N} timed out waiting for download", i);
                     StatusText.Text = "Camera timed out — check the USB connection and try again.";
                     return;
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // Hard EDSDK error propagated immediately from CameraService
                     _shooting = false;
                     Log.Error("Hard camera error on photo {N}: {Message}", i, ex.Message);
                     StatusText.Text = $"Camera error — {ex.Message}";
@@ -275,7 +276,7 @@ namespace Photobooth.Views
             await FadeOutFlash();
 
             Dispatcher.Invoke(() =>
-                App.Flow.Trigger(FlowTrigger.ShotsDone,
+                _flow.Trigger(FlowTrigger.ShotsDone,
                     new FlowContext { PhotoPaths = _capturedPaths, SessionId = _sessionId ?? 0 }));
         }
 
@@ -331,7 +332,7 @@ namespace Photobooth.Views
                 await FadeOutFlash();
                 await Task.Delay(1000, ct);
             }
-            catch (OperationCanceledException) { /* session torn down — stop silently */ }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to load captured preview for {Path}", path);
@@ -370,7 +371,7 @@ namespace Photobooth.Views
 
             if (_sessionId.HasValue && _capturedPaths.Count == 0)
             {
-                try { App.Events.AbandonSession(_sessionId.Value); _sessionId = null; }
+                try { _events.AbandonSession(_sessionId.Value); _sessionId = null; }
                 catch (Exception ex) { Log.Error(ex, "Failed to abandon session on disconnect"); }
             }
 
@@ -380,8 +381,6 @@ namespace Photobooth.Views
         private void OnCameraError(object? sender, string msg)
         {
             Log.Error("Camera error on shoot page: {Message}", msg);
-            // Only update status text when not mid-shoot; hard errors during capture are
-            // propagated via TakePictureAsync's exception path instead
             if (!_shooting)
                 Dispatcher.Invoke(() => StatusText.Text = $"Error: {msg}");
         }
@@ -401,11 +400,11 @@ namespace Photobooth.Views
 
             if (_sessionId.HasValue)
             {
-                try { App.Events.AbandonSession(_sessionId.Value); _sessionId = null; }
+                try { _events.AbandonSession(_sessionId.Value); _sessionId = null; }
                 catch (Exception ex) { Log.Error(ex, "Failed to abandon session on back"); }
             }
 
-            App.Flow.Trigger(FlowTrigger.SessionAborted);
+            _flow.Trigger(FlowTrigger.SessionAborted);
         }
     }
 }

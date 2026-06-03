@@ -8,8 +8,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using Photobooth.Data.Models;
+using Photobooth.Services;
 using Serilog;
 using Line      = System.Windows.Shapes.Line;
 using Rectangle = System.Windows.Shapes.Rectangle;
@@ -116,7 +118,7 @@ namespace Photobooth.Views
                 LoadTemplateImage(dlg.FileName);
 
                 if (_eventId.HasValue)
-                    App.Events.SetPhotostripTemplatePath(_eventId.Value, dlg.FileName);
+                    App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, dlg.FileName);
 
                 UpdateStatus();
                 Log.Information("Strip template set to: {Path}", dlg.FileName);
@@ -181,7 +183,7 @@ namespace Photobooth.Views
             UploadButton.IsEnabled = _eventSlug is not null;
 
             if (_eventId.HasValue)
-                App.Events.SetPhotostripTemplatePath(_eventId.Value, null);
+                App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, null);
 
             UpdateStatus();
         }

@@ -8,12 +8,19 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Photobooth.Camera;
 using Photobooth.Helpers;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth.Views
 {
     public partial class GreetingPage : Page
     {
+        private readonly CameraService       _camera;
+        private readonly IEventService       _events;
+        private readonly SettingsManager     _settings;
+        private readonly IFileStorageService _fileStorage;
+        private readonly AIEnhancementClient _aiClient;
+        private readonly FlowController      _flow;
 
         // Lazily initialised — named elements aren't available until after InitializeComponent.
         private Button[]?           _navButtons;
@@ -33,9 +40,22 @@ namespace Photobooth.Views
         private FrameworkElement[] ContentPanels => _contentPanels ??= new FrameworkElement[]
             { PanelEvents, PanelCamera, PanelStrip, PanelPrinter, PanelDisplay, PanelAI, PanelSync, PanelAbout };
 
-        public GreetingPage()
+        public GreetingPage(
+            CameraService       camera,
+            IEventService       events,
+            SettingsManager     settings,
+            IFileStorageService fileStorage,
+            AIEnhancementClient aiClient,
+            FlowController      flow)
         {
+            _camera      = camera;
+            _events      = events;
+            _settings    = settings;
+            _fileStorage = fileStorage;
+            _aiClient    = aiClient;
+            _flow        = flow;
             InitializeComponent();
+
             Log.Information("Navigated to GreetingPage");
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
@@ -45,7 +65,7 @@ namespace Photobooth.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            App.Camera.CameraDisconnected += OnCameraDisconnected;
+            _camera.CameraDisconnected += OnCameraDisconnected;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown += OnWindowKeyDown;
             UpdateCameraStatus();
@@ -55,9 +75,9 @@ namespace Photobooth.Views
 
         private void ApplyActiveEventAppearance()
         {
-            var id = App.Settings.ActiveEventId;
+            var id = _settings.ActiveEventId;
             if (!id.HasValue) return;
-            var ev = App.Events.GetById(id.Value);
+            var ev = _events.GetById(id.Value);
             if (ev is null) return;
 
             if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",     ev.AccentColor);
@@ -82,8 +102,8 @@ namespace Photobooth.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            App.Camera.CameraDisconnected    -= OnCameraDisconnected;
-            App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            _camera.CameraDisconnected    -= OnCameraDisconnected;
+            _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
             StopInlinePreview();
@@ -91,13 +111,13 @@ namespace Photobooth.Views
 
         private void UpdateCameraStatus()
         {
-            bool connected = App.Camera.IsConnected;
-            bool hasEvent  = App.Settings.ActiveEventId.HasValue;
+            bool connected = _camera.IsConnected;
+            bool hasEvent  = _settings.ActiveEventId.HasValue;
 
             bool paywallActive = false;
             if (hasEvent)
             {
-                var ev = App.Events.GetById(App.Settings.ActiveEventId!.Value);
+                var ev = _events.GetById(_settings.ActiveEventId!.Value);
                 paywallActive = ev?.PaywallEnabled == true;
             }
 
@@ -122,7 +142,7 @@ namespace Photobooth.Views
 
         private void UpdateAIEnhancementButton()
         {
-            AIEnhancementButton.Visibility = App.Settings.AIEnhancementEnabled
+            AIEnhancementButton.Visibility = _settings.AIEnhancementEnabled
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
@@ -137,19 +157,19 @@ namespace Photobooth.Views
             if (e.Key != Key.F13) return;
             if (SettingsOverlay.Visibility      == Visibility.Visible ||
                 SettingsContentPanel.Visibility == Visibility.Visible) return;
-            if (!App.Settings.ActiveEventId.HasValue) return;
+            if (!_settings.ActiveEventId.HasValue) return;
 
-            var ev = App.Events.GetById(App.Settings.ActiveEventId.Value);
+            var ev = _events.GetById(_settings.ActiveEventId.Value);
             if (ev?.PaywallEnabled != true) return;
 
-            if (!App.Camera.IsConnected)
+            if (!_camera.IsConnected)
             {
                 Log.Warning("Payment signal (F13) received but camera not connected — session blocked");
                 return;
             }
 
             Log.Information("Payment signal (F13) received — starting session");
-            App.Flow.Trigger(FlowTrigger.StartNormal);
+            _flow.Trigger(FlowTrigger.StartNormal);
         }
 
         // --- Greeting actions ----------------------------------------------------
@@ -160,7 +180,7 @@ namespace Photobooth.Views
             RetryButton.IsEnabled = false;
             CameraStatusText.Text = "Searching for camera…";
 
-            bool ok = App.Camera.Initialize();
+            bool ok = _camera.Initialize();
             Log.Information("Camera reconnect attempt: {Result}", ok ? "success" : "no camera found");
 
             RetryButton.IsEnabled = true;
@@ -170,14 +190,14 @@ namespace Photobooth.Views
 
         private void StartSession_Click(object sender, RoutedEventArgs e)
         {
-            if (!App.Camera.IsConnected)
+            if (!_camera.IsConnected)
             {
                 Log.Warning("Start tapped but camera not connected — blocked navigation");
                 UpdateCameraStatus();
                 return;
             }
 
-            if (!App.Settings.ActiveEventId.HasValue)
+            if (!_settings.ActiveEventId.HasValue)
             {
                 Log.Warning("Start tapped but no active event selected — blocked navigation");
                 UpdateCameraStatus();
@@ -185,25 +205,25 @@ namespace Photobooth.Views
             }
 
             Log.Information("Session started by user");
-            App.Flow.Trigger(FlowTrigger.StartNormal);
+            _flow.Trigger(FlowTrigger.StartNormal);
         }
 
         private void AIEnhancement_Click(object sender, RoutedEventArgs e)
         {
-            if (!App.Camera.IsConnected)
+            if (!_camera.IsConnected)
             {
                 UpdateCameraStatus();
                 return;
             }
 
-            if (!App.Settings.ActiveEventId.HasValue)
+            if (!_settings.ActiveEventId.HasValue)
             {
                 UpdateCameraStatus();
                 return;
             }
 
             Log.Information("AI Enhancement flow started by user");
-            App.Flow.Trigger(FlowTrigger.StartAI);
+            _flow.Trigger(FlowTrigger.StartAI);
         }
 
         // --- Settings overlay (PIN gate) -----------------------------------------
@@ -232,9 +252,8 @@ namespace Photobooth.Views
 
         private void TryUnlock()
         {
-            if (App.Settings.VerifyPin(PinBox.Password))
+            if (_settings.VerifyPin(PinBox.Password))
             {
-                Log.Information("Settings unlocked successfully");
                 SettingsOverlay.Visibility = Visibility.Collapsed;
                 OpenSettings();
                 SettingsContentPanel.Visibility = Visibility.Visible;
@@ -252,10 +271,10 @@ namespace Photobooth.Views
             LoadEvents();
             RefreshStoragePath();
             PopulatePrinterDropdown();
-            AutoPrintToggle.IsChecked = App.Settings.AutoPrint;
-            AIEnableToggle.IsChecked  = App.Settings.AIEnhancementEnabled;
-            AIServerUrlBox.Text       = App.Settings.AIServerUrl;
-            AIApiKeyBox.Text          = App.Settings.AIApiKey;
+            AutoPrintToggle.IsChecked = _settings.AutoPrint;
+            AIEnableToggle.IsChecked  = _settings.AIEnhancementEnabled;
+            AIServerUrlBox.Text       = _settings.AIServerUrl;
+            AIApiKeyBox.Text          = _settings.AIApiKey;
             SelectTab(0);
         }
 
@@ -268,7 +287,7 @@ namespace Photobooth.Views
             {
                 EventsComboBox.Items.Clear();
                 EventsComboBox.Items.Add(new ComboBoxItem { Content = "— New event —", Tag = null });
-                foreach (var ev in App.Events.GetActive())
+                foreach (var ev in _events.GetActive())
                     EventsComboBox.Items.Add(new ComboBoxItem { Content = ev.Name, Tag = ev.Id });
                 EventsComboBox.SelectedIndex = 0;
             }
@@ -277,8 +296,7 @@ namespace Photobooth.Views
                 _loadingEvents = false;
             }
 
-            // Restore the previously active event if it still exists
-            var savedId = App.Settings.ActiveEventId;
+            var savedId = _settings.ActiveEventId;
             if (savedId.HasValue)
                 SelectEventById(savedId.Value);
             else
@@ -296,7 +314,7 @@ namespace Photobooth.Views
             if (item.Tag is int id)
             {
                 SetSelectedEvent(id);
-                var ev = App.Events.GetById(id);
+                var ev = _events.GetById(id);
                 if (ev is not null)
                 {
                     PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
@@ -311,14 +329,10 @@ namespace Photobooth.Views
             }
         }
 
-        /// <summary>
-        /// Single point of truth for changing the selected event.
-        /// Keeps _selectedEventId and the persisted setting in sync.
-        /// </summary>
         private void SetSelectedEvent(int? id)
         {
             _selectedEventId = id;
-            App.Settings.SetActiveEventId(id);
+            _settings.SetActiveEventId(id);
         }
 
         private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession)
@@ -348,11 +362,11 @@ namespace Photobooth.Views
 
         private void RefreshSessionStats(int eventId)
         {
-            var (sessions, photos, prints, ai) = App.Events.GetStats(eventId);
-            SessionCountText.Text   = sessions.ToString();
-            PhotoCountText.Text     = photos.ToString();
-            PrintCountText.Text     = prints.ToString();
-            AICountText.Text        = ai.ToString();
+            var (sessions, photos, prints, ai) = _events.GetStats(eventId);
+            SessionCountText.Text = sessions.ToString();
+            PhotoCountText.Text   = photos.ToString();
+            PrintCountText.Text   = prints.ToString();
+            AICountText.Text      = ai.ToString();
             _ = RefreshSessionPreviewAsync(eventId);
         }
 
@@ -365,17 +379,12 @@ namespace Photobooth.Views
 
         private async Task RefreshSessionPreviewAsync(int eventId)
         {
-            // Stamp this load; any older in-flight load will see a mismatched version and discard its result.
             var version = ++_previewVersion;
-
-            // Clear immediately so the previous event's photos don't linger while the query runs.
             SessionPreviewList.ItemsSource = null;
 
-            // DB query + thumbnail decoding on a background thread.
-            // BitmapHelper.LoadThumbnail freezes each BitmapImage, safe to cross thread boundary.
             var items = await Task.Run(() =>
             {
-                var sessions = App.Events.GetSessionsWithPhotos(eventId);
+                var sessions = _events.GetSessionsWithPhotos(eventId);
 
                 return sessions.Select(s =>
                 {
@@ -403,9 +412,7 @@ namespace Photobooth.Views
                 }).ToList();
             });
 
-            // Discard if a newer event was selected while this load was running.
             if (_previewVersion != version) return;
-
             SessionPreviewList.ItemsSource = items;
         }
 
@@ -424,7 +431,8 @@ namespace Photobooth.Views
 
         private void OpenSessionBrowserAt(int? sessionId)
         {
-            var browser = new SessionBrowserWindow(_selectedEventId!.Value, sessionId)
+            var browser = new SessionBrowserWindow(
+                _selectedEventId!.Value, _events, _aiClient, _fileStorage, sessionId)
             {
                 Owner = Window.GetWindow(this)
             };
@@ -443,7 +451,7 @@ namespace Photobooth.Views
             int savedId;
             if (_selectedEventId.HasValue)
             {
-                App.Events.UpdateDetails(_selectedEventId.Value, name,
+                _events.UpdateDetails(_selectedEventId.Value, name,
                     PaywallToggle.IsChecked == true,
                     SaveImagesToggle.IsChecked == true,
                     printLimitPerEvent,
@@ -452,7 +460,7 @@ namespace Photobooth.Views
             }
             else
             {
-                if (!App.Settings.IsStorageConfigured)
+                if (!_settings.IsStorageConfigured)
                 {
                     StoragePathWarning.Visibility = Visibility.Visible;
                     MessageBox.Show(
@@ -463,7 +471,7 @@ namespace Photobooth.Views
                     return;
                 }
 
-                var ev = App.Events.Create(name,
+                var ev = _events.Create(name,
                     PaywallToggle.IsChecked == true,
                     SaveImagesToggle.IsChecked == true,
                     printLimitPerEvent,
@@ -487,7 +495,7 @@ namespace Photobooth.Views
         private void ClearSessionData_Click(object sender, RoutedEventArgs e)
         {
             if (!_selectedEventId.HasValue) return;
-            App.Events.ClearSessions(_selectedEventId.Value);
+            _events.ClearSessions(_selectedEventId.Value);
             RefreshSessionStats(_selectedEventId.Value);
         }
 
@@ -495,7 +503,7 @@ namespace Photobooth.Views
         {
             if (!_selectedEventId.HasValue) return;
 
-            var ev = App.Events.GetById(_selectedEventId.Value);
+            var ev = _events.GetById(_selectedEventId.Value);
             if (ev is null) return;
 
             var result = MessageBox.Show(
@@ -507,7 +515,7 @@ namespace Photobooth.Views
 
             if (result != MessageBoxResult.Yes) return;
 
-            App.Events.Archive(_selectedEventId.Value);
+            _events.Archive(_selectedEventId.Value);
             SetSelectedEvent(null);
             LoadEvents();
         }
@@ -517,9 +525,9 @@ namespace Photobooth.Views
             if (!_selectedEventId.HasValue) return;
 
             if (sender == PaywallToggle)
-                App.Events.SetPaywall(_selectedEventId.Value, PaywallToggle.IsChecked == true);
+                _events.SetPaywall(_selectedEventId.Value, PaywallToggle.IsChecked == true);
             else if (sender == SaveImagesToggle)
-                App.Events.SetSaveImages(_selectedEventId.Value, SaveImagesToggle.IsChecked == true);
+                _events.SetSaveImages(_selectedEventId.Value, SaveImagesToggle.IsChecked == true);
         }
 
         private void PrintLimitBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -531,7 +539,7 @@ namespace Photobooth.Views
         {
             if (!_selectedEventId.HasValue) return;
             int? limit = int.TryParse(PrintLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
-            App.Events.SetEventPrintLimit(_selectedEventId.Value, limit);
+            _events.SetEventPrintLimit(_selectedEventId.Value, limit);
             PrintLimitBox.Text = limit?.ToString() ?? string.Empty;
         }
 
@@ -544,14 +552,14 @@ namespace Photobooth.Views
         {
             if (!_selectedEventId.HasValue) return;
             int? limit = int.TryParse(SessionLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
-            App.Events.SetSessionPrintLimit(_selectedEventId.Value, limit);
+            _events.SetSessionPrintLimit(_selectedEventId.Value, limit);
             SessionLimitBox.Text = limit?.ToString() ?? string.Empty;
         }
 
         private void SelectEventById(int id)
         {
-            var ev = App.Events.GetById(id);
-            if (ev is null) return; // event no longer exists — stay in new-event state
+            var ev = _events.GetById(id);
+            if (ev is null) return;
 
             _loadingEvents = true;
             try
@@ -580,8 +588,8 @@ namespace Photobooth.Views
 
         private void RefreshStoragePath()
         {
-            StoragePathBox.Text = App.Settings.StorageRoot;
-            StoragePathWarning.Visibility = App.Settings.IsStorageConfigured
+            StoragePathBox.Text = _settings.StorageRoot;
+            StoragePathWarning.Visibility = _settings.IsStorageConfigured
                 ? Visibility.Collapsed
                 : Visibility.Visible;
         }
@@ -591,12 +599,12 @@ namespace Photobooth.Views
             var dlg = new Microsoft.Win32.OpenFolderDialog
             {
                 Title            = "Select storage root folder",
-                InitialDirectory = App.Settings.StorageRoot,
+                InitialDirectory = _settings.StorageRoot,
             };
 
             if (dlg.ShowDialog() != true) return;
 
-            App.Settings.SetStorageRoot(dlg.FolderName);
+            _settings.SetStorageRoot(dlg.FolderName);
             StoragePathBox.Text = dlg.FolderName;
             StoragePathWarning.Visibility = Visibility.Collapsed;
             Log.Information("Storage root changed to {Path}", dlg.FolderName);
@@ -612,10 +620,9 @@ namespace Photobooth.Views
 
         private void SelectTab(int index)
         {
-            // Leaving camera tab — clean up preview and property listener
             if (ContentPanels[1].Visibility == Visibility.Visible && index != 1)
             {
-                App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+                _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
                 StopInlinePreview();
                 CameraPreviewPanel.Visibility = Visibility.Collapsed;
             }
@@ -632,7 +639,7 @@ namespace Photobooth.Views
                 LoadCameraSettings();
                 CameraPreviewPanel.Visibility = Visibility.Visible;
                 InlinePreviewImage.Source = null;
-                InlinePreviewStatusText.Text  = "Starting camera preview…";
+                InlinePreviewStatusText.Text      = "Starting camera preview…";
                 InlinePreviewStatusText.Visibility = Visibility.Visible;
                 StartInlinePreview();
             }
@@ -658,22 +665,22 @@ namespace Photobooth.Views
 
         private void LoadCameraSettings()
         {
-            if (!App.Camera.IsConnected)
+            if (!_camera.IsConnected)
             {
-                CameraModelLabel.Text       = "No camera connected";
+                CameraModelLabel.Text        = "No camera connected";
                 CameraSettingStatusText.Text = "Connect a camera and retry.";
                 IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
                     WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = false;
                 return;
             }
 
-            CameraModelLabel.Text       = App.Camera.ModelName ?? "Camera";
+            CameraModelLabel.Text        = _camera.ModelName ?? "Camera";
             CameraSettingStatusText.Text = "Loading valid values from camera…";
             IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
                 WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = true;
 
-            App.Camera.CameraPropertyChanged -= OnCameraPropertyChanged;
-            App.Camera.CameraPropertyChanged += OnCameraPropertyChanged;
+            _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            _camera.CameraPropertyChanged += OnCameraPropertyChanged;
 
             RefreshCameraDropdown(IsoComboBox,          EDSDKLib.EDSDK.PropID_ISOSpeed,     CameraPropertyMaps.Iso,          CameraPropertyMaps.LookupIso);
             RefreshCameraDropdown(TvComboBox,           EDSDKLib.EDSDK.PropID_Tv,           CameraPropertyMaps.Tv,           CameraPropertyMaps.LookupTv);
@@ -681,8 +688,7 @@ namespace Photobooth.Views
             RefreshCameraDropdown(WhiteBalanceComboBox, EDSDKLib.EDSDK.PropID_WhiteBalance, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
             RefreshCameraDropdown(ImageQualityComboBox, EDSDKLib.EDSDK.PropID_ImageQuality, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
 
-            // Request fresh descriptors — UI will update via OnCameraPropertyChanged
-            App.Camera.RequestPropertyDescs();
+            _camera.RequestPropertyDescs();
         }
 
         private void RefreshCameraDropdown(ComboBox cb, uint propId,
@@ -691,8 +697,8 @@ namespace Photobooth.Views
             _settingCameraControls = true;
             try
             {
-                uint currentValue    = App.Camera.GetPropertyValue(propId) ?? 0xFFFFFFFF;
-                int[]? desc          = App.Camera.GetPropertyDesc(propId);
+                uint currentValue = _camera.GetPropertyValue(propId) ?? 0xFFFFFFFF;
+                int[]? desc       = _camera.GetPropertyDesc(propId);
 
                 cb.Items.Clear();
 
@@ -766,7 +772,7 @@ namespace Photobooth.Views
 
             if (propId == 0) return;
             Log.Information("Camera property 0x{PropId:X8} → 0x{Value:X8}", propId, value);
-            App.Camera.SetProperty(propId, value);
+            _camera.SetProperty(propId, value);
         }
 
         // --- Inline live preview -------------------------------------------------
@@ -777,10 +783,10 @@ namespace Photobooth.Views
 
         private void StartInlinePreview()
         {
-            if (!App.Camera.IsConnected) return;
+            if (!_camera.IsConnected) return;
             _inlineEvfRunning = true;
-            App.Camera.EvfFrameReady += OnInlineEvfFrame;
-            App.Camera.StartLiveView();
+            _camera.EvfFrameReady += OnInlineEvfFrame;
+            _camera.StartLiveView();
             RequestInlineEvfFrame();
 
             _inlineEvfWatchdog = new System.Threading.Timer(_ =>
@@ -796,15 +802,15 @@ namespace Photobooth.Views
             _inlineEvfRunning = false;
             _inlineEvfWatchdog?.Dispose();
             _inlineEvfWatchdog = null;
-            App.Camera.EvfFrameReady -= OnInlineEvfFrame;
-            App.Camera.StopLiveView();
+            _camera.EvfFrameReady -= OnInlineEvfFrame;
+            _camera.StopLiveView();
         }
 
         private void RequestInlineEvfFrame()
         {
             if (!_inlineEvfRunning || _inlineEvfFramePending) return;
             _inlineEvfFramePending = true;
-            App.Camera.RequestEvfFrame();
+            _camera.RequestEvfFrame();
         }
 
         private void OnInlineEvfFrame(object? sender, System.Windows.Media.Imaging.BitmapSource frame)
@@ -814,24 +820,23 @@ namespace Photobooth.Views
             {
                 InlinePreviewImage.Source = frame;
                 InlinePreviewStatusText.Visibility = Visibility.Collapsed;
-                InlinePreviewInfoText.Text = App.Camera.ModelName ?? string.Empty;
+                InlinePreviewInfoText.Text = _camera.ModelName ?? string.Empty;
             });
             RequestInlineEvfFrame();
         }
 
         private async void TakeTestShot_Click(object sender, RoutedEventArgs e)
         {
-            if (!App.Camera.IsConnected) return;
+            if (!_camera.IsConnected) return;
 
             TakeTestShotButton.IsEnabled = false;
             ResumePreviewButton.Visibility = Visibility.Collapsed;
 
-            // Pause live view before firing shutter
             _inlineEvfRunning = false;
             _inlineEvfWatchdog?.Dispose();
             _inlineEvfWatchdog = null;
-            App.Camera.EvfFrameReady -= OnInlineEvfFrame;
-            App.Camera.StopLiveView();
+            _camera.EvfFrameReady -= OnInlineEvfFrame;
+            _camera.StopLiveView();
 
             InlinePreviewStatusText.Text = "Capturing…";
             InlinePreviewStatusText.Visibility = Visibility.Visible;
@@ -839,7 +844,7 @@ namespace Photobooth.Views
 
             try
             {
-                string path = await App.Camera.TakePictureAsync();
+                string path = await _camera.TakePictureAsync();
 
                 var bitmap = BitmapHelper.LoadFromFile(path);
 
@@ -870,11 +875,11 @@ namespace Photobooth.Views
 
         private void ResumePreview_Click(object sender, RoutedEventArgs e)
         {
-            ResumePreviewButton.Visibility    = Visibility.Collapsed;
-            InlinePreviewImage.Source         = null;
-            InlinePreviewStatusText.Text      = "Starting camera preview…";
+            ResumePreviewButton.Visibility     = Visibility.Collapsed;
+            InlinePreviewImage.Source          = null;
+            InlinePreviewStatusText.Text       = "Starting camera preview…";
             InlinePreviewStatusText.Visibility = Visibility.Visible;
-            InlinePreviewInfoText.Text        = string.Empty;
+            InlinePreviewInfoText.Text         = string.Empty;
             StartInlinePreview();
         }
 
@@ -884,13 +889,13 @@ namespace Photobooth.Views
         {
             if (_selectedEventId.HasValue)
             {
-                var ev = App.Events.GetById(_selectedEventId.Value);
+                var ev = _events.GetById(_selectedEventId.Value);
                 if (ev is not null)
                 {
                     StripDesigner.LoadForEvent(
                         ev.Id,
                         ev.Slug,
-                        App.FileStorage.GetStripTemplatePath(ev.Slug),
+                        _fileStorage.GetStripTemplatePath(ev.Slug),
                         ev.PhotostripTemplatePath);
                     return;
                 }
@@ -902,9 +907,9 @@ namespace Photobooth.Views
 
         private void PopulateAboutTab()
         {
-            if (App.Camera.IsConnected)
+            if (_camera.IsConnected)
             {
-                AboutCameraModel.Text  = App.Camera.ModelName ?? "Canon camera";
+                AboutCameraModel.Text  = _camera.ModelName ?? "Canon camera";
                 AboutCameraStatus.Text = "Connected";
             }
             else
@@ -913,7 +918,7 @@ namespace Photobooth.Views
                 AboutCameraStatus.Text = "Supports Canon EOS cameras via EDSDK";
             }
 
-            var printerName = App.Settings.PrinterName;
+            var printerName = _settings.PrinterName;
             if (!string.IsNullOrEmpty(printerName))
             {
                 AboutPrinterModel.Text  = printerName;
@@ -929,9 +934,9 @@ namespace Photobooth.Views
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Photobooth", "Logs");
 
-            AboutSessionsPath.Text = string.IsNullOrWhiteSpace(App.Settings.StorageRoot)
+            AboutSessionsPath.Text = string.IsNullOrWhiteSpace(_settings.StorageRoot)
                 ? "(not configured)"
-                : App.Settings.StorageRoot;
+                : _settings.StorageRoot;
         }
 
         // --- Printer tab ---------------------------------------------------------
@@ -944,11 +949,10 @@ namespace Photobooth.Views
             PrinterDropdown.Items.Clear();
             PrinterDropdown.Items.Add("(none)");
 
-            string? saved = App.Settings.PrinterName;
+            string? saved = _settings.PrinterName;
 
             _ = Task.Run(() =>
             {
-                // InstalledPrinters calls into the Windows print spooler — can block for seconds.
                 var printers = new List<string>();
                 foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
                     printers.Add(name);
@@ -975,12 +979,12 @@ namespace Photobooth.Views
 
         private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
         {
-            App.Settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
+            _settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
         }
 
         private void AIEnableToggle_Click(object sender, RoutedEventArgs e)
         {
-            App.Settings.SetAIEnhancementEnabled(AIEnableToggle.IsChecked == true);
+            _settings.SetAIEnhancementEnabled(AIEnableToggle.IsChecked == true);
             UpdateAIEnhancementButton();
         }
 
@@ -989,7 +993,7 @@ namespace Photobooth.Views
             var url = AIServerUrlBox.Text.Trim();
             if (!string.IsNullOrEmpty(url))
             {
-                App.Settings.SetAIServerUrl(url);
+                _settings.SetAIServerUrl(url);
                 _ = TestAIConnectionAsync();
             }
         }
@@ -998,13 +1002,13 @@ namespace Photobooth.Views
 
         private async Task TestAIConnectionAsync()
         {
-            AIStatusDot.Fill            = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
-            AIStatusText.Text           = "Testing…";
-            AIStatusText.Foreground     = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
+            AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
+            AIStatusText.Text       = "Testing…";
+            AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
 
             try
             {
-                var styles = await App.AIClient.GetStylesAsync();
+                var styles = await _aiClient.GetStylesAsync();
                 AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 AIStatusText.Text       = $"Connected — {styles.Count} style{(styles.Count == 1 ? "" : "s")} available";
                 AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
@@ -1021,21 +1025,21 @@ namespace Photobooth.Views
 
         private void AIApiKey_LostFocus(object sender, RoutedEventArgs e)
         {
-            App.Settings.SetAIApiKey(AIApiKeyBox.Text.Trim());
+            _settings.SetAIApiKey(AIApiKeyBox.Text.Trim());
         }
 
         private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (PrinterDropdown.SelectedIndex <= 0)
             {
-                App.Settings.SetPrinterName(null);
+                _settings.SetPrinterName(null);
                 PrinterStatusText.Text = "No printer selected.";
                 Log.Information("Printer selection cleared");
             }
             else
             {
                 string name = (string)PrinterDropdown.SelectedItem;
-                App.Settings.SetPrinterName(name);
+                _settings.SetPrinterName(name);
                 PrinterStatusText.Text = $"Active: {name}";
                 Log.Information("Printer selected: {Name}", name);
             }
@@ -1045,18 +1049,18 @@ namespace Photobooth.Views
 
         private void LoadDisplaySliders()
         {
-            CountdownSlider.Value    = App.Settings.CountdownSeconds;
-            PreviewHoldSlider.Value  = App.Settings.PreviewHoldSeconds;
+            CountdownSlider.Value   = _settings.CountdownSeconds;
+            PreviewHoldSlider.Value = _settings.PreviewHoldSeconds;
         }
 
         private void CountdownSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            App.Settings.SetCountdownSeconds((int)CountdownSlider.Value);
+            _settings.SetCountdownSeconds((int)CountdownSlider.Value);
         }
 
         private void PreviewHoldSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            App.Settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
+            _settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
         }
 
         // --- Display tab: background image ---------------------------------------
@@ -1082,7 +1086,7 @@ namespace Photobooth.Views
                 Log.Information("Greeting background set: {Path}", dlg.FileName);
 
                 if (_selectedEventId.HasValue)
-                    App.Events.SetBackgroundImagePath(_selectedEventId.Value, dlg.FileName);
+                    _events.SetBackgroundImagePath(_selectedEventId.Value, dlg.FileName);
             }
             catch (Exception ex)
             {
@@ -1094,7 +1098,7 @@ namespace Photobooth.Views
         {
             ClearBackground();
             if (_selectedEventId.HasValue)
-                App.Events.SetBackgroundImagePath(_selectedEventId.Value, null);
+                _events.SetBackgroundImagePath(_selectedEventId.Value, null);
         }
 
         private void ClearBackground()
@@ -1153,7 +1157,7 @@ namespace Photobooth.Views
             var hex = AccentHexBox.Text.Trim();
             ApplyBrushColor("AccentBrush", hex);
             if (_selectedEventId.HasValue)
-                App.Events.SetAccentColor(_selectedEventId.Value, hex);
+                _events.SetAccentColor(_selectedEventId.Value, hex);
         }
 
         private void ApplyBgColor_Click(object sender, RoutedEventArgs e)
@@ -1161,7 +1165,7 @@ namespace Photobooth.Views
             var hex = BgColorHexBox.Text.Trim();
             ApplyBrushColor("BackgroundBrush", hex);
             if (_selectedEventId.HasValue)
-                App.Events.SetBackgroundColor(_selectedEventId.Value, hex);
+                _events.SetBackgroundColor(_selectedEventId.Value, hex);
         }
 
         private void ApplySurfaceColor_Click(object sender, RoutedEventArgs e)
@@ -1169,7 +1173,7 @@ namespace Photobooth.Views
             var hex = SurfaceHexBox.Text.Trim();
             ApplyBrushColor("SurfaceBrush", hex);
             if (_selectedEventId.HasValue)
-                App.Events.SetSurfaceColor(_selectedEventId.Value, hex);
+                _events.SetSurfaceColor(_selectedEventId.Value, hex);
         }
 
         private void RevertAppearance_Click(object sender, RoutedEventArgs e)
@@ -1186,10 +1190,10 @@ namespace Photobooth.Views
 
             if (_selectedEventId.HasValue)
             {
-                App.Events.SetAccentColor(_selectedEventId.Value, null);
-                App.Events.SetBackgroundColor(_selectedEventId.Value, null);
-                App.Events.SetSurfaceColor(_selectedEventId.Value, null);
-                App.Events.SetBackgroundImagePath(_selectedEventId.Value, null);
+                _events.SetAccentColor(_selectedEventId.Value, null);
+                _events.SetBackgroundColor(_selectedEventId.Value, null);
+                _events.SetSurfaceColor(_selectedEventId.Value, null);
+                _events.SetBackgroundImagePath(_selectedEventId.Value, null);
             }
 
             Log.Information("Appearance reverted to defaults");
@@ -1244,7 +1248,7 @@ namespace Photobooth.Views
                 return;
             }
 
-            App.Settings.SetPin(newPin);
+            _settings.SetPin(newPin);
             NewPinBox.Password     = string.Empty;
             ConfirmPinBox.Password = string.Empty;
             ShowPinStatus("PIN changed successfully.", isError: false);

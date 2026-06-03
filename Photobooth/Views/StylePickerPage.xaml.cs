@@ -7,21 +7,26 @@ namespace Photobooth.Views
 {
     public partial class StylePickerPage : Page
     {
-        public StylePickerPage()
+        private readonly AIEnhancementClient _aiClient;
+        private readonly FlowController      _flow;
+
+        public StylePickerPage(AIEnhancementClient aiClient, FlowController flow)
         {
+            _aiClient = aiClient;
+            _flow     = flow;
             InitializeComponent();
-            Loaded += OnLoaded;
+            Loaded   += OnLoaded;
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                LoadingText.Visibility  = Visibility.Visible;
+                LoadingText.Visibility    = Visibility.Visible;
                 StylesScroller.Visibility = Visibility.Collapsed;
-                LoadingText.Text        = "Loading styles…";
+                LoadingText.Text          = "Loading styles…";
 
-                var styles = await App.AIClient.GetStylesAsync();
+                var styles = await _aiClient.GetStylesAsync();
 
                 StylesListBox.ItemsSource = styles;
                 LoadingText.Visibility    = Visibility.Collapsed;
@@ -45,18 +50,18 @@ namespace Photobooth.Views
         {
             if (StylesListBox.SelectedItem is not AugmentationStyle style) return;
 
-            App.AIFlowActive        = true;
-            App.AISelectedStyleId   = style.Id;
-            App.AISelectedStyleName = style.Name;
+            _flow.AIFlowActive = true;
+            _flow.AIStyleId    = style.Id;
+            _flow.AIStyleName  = style.Name;
 
             Log.Information("AI style selected: {StyleId} ({StyleName})", style.Id, style.Name);
-            App.Flow.Trigger(FlowTrigger.StyleChosen);
+            _flow.Trigger(FlowTrigger.StyleChosen);
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
-            App.AIFlowActive = false;
-            App.Flow.Trigger(FlowTrigger.StyleCancelled);
+            _flow.AIFlowActive = false;
+            _flow.Trigger(FlowTrigger.StyleCancelled);
         }
     }
 }
