@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Linq;
 using Photobooth.Services;
 using Serilog;
 
@@ -68,12 +69,12 @@ namespace Photobooth.Print
             PaperSize? paperSize = null;
             if (printerName != null)
             {
-                var sizes = _adapter.GetPaperSizes(printerName);
+                var sizes = _adapter.GetPaperSizes(printerName).ToList();
                 paperSize = Find4x6PortraitSize(sizes);
                 if (paperSize == null)
                 {
                     Log.Warning("No 4×6 paper size found — using driver default. Available: {Sizes}",
-                        string.Join(", ", _adapter.GetPaperSizes(printerName).Select(s => s.PaperName)));
+                        string.Join(", ", sizes.Select(s => s.PaperName)));
                 }
             }
 

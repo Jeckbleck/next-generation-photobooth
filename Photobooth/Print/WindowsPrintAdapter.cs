@@ -25,7 +25,7 @@ public sealed class WindowsPrintAdapter : IPrintAdapter
     {
         Log.Information("Printing strip on {Printer}", printerName ?? "(system default)");
 
-        var doc = new PrintDocument();
+        using var doc = new PrintDocument();
         if (printerName != null)
             doc.PrinterSettings.PrinterName = printerName;
 
