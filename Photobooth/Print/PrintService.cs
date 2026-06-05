@@ -1,5 +1,5 @@
+using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using Photobooth.Services;
 using Serilog;
@@ -9,13 +9,18 @@ namespace Photobooth.Print
     public sealed class PrintService
     {
         private readonly SettingsManager _settings;
+        private readonly IPrintAdapter _adapter;
 
-        public PrintService(SettingsManager settings) => _settings = settings;
+        public PrintService(SettingsManager settings, IPrintAdapter adapter)
+        {
+            _settings = settings;
+            _adapter  = adapter;
+        }
 
         // First installed printer whose name contains "DNP" or "DS620"; null if none.
         public string? FindDnpPrinter()
         {
-            foreach (string name in PrinterSettings.InstalledPrinters)
+            foreach (string name in _adapter.GetInstalledPrinterNames())
             {
                 var u = name.ToUpperInvariant();
                 if (u.Contains("DNP") || u.Contains("DS620") || u.Contains("DS-620") || u.Contains("DS 620") || u.Contains("RX1"))
@@ -57,65 +62,44 @@ namespace Photobooth.Print
         private void PrintOnCurrentThread(Bitmap strip)
         {
             string? printerName = EffectivePrinterName();
-            Log.Information("Printing strip on {Printer}", printerName ?? "(system default)");
             Log.Debug("Installed printers: {Printers}",
-                string.Join(", ", PrinterSettings.InstalledPrinters.Cast<string>()));
+                string.Join(", ", _adapter.GetInstalledPrinterNames()));
 
-            var doc = new PrintDocument();
+            PaperSize? paperSize = null;
             if (printerName != null)
-                doc.PrinterSettings.PrinterName = printerName;
-
-            Log.Debug("Resolved printer: {Printer} — IsValid={Valid}",
-                doc.PrinterSettings.PrinterName,
-                doc.PrinterSettings.IsValid);
-
-            // Portrait 4×6 paper — matches the 1240×1844 px canvas.
-            var paperSize = Find4x6PortraitSize(doc.PrinterSettings);
-            if (paperSize != null)
             {
-                doc.DefaultPageSettings.PaperSize = paperSize;
-                Log.Debug("Paper size matched: {Name}", paperSize.PaperName);
-            }
-            else
-            {
-                Log.Warning("No 4×6 paper size found — using driver default. Available: {Sizes}",
-                    string.Join(", ", doc.PrinterSettings.PaperSizes.Cast<PaperSize>()
-                        .Select(s => s.PaperName)));
+                var sizes = _adapter.GetPaperSizes(printerName);
+                paperSize = Find4x6PortraitSize(sizes);
+                if (paperSize == null)
+                {
+                    Log.Warning("No 4×6 paper size found — using driver default. Available: {Sizes}",
+                        string.Join(", ", _adapter.GetPaperSizes(printerName).Select(s => s.PaperName)));
+                }
             }
 
-            doc.DefaultPageSettings.Landscape = false;
-
-            var bmp = strip;
-            doc.PrintPage += (_, e) =>
-            {
-                e.Graphics!.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                e.Graphics.PixelOffsetMode    = PixelOffsetMode.HighQuality;
-                e.Graphics.DrawImage(bmp, e.PageBounds);
-                e.HasMorePages = false;
-            };
-
-            doc.Print();
-            Log.Information("Print job submitted");
+            _adapter.SubmitJob(printerName, paperSize, strip);
         }
 
-        private static PaperSize? Find4x6PortraitSize(PrinterSettings ps)
+        internal static PaperSize? Find4x6PortraitSize(IEnumerable<PaperSize> sizes)
         {
+            var list = sizes as IList<PaperSize> ?? new List<PaperSize>(sizes);
+
             // DNP driver names the portrait 4×6 as "PR(4x6)" — try exact prefix first.
-            foreach (PaperSize s in ps.PaperSizes)
+            foreach (PaperSize s in list)
             {
                 var n = s.PaperName.ToUpperInvariant();
                 if (n.StartsWith("PR(4") || n.StartsWith("PR (4"))
                     return s;
             }
             // Fallback: any name containing 4×6.
-            foreach (PaperSize s in ps.PaperSizes)
+            foreach (PaperSize s in list)
             {
                 var n = s.PaperName.ToUpperInvariant();
                 if (n.Contains("4X6") || n.Contains("4 X 6"))
                     return s;
             }
             // Fallback: match physical dimensions (hundredths of an inch: 400×600).
-            foreach (PaperSize s in ps.PaperSizes)
+            foreach (PaperSize s in list)
             {
                 if (s.Width == 400 && s.Height == 600)
                     return s;

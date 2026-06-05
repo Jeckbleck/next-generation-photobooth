@@ -31,6 +31,7 @@ namespace Photobooth
             sc.AddSingleton<CameraService>();
             sc.AddSingleton<IFileStorageService, FileStorageService>();
             sc.AddSingleton<IEventService, EventService>();
+            sc.AddSingleton<IPrintAdapter, WindowsPrintAdapter>();
             sc.AddSingleton<PrintService>();
             sc.AddSingleton<AIEnhancementClient>();
 
