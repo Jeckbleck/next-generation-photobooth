@@ -55,6 +55,7 @@ namespace Photobooth.Views
             _aiClient    = aiClient;
             _flow        = flow;
             InitializeComponent();
+            _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
             Loaded   += OnLoaded;
@@ -1047,19 +1048,25 @@ namespace Photobooth.Views
 
         // --- Display tab: sliders ------------------------------------------------
 
+        private bool _loadingDisplaySliders = true; // true until after InitializeComponent so XAML default values don't overwrite saved settings
+
         private void LoadDisplaySliders()
         {
+            _loadingDisplaySliders = true;
             CountdownSlider.Value   = _settings.CountdownSeconds;
             PreviewHoldSlider.Value = _settings.PreviewHoldSeconds;
+            _loadingDisplaySliders = false;
         }
 
         private void CountdownSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (_loadingDisplaySliders) return;
             _settings.SetCountdownSeconds((int)CountdownSlider.Value);
         }
 
         private void PreviewHoldSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (_loadingDisplaySliders) return;
             _settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
         }
 
@@ -1270,6 +1277,21 @@ namespace Photobooth.Views
             Log.Debug("Settings panel closed");
             SettingsContentPanel.Visibility = Visibility.Collapsed;
             UpdateCameraStatus();
+        }
+
+        private void CloseApplication_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(
+                "Close the booth application?",
+                "Close Application",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                MessageBoxResult.No);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            Log.Information("Application closed by operator via About tab");
+            Application.Current.Shutdown();
         }
     }
 }

@@ -195,13 +195,39 @@
                                                        Foreground="#555577"
                                                        FontSize="11" Margin="0,2,0,0"/>
                                         </StackPanel>
-                                        <Border Grid.Column="1"
-                                                Background="#1E2F4A" CornerRadius="4"
-                                                Padding="6,3" VerticalAlignment="Top">
-                                            <TextBlock Text="{Binding PhotoLabel}"
-                                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                                       FontSize="10"/>
-                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                                            <Border Background="#1E2F4A" CornerRadius="4"
+                                                    Padding="6,3" Margin="0,0,0,4">
+                                                <TextBlock Text="{Binding PhotoLabel}"
+                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                           FontSize="10"/>
+                                            </Border>
+                                            <Border CornerRadius="4" Padding="6,3">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#1E2F4A"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding PrintCount}" Value="0">
+                                                                <Setter Property="Background" Value="#1A1A2A"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding PrintLabel}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                                            <Setter Property="FontSize"   Value="10"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding PrintCount}" Value="0">
+                                                                    <Setter Property="Foreground" Value="#444466"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </StackPanel>
                                     </Grid>
                                     <ItemsControl ItemsSource="{Binding Thumbnails}">
                                         <ItemsControl.ItemsPanel>
@@ -235,14 +261,22 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                <TextBlock x:Name="DetailLabel"
-                           Foreground="{StaticResource TextPrimaryBrush}"
-                           FontSize="18" FontWeight="Bold"/>
-                <TextBlock x:Name="DetailDate"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" Margin="0,4,0,0"/>
-            </StackPanel>
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock x:Name="DetailLabel"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="18" FontWeight="Bold"/>
+                    <TextBlock x:Name="DetailDate"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="13" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Background="#1E2F4A" CornerRadius="6" Padding="10,5">
+                    <TextBlock x:Name="DetailPrintCount"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="13"/>
+                </Border>
+            </Grid>
 
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>

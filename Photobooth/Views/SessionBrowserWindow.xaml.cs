@@ -23,10 +23,12 @@ namespace Photobooth.Views
 
         private sealed class SessionCardItem
         {
-            public int    SessionId  { get; init; }
-            public string Label      { get; init; } = "";
-            public string Date       { get; init; } = "";
-            public string PhotoLabel { get; init; } = "";
+            public int    SessionId   { get; init; }
+            public string Label       { get; init; } = "";
+            public string Date        { get; init; } = "";
+            public string PhotoLabel  { get; init; } = "";
+            public int    PrintCount  { get; init; }
+            public string PrintLabel  { get; init; } = "";
             public List<System.Windows.Media.ImageSource> Thumbnails    { get; init; } = new();
             public List<string>                           PhotoPaths    { get; init; } = new();
             public List<VariantRowItem>                   VariantRows   { get; init; } = new();
@@ -121,12 +123,15 @@ namespace Photobooth.Views
                     }).ToList();
 
                     int n = s.Photos.Count;
+                    int p = s.PrintCount;
                     return new SessionCardItem
                     {
                         SessionId   = s.Id,
                         Label       = $"Session {total - idx}",
                         Date        = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
                         PhotoLabel  = $"{n} photo{(n == 1 ? "" : "s")}",
+                        PrintCount  = p,
+                        PrintLabel  = p == 0 ? "Not printed" : $"{p} print{(p == 1 ? "" : "s")}",
                         Thumbnails  = thumbs,
                         PhotoPaths  = paths,
                         VariantRows = variantRows,
@@ -161,8 +166,9 @@ namespace Photobooth.Views
             _selectedPhotoPaths = item.PhotoPaths;
             _showingEnhanced    = false;
 
-            DetailLabel.Text = item.Label;
-            DetailDate.Text  = item.Date;
+            DetailLabel.Text      = item.Label;
+            DetailDate.Text       = item.Date;
+            DetailPrintCount.Text = item.PrintLabel;
 
             var ev           = _events.GetById(_eventId);
             bool blocked     = false;
