@@ -90,7 +90,7 @@ namespace Photobooth.Print
             g.DrawString(brandingText, font, textBrush, (RectangleF)barRect, sf);
         }
 
-        private static Rectangle LetterboxRect(int imgW, int imgH, Rectangle slot)
+        internal static Rectangle LetterboxRect(int imgW, int imgH, Rectangle slot)
         {
             float scale = Math.Min((float)slot.Width / imgW, (float)slot.Height / imgH);
             int w = (int)(imgW * scale);
@@ -177,7 +177,7 @@ namespace Photobooth.Print
             return canvas;
         }
 
-        private static Rectangle FillRect(int imgW, int imgH, Rectangle slot)
+        internal static Rectangle FillRect(int imgW, int imgH, Rectangle slot)
         {
             float scale = Math.Max((float)slot.Width / imgW, (float)slot.Height / imgH);
             int w = (int)(imgW * scale);
@@ -189,7 +189,7 @@ namespace Photobooth.Print
         }
 
         // Rotates a bitmap clockwise by the given degrees (must be 90, 180, or 270).
-        private static Bitmap RotateBitmap(Bitmap source, int degrees)
+        internal static Bitmap RotateBitmap(Bitmap source, int degrees)
         {
             bool swap = degrees % 180 != 0;
             int newW = swap ? source.Height : source.Width;
