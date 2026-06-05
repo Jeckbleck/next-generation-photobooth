@@ -33,7 +33,7 @@ namespace Photobooth.Camera
         public string SessionDirectory { get; set; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
 
-        private TaskCompletionSource<string>? _pendingDownload;
+        internal TaskCompletionSource<string>? _pendingDownload;
 
         // --- Lifecycle -----------------------------------------------------------
 
@@ -249,7 +249,7 @@ namespace Photobooth.Camera
             }
         }
 
-        private void OnPhotoSaved(string path)
+        internal void OnPhotoSaved(string path)
         {
             Log.Information("Photo download complete: {Path}", path);
             if (_model != null) _model.IsCapturing = false;
@@ -258,7 +258,7 @@ namespace Photobooth.Camera
 
         // --- SDK event callbacks -------------------------------------------------
 
-        private uint HandleObjectEvent(uint inEvent, IntPtr inRef, IntPtr inContext)
+        internal uint HandleObjectEvent(uint inEvent, IntPtr inRef, IntPtr inContext)
         {
             if (inEvent == EDSDKLib.EDSDK.ObjectEvent_DirItemRequestTransfer && _model != null && _processor != null)
             {
@@ -272,7 +272,7 @@ namespace Photobooth.Camera
             return EDSDKLib.EDSDK.EDS_ERR_OK;
         }
 
-        private uint HandlePropertyEvent(uint inEvent, uint inPropertyID, uint inParam, IntPtr inContext)
+        internal uint HandlePropertyEvent(uint inEvent, uint inPropertyID, uint inParam, IntPtr inContext)
         {
             if (_model == null || _processor == null) return EDSDKLib.EDSDK.EDS_ERR_OK;
 
@@ -288,7 +288,7 @@ namespace Photobooth.Camera
             return EDSDKLib.EDSDK.EDS_ERR_OK;
         }
 
-        private uint HandleStateEvent(uint inEvent, uint inParameter, IntPtr inContext)
+        internal uint HandleStateEvent(uint inEvent, uint inParameter, IntPtr inContext)
         {
             if (inEvent == EDSDKLib.EDSDK.StateEvent_Shutdown)
             {
