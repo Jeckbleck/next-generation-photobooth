@@ -8,18 +8,24 @@ namespace Photobooth.Services
 {
     public class SettingsManager
     {
-        private static readonly string FilePath = Path.Combine(
+        private static readonly string DefaultFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Photobooth", "settings.json");
 
         public static readonly string DefaultStorageRoot = Path.Combine("C:\\", "Photobooth");
 
+        private readonly string _filePath;
         private AppSettings _settings;
 
-        public SettingsManager()
+        public SettingsManager() : this(DefaultFilePath) { }
+
+        public SettingsManager(string filePath)
         {
+            _filePath = filePath;
             _settings = Load();
         }
+
+        public AppSettings Settings => _settings;
 
         public bool VerifyPin(string pin) => HashPin(pin) == _settings.PinHash;
 
@@ -118,9 +124,9 @@ namespace Photobooth.Services
         {
             try
             {
-                if (File.Exists(FilePath))
+                if (File.Exists(_filePath))
                 {
-                    var json = File.ReadAllText(FilePath);
+                    var json = File.ReadAllText(_filePath);
                     var loaded = JsonSerializer.Deserialize<AppSettings>(json);
                     if (loaded is not null)
                     {
@@ -129,7 +135,7 @@ namespace Photobooth.Services
                             loaded.StorageRoot = DefaultStorageRoot;
                             Save(loaded);
                         }
-                        Log.Debug("Settings loaded from {Path}", FilePath);
+                        Log.Debug("Settings loaded from {Path}", _filePath);
                         return loaded;
                     }
                 }
@@ -144,19 +150,21 @@ namespace Photobooth.Services
             return defaults;
         }
 
-        private void Save() => Save(_settings);
+        public void Save() => Save(_settings);
 
-        private static void Save(AppSettings settings)
+        private void Save(AppSettings settings)
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                var dir = Path.GetDirectoryName(_filePath);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(FilePath, json);
+                File.WriteAllText(_filePath, json);
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Failed to save settings to {Path}", FilePath);
+                Log.Warning(ex, "Failed to save settings to {Path}", _filePath);
             }
         }
 
