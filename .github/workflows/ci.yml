@@ -19,10 +19,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore --runtime win-x86
+        run: dotnet restore NextGenerationPhotobooth.sln --runtime win-x86
 
       - name: Build
-        run: dotnet build -c Release --no-restore
+        run: dotnet build NextGenerationPhotobooth.sln -c Release --runtime win-x86 --no-restore
 
       - name: Run tests
         run: dotnet test Photobooth.Tests/Photobooth.Tests.csproj -c Release --no-build --no-restore --verbosity normal
