@@ -18,6 +18,12 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Setup .NET 10 (x86 runtime for test host)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          architecture: x86
+
       - name: Restore
         run: dotnet restore NextGenerationPhotobooth.sln --runtime win-x86
 
