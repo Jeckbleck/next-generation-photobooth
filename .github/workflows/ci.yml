@@ -22,7 +22,7 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile dotnet-install.ps1 -UseBasicParsing
-          & ./dotnet-install.ps1 -Channel 10.0 -Architecture x86 -InstallDir 'C:\Program Files (x86)\dotnet' -Runtime dotnet
+          & ./dotnet-install.ps1 -Channel 10.0 -Architecture x86 -InstallDir 'C:\Program Files (x86)\dotnet' -Runtime windowsdesktop
           Remove-Item dotnet-install.ps1
 
       - name: Set DOTNET_ROOT(x86) for x86 test host
