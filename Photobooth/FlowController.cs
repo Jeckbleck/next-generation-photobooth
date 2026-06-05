@@ -1,9 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Controls;
-using Microsoft.Extensions.DependencyInjection;
-using Photobooth.Views;
 using Serilog;
 
 namespace Photobooth
@@ -36,9 +32,9 @@ namespace Photobooth
 
     public sealed class FlowController
     {
-        private readonly IServiceProvider _provider;
+        private readonly INavigator _navigator;
 
-        public FlowController(IServiceProvider provider) => _provider = provider;
+        public FlowController(INavigator navigator) => _navigator = navigator;
 
         public BoothState   CurrentState  { get; private set; } = BoothState.Idle;
         public List<string> SessionPhotos { get; private set; } = new();
@@ -67,7 +63,7 @@ namespace Photobooth
 
             CurrentState = next.Value;
             StateChanged?.Invoke(this, next.Value);
-            Navigate(next.Value);
+            _navigator.NavigateTo(next.Value);
         }
 
         private static BoothState? Transition(BoothState state, FlowTrigger trigger) =>
@@ -82,21 +78,5 @@ namespace Photobooth
                 (BoothState.Preview,   FlowTrigger.PreviewDone)    => BoothState.Idle,
                 _ => null,
             };
-
-        private void Navigate(BoothState state)
-        {
-            if (Application.Current.MainWindow is not MainWindow w) return;
-
-            Page page = state switch
-            {
-                BoothState.Idle      => _provider.GetRequiredService<GreetingPage>(),
-                BoothState.StylePick => _provider.GetRequiredService<StylePickerPage>(),
-                BoothState.Shooting  => _provider.GetRequiredService<ShootPage>(),
-                BoothState.Preview   => _provider.GetRequiredService<ResultsPage>(),
-                _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
-            };
-
-            w.NavigateTo(page);
-        }
     }
 }

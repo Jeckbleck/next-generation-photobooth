@@ -35,6 +35,7 @@ namespace Photobooth
             sc.AddSingleton<AIEnhancementClient>();
 
             // Flow
+            sc.AddSingleton<INavigator, WindowsNavigator>();
             sc.AddSingleton<FlowController>();
 
             // Pages — transient so each navigation gets a fresh instance
