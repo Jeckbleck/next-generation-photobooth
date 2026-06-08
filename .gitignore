@@ -34,3 +34,5 @@ Desktop.ini
 # Claude
 .claude/
 CLAUDE.md
+
+graphify-out/
