@@ -23,7 +23,7 @@ namespace Photobooth.Views
         private readonly FlowController      _flow;
 
         private readonly List<string> _capturedPaths = new();
-        private bool _shooting;
+        private volatile bool _shooting;
         private bool _sequenceAborted;
         private CancellationTokenSource _sessionCts = new();
         private EvfPump? _evfPump;
@@ -112,6 +112,7 @@ namespace Photobooth.Views
                 return;
             }
 
+            _evfPump?.Stop();
             _evfPump = new EvfPump(
                 _camera,
                 Dispatcher,
@@ -226,8 +227,7 @@ namespace Photobooth.Views
                 await ShowCapturedPreview(path, ct);
                 LightUpDot(i);
 
-                if (i < 3)
-                    _shooting = false;
+                _shooting = false;
             }
 
             if (ct.IsCancellationRequested) return;
