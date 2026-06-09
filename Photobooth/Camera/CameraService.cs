@@ -310,31 +310,18 @@ namespace Photobooth.Camera
         {
             if (dataSetPtr == IntPtr.Zero) return;
 
-            try
-            {
-                var dataset = Marshal.PtrToStructure<EvfDataSet>(dataSetPtr);
-                if (dataset.Stream == IntPtr.Zero) return;
+            var dataset = Marshal.PtrToStructure<EvfDataSet>(dataSetPtr);
+            if (dataset.Stream == IntPtr.Zero) return;
 
-                EDSDKLib.EDSDK.EdsGetPointer(dataset.Stream, out IntPtr pointer);
-                EDSDKLib.EDSDK.EdsGetLength(dataset.Stream, out ulong length);
+            EDSDKLib.EDSDK.EdsGetPointer(dataset.Stream, out IntPtr pointer);
+            EDSDKLib.EDSDK.EdsGetLength(dataset.Stream, out ulong length);
 
-                byte[] buffer = new byte[length];
-                Marshal.Copy(pointer, buffer, 0, (int)length);
+            byte[] buffer = new byte[length];
+            Marshal.Copy(pointer, buffer, 0, (int)length);
 
-                using var ms = new MemoryStream(buffer);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = ms;
-                bitmap.EndInit();
-                bitmap.Freeze();
-
-                EvfFrameReady?.Invoke(this, bitmap);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to decode EVF frame");
-            }
+            var frame = EvfDecoder.Decode(buffer);
+            if (frame != null)
+                EvfFrameReady?.Invoke(this, frame);
         }
 
         // --- Cleanup -------------------------------------------------------------
