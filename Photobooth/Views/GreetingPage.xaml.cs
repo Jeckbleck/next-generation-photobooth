@@ -30,9 +30,7 @@ namespace Photobooth.Views
         private const string DefaultBackground = "#1A1A2E";
         private const string DefaultSurface    = "#16213E";
 
-        private int?  _selectedEventId;
-        private bool  _loadingEvents;
-        private int   _previewVersion;
+        private EventManagementPanel _eventPanel = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -55,6 +53,9 @@ namespace Photobooth.Views
             _aiClient    = aiClient;
             _flow        = flow;
             InitializeComponent();
+            _eventPanel = new EventManagementPanel(_events, _settings, _fileStorage, _aiClient);
+            EventPanelHost.Content = _eventPanel;
+            _eventPanel.ActiveEventChanged += OnActiveEventChanged;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -151,6 +152,12 @@ namespace Photobooth.Views
         private void OnCameraDisconnected(object? sender, System.EventArgs e)
         {
             Dispatcher.Invoke(UpdateCameraStatus);
+        }
+
+        private void OnActiveEventChanged(object? sender, Data.Models.Event? ev)
+        {
+            if (ev is not null) LoadEventAppearance(ev);
+            UpdateCameraStatus();
         }
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)
@@ -269,346 +276,13 @@ namespace Photobooth.Views
 
         private void OpenSettings()
         {
-            LoadEvents();
-            RefreshStoragePath();
+            _eventPanel.Refresh();
             PopulatePrinterDropdown();
             AutoPrintToggle.IsChecked = _settings.AutoPrint;
             AIEnableToggle.IsChecked  = _settings.AIEnhancementEnabled;
             AIServerUrlBox.Text       = _settings.AIServerUrl;
             AIApiKeyBox.Text          = _settings.AIApiKey;
             SelectTab(0);
-        }
-
-        // --- Event Management tab ------------------------------------------------
-
-        private void LoadEvents()
-        {
-            _loadingEvents = true;
-            try
-            {
-                EventsComboBox.Items.Clear();
-                EventsComboBox.Items.Add(new ComboBoxItem { Content = "— New event —", Tag = null });
-                foreach (var ev in _events.GetActive())
-                    EventsComboBox.Items.Add(new ComboBoxItem { Content = ev.Name, Tag = ev.Id });
-                EventsComboBox.SelectedIndex = 0;
-            }
-            finally
-            {
-                _loadingEvents = false;
-            }
-
-            var savedId = _settings.ActiveEventId;
-            if (savedId.HasValue)
-                SelectEventById(savedId.Value);
-            else
-            {
-                _selectedEventId = null;
-                ClearEventFields();
-            }
-        }
-
-        private void EventsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_loadingEvents) return;
-            if (EventsComboBox.SelectedItem is not ComboBoxItem item) return;
-
-            if (item.Tag is int id)
-            {
-                SetSelectedEvent(id);
-                var ev = _events.GetById(id);
-                if (ev is not null)
-                {
-                    PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
-                    RefreshSessionStats(id);
-                    LoadEventAppearance(ev);
-                }
-            }
-            else
-            {
-                SetSelectedEvent(null);
-                ClearEventFields();
-            }
-        }
-
-        private void SetSelectedEvent(int? id)
-        {
-            _selectedEventId = id;
-            _settings.SetActiveEventId(id);
-        }
-
-        private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession)
-        {
-            EventNameBox.Text              = name;
-            PaywallToggle.IsChecked        = paywallEnabled;
-            SaveImagesToggle.IsChecked     = saveImagesEnabled;
-            PrintLimitBox.Text             = printLimitPerEvent?.ToString()   ?? string.Empty;
-            SessionLimitBox.Text           = printLimitPerSession?.ToString() ?? string.Empty;
-            ArchiveEventButton.IsEnabled   = true;
-        }
-
-        private void ClearEventFields()
-        {
-            EventNameBox.Text               = string.Empty;
-            PaywallToggle.IsChecked         = false;
-            SaveImagesToggle.IsChecked      = true;
-            PrintLimitBox.Text              = string.Empty;
-            SessionLimitBox.Text            = string.Empty;
-            SessionCountText.Text           = "—";
-            PhotoCountText.Text             = "—";
-            PrintCountText.Text             = "—";
-            AICountText.Text                = "—";
-            SessionPreviewList.ItemsSource  = null;
-            ArchiveEventButton.IsEnabled    = false;
-        }
-
-        private void RefreshSessionStats(int eventId)
-        {
-            var (sessions, photos, prints, ai) = _events.GetStats(eventId);
-            SessionCountText.Text = sessions.ToString();
-            PhotoCountText.Text   = photos.ToString();
-            PrintCountText.Text   = prints.ToString();
-            AICountText.Text      = ai.ToString();
-            _ = RefreshSessionPreviewAsync(eventId);
-        }
-
-        private sealed class SessionPreviewItem
-        {
-            public int    SessionId  { get; init; }
-            public string Date       { get; init; } = "";
-            public List<System.Windows.Media.ImageSource> Thumbnails { get; init; } = new();
-        }
-
-        private async Task RefreshSessionPreviewAsync(int eventId)
-        {
-            var version = ++_previewVersion;
-            SessionPreviewList.ItemsSource = null;
-
-            var items = await Task.Run(() =>
-            {
-                var sessions = _events.GetSessionsWithPhotos(eventId);
-
-                return sessions.Select(s =>
-                {
-                    var thumbs = s.Photos
-                        .Where(p => p.FilePath != null && File.Exists(p.FilePath))
-                        .OrderBy(p => p.Sequence)
-                        .Select(p =>
-                        {
-                            try
-                            {
-                                return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(p.FilePath!, fallbackDecodeWidth: 80);
-                            }
-                            catch { return null; }
-                        })
-                        .Where(b => b != null)
-                        .Cast<System.Windows.Media.ImageSource>()
-                        .ToList();
-
-                    return new SessionPreviewItem
-                    {
-                        SessionId  = s.Id,
-                        Date       = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
-                        Thumbnails = thumbs,
-                    };
-                }).ToList();
-            });
-
-            if (_previewVersion != version) return;
-            SessionPreviewList.ItemsSource = items;
-        }
-
-        private void SessionPreviewCard_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-            if (((Button)sender).DataContext is not SessionPreviewItem item) return;
-            OpenSessionBrowserAt(item.SessionId);
-        }
-
-        private void OpenSessionBrowser_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-            OpenSessionBrowserAt(null);
-        }
-
-        private void OpenSessionBrowserAt(int? sessionId)
-        {
-            var browser = new SessionBrowserWindow(
-                _selectedEventId!.Value, _events, _aiClient, _fileStorage, sessionId)
-            {
-                Owner = Window.GetWindow(this)
-            };
-            browser.ShowDialog();
-            RefreshSessionStats(_selectedEventId.Value);
-        }
-
-        private void SaveEvent_Click(object sender, RoutedEventArgs e)
-        {
-            var name = EventNameBox.Text.Trim();
-            if (string.IsNullOrEmpty(name)) return;
-
-            int? printLimitPerEvent   = int.TryParse(PrintLimitBox.Text.Trim(),   out int pe) && pe > 0 ? pe : null;
-            int? printLimitPerSession = int.TryParse(SessionLimitBox.Text.Trim(), out int ps) && ps > 0 ? ps : null;
-
-            int savedId;
-            if (_selectedEventId.HasValue)
-            {
-                _events.UpdateDetails(_selectedEventId.Value, name,
-                    PaywallToggle.IsChecked == true,
-                    SaveImagesToggle.IsChecked == true,
-                    printLimitPerEvent,
-                    printLimitPerSession);
-                savedId = _selectedEventId.Value;
-            }
-            else
-            {
-                if (!_settings.IsStorageConfigured)
-                {
-                    StoragePathWarning.Visibility = Visibility.Visible;
-                    MessageBox.Show(
-                        "Please select a storage folder before creating an event.\n\nUse the Browse button in the Storage section above.",
-                        "Storage path required",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return;
-                }
-
-                var ev = _events.Create(name,
-                    PaywallToggle.IsChecked == true,
-                    SaveImagesToggle.IsChecked == true,
-                    printLimitPerEvent,
-                    printLimitPerSession);
-                savedId = ev.Id;
-            }
-
-            LoadEvents();
-            SelectEventById(savedId);
-        }
-
-        private void ClearEvent_Click(object sender, RoutedEventArgs e)
-        {
-            _loadingEvents = true;
-            EventsComboBox.SelectedIndex = 0;
-            _loadingEvents = false;
-            SetSelectedEvent(null);
-            ClearEventFields();
-        }
-
-        private void ClearSessionData_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-            _events.ClearSessions(_selectedEventId.Value);
-            RefreshSessionStats(_selectedEventId.Value);
-        }
-
-        private void ArchiveEvent_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-
-            var ev = _events.GetById(_selectedEventId.Value);
-            if (ev is null) return;
-
-            var result = MessageBox.Show(
-                $"Archive \"{ev.Name}\"?\n\nThe event will be hidden from the list. All sessions and photos on disk are kept and can be recovered by an administrator.",
-                "Archive Event",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning,
-                MessageBoxResult.No);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            _events.Archive(_selectedEventId.Value);
-            SetSelectedEvent(null);
-            LoadEvents();
-        }
-
-        private void Toggle_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-
-            if (sender == PaywallToggle)
-                _events.SetPaywall(_selectedEventId.Value, PaywallToggle.IsChecked == true);
-            else if (sender == SaveImagesToggle)
-                _events.SetSaveImages(_selectedEventId.Value, SaveImagesToggle.IsChecked == true);
-        }
-
-        private void PrintLimitBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            e.Handled = !e.Text.All(char.IsDigit);
-        }
-
-        private void PrintLimitBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-            int? limit = int.TryParse(PrintLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
-            _events.SetEventPrintLimit(_selectedEventId.Value, limit);
-            PrintLimitBox.Text = limit?.ToString() ?? string.Empty;
-        }
-
-        private void SessionLimitBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            e.Handled = !e.Text.All(char.IsDigit);
-        }
-
-        private void SessionLimitBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (!_selectedEventId.HasValue) return;
-            int? limit = int.TryParse(SessionLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
-            _events.SetSessionPrintLimit(_selectedEventId.Value, limit);
-            SessionLimitBox.Text = limit?.ToString() ?? string.Empty;
-        }
-
-        private void SelectEventById(int id)
-        {
-            var ev = _events.GetById(id);
-            if (ev is null) return;
-
-            _loadingEvents = true;
-            try
-            {
-                foreach (ComboBoxItem item in EventsComboBox.Items)
-                {
-                    if (item.Tag is int itemId && itemId == id)
-                    {
-                        EventsComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-            finally
-            {
-                _loadingEvents = false;
-            }
-
-            SetSelectedEvent(id);
-            PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
-            RefreshSessionStats(id);
-            LoadEventAppearance(ev);
-        }
-
-        // --- Storage path --------------------------------------------------------
-
-        private void RefreshStoragePath()
-        {
-            StoragePathBox.Text = _settings.StorageRoot;
-            StoragePathWarning.Visibility = _settings.IsStorageConfigured
-                ? Visibility.Collapsed
-                : Visibility.Visible;
-        }
-
-        private void BrowseStoragePath_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new Microsoft.Win32.OpenFolderDialog
-            {
-                Title            = "Select storage root folder",
-                InitialDirectory = _settings.StorageRoot,
-            };
-
-            if (dlg.ShowDialog() != true) return;
-
-            _settings.SetStorageRoot(dlg.FolderName);
-            StoragePathBox.Text = dlg.FolderName;
-            StoragePathWarning.Visibility = Visibility.Collapsed;
-            Log.Information("Storage root changed to {Path}", dlg.FolderName);
         }
 
         // --- Tab navigation ------------------------------------------------------
@@ -865,9 +539,9 @@ namespace Photobooth.Views
 
         private void LoadStripDesigner()
         {
-            if (_selectedEventId.HasValue)
+            if (_eventPanel.SelectedEventId.HasValue)
             {
-                var ev = _events.GetById(_selectedEventId.Value);
+                var ev = _events.GetById(_eventPanel.SelectedEventId.Value);
                 if (ev is not null)
                 {
                     StripDesigner.LoadForEvent(
@@ -1069,8 +743,8 @@ namespace Photobooth.Views
                 BgPreviewBorder.Visibility   = Visibility.Visible;
                 Log.Information("Greeting background set: {Path}", dlg.FileName);
 
-                if (_selectedEventId.HasValue)
-                    _events.SetBackgroundImagePath(_selectedEventId.Value, dlg.FileName);
+                if (_eventPanel.SelectedEventId.HasValue)
+                    _events.SetBackgroundImagePath(_eventPanel.SelectedEventId.Value, dlg.FileName);
             }
             catch (Exception ex)
             {
@@ -1081,8 +755,8 @@ namespace Photobooth.Views
         private void ClearGreetingBg_Click(object sender, RoutedEventArgs e)
         {
             ClearBackground();
-            if (_selectedEventId.HasValue)
-                _events.SetBackgroundImagePath(_selectedEventId.Value, null);
+            if (_eventPanel.SelectedEventId.HasValue)
+                _events.SetBackgroundImagePath(_eventPanel.SelectedEventId.Value, null);
         }
 
         private void ClearBackground()
@@ -1140,24 +814,24 @@ namespace Photobooth.Views
         {
             var hex = AccentHexBox.Text.Trim();
             ApplyBrushColor("AccentBrush", hex);
-            if (_selectedEventId.HasValue)
-                _events.SetAccentColor(_selectedEventId.Value, hex);
+            if (_eventPanel.SelectedEventId.HasValue)
+                _events.SetAccentColor(_eventPanel.SelectedEventId.Value, hex);
         }
 
         private void ApplyBgColor_Click(object sender, RoutedEventArgs e)
         {
             var hex = BgColorHexBox.Text.Trim();
             ApplyBrushColor("BackgroundBrush", hex);
-            if (_selectedEventId.HasValue)
-                _events.SetBackgroundColor(_selectedEventId.Value, hex);
+            if (_eventPanel.SelectedEventId.HasValue)
+                _events.SetBackgroundColor(_eventPanel.SelectedEventId.Value, hex);
         }
 
         private void ApplySurfaceColor_Click(object sender, RoutedEventArgs e)
         {
             var hex = SurfaceHexBox.Text.Trim();
             ApplyBrushColor("SurfaceBrush", hex);
-            if (_selectedEventId.HasValue)
-                _events.SetSurfaceColor(_selectedEventId.Value, hex);
+            if (_eventPanel.SelectedEventId.HasValue)
+                _events.SetSurfaceColor(_eventPanel.SelectedEventId.Value, hex);
         }
 
         private void RevertAppearance_Click(object sender, RoutedEventArgs e)
@@ -1172,12 +846,12 @@ namespace Photobooth.Views
 
             ClearBackground();
 
-            if (_selectedEventId.HasValue)
+            if (_eventPanel.SelectedEventId.HasValue)
             {
-                _events.SetAccentColor(_selectedEventId.Value, null);
-                _events.SetBackgroundColor(_selectedEventId.Value, null);
-                _events.SetSurfaceColor(_selectedEventId.Value, null);
-                _events.SetBackgroundImagePath(_selectedEventId.Value, null);
+                _events.SetAccentColor(_eventPanel.SelectedEventId.Value, null);
+                _events.SetBackgroundColor(_eventPanel.SelectedEventId.Value, null);
+                _events.SetSurfaceColor(_eventPanel.SelectedEventId.Value, null);
+                _events.SetBackgroundImagePath(_eventPanel.SelectedEventId.Value, null);
             }
 
             Log.Information("Appearance reverted to defaults");
