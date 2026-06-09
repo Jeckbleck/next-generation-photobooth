@@ -778,52 +778,32 @@ namespace Photobooth.Views
 
         // --- Inline live preview -------------------------------------------------
 
-        private bool _inlineEvfRunning;
-        private bool _inlineEvfFramePending;
-        private System.Threading.Timer? _inlineEvfWatchdog;
+        private EvfPump? _inlineEvfPump;
 
         private void StartInlinePreview()
         {
             if (!_camera.IsConnected) return;
-            _inlineEvfRunning = true;
-            _camera.EvfFrameReady += OnInlineEvfFrame;
-            _camera.StartLiveView();
-            RequestInlineEvfFrame();
-
-            _inlineEvfWatchdog = new System.Threading.Timer(_ =>
-            {
-                if (!_inlineEvfRunning) return;
-                _inlineEvfFramePending = false;
-                RequestInlineEvfFrame();
-            }, null, 200, 100);
+            _inlineEvfPump = new EvfPump(
+                _camera,
+                Dispatcher,
+                frame =>
+                {
+                    InlinePreviewImage.Source = frame;
+                    InlinePreviewStatusText.Visibility = Visibility.Collapsed;
+                },
+                onStall: () =>
+                {
+                    InlinePreviewStatusText.Text = "Camera preview unavailable.";
+                    InlinePreviewStatusText.Visibility = Visibility.Visible;
+                },
+                watchdogMs: 100);
+            _inlineEvfPump.Start();
         }
 
         private void StopInlinePreview()
         {
-            _inlineEvfRunning = false;
-            _inlineEvfWatchdog?.Dispose();
-            _inlineEvfWatchdog = null;
-            _camera.EvfFrameReady -= OnInlineEvfFrame;
-            _camera.StopLiveView();
-        }
-
-        private void RequestInlineEvfFrame()
-        {
-            if (!_inlineEvfRunning || _inlineEvfFramePending) return;
-            _inlineEvfFramePending = true;
-            _camera.RequestEvfFrame();
-        }
-
-        private void OnInlineEvfFrame(object? sender, System.Windows.Media.Imaging.BitmapSource frame)
-        {
-            _inlineEvfFramePending = false;
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
-            {
-                InlinePreviewImage.Source = frame;
-                InlinePreviewStatusText.Visibility = Visibility.Collapsed;
-                InlinePreviewInfoText.Text = _camera.ModelName ?? string.Empty;
-            });
-            RequestInlineEvfFrame();
+            _inlineEvfPump?.Stop();
+            _inlineEvfPump = null;
         }
 
         private async void TakeTestShot_Click(object sender, RoutedEventArgs e)
@@ -833,11 +813,8 @@ namespace Photobooth.Views
             TakeTestShotButton.IsEnabled = false;
             ResumePreviewButton.Visibility = Visibility.Collapsed;
 
-            _inlineEvfRunning = false;
-            _inlineEvfWatchdog?.Dispose();
-            _inlineEvfWatchdog = null;
-            _camera.EvfFrameReady -= OnInlineEvfFrame;
-            _camera.StopLiveView();
+            _inlineEvfPump?.Stop();
+            _inlineEvfPump = null;
 
             InlinePreviewStatusText.Text = "Capturing…";
             InlinePreviewStatusText.Visibility = Visibility.Visible;
