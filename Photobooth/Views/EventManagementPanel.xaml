@@ -53,7 +53,7 @@
                 <TextBlock Text="Paid event" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
                 <TextBlock Text="Require payment before each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
             </StackPanel>
-            <ToggleButton x:Name="PaywallToggle" Grid.Column="1" Style="{DynamicResource ToggleSwitch}" IsChecked="False" VerticalAlignment="Center" Click="Toggle_Click"/>
+            <ToggleButton x:Name="PaywallToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="False" VerticalAlignment="Center" Click="Toggle_Click"/>
         </Grid>
 
         <Grid Margin="0,0,0,12">
@@ -65,7 +65,7 @@
                 <TextBlock Text="Save images" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
                 <TextBlock Text="Store photos to disk after each session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
             </StackPanel>
-            <ToggleButton x:Name="SaveImagesToggle" Grid.Column="1" Style="{DynamicResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center" Click="Toggle_Click"/>
+            <ToggleButton x:Name="SaveImagesToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}" IsChecked="True" VerticalAlignment="Center" Click="Toggle_Click"/>
         </Grid>
 
         <TextBlock Text="Print limit per event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,4"/>

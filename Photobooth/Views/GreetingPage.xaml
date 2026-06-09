@@ -42,27 +42,6 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         </Style>
 
-        <Style x:Key="ToggleSwitch" TargetType="ToggleButton">
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Track" Width="42" Height="24" CornerRadius="12" Background="#334">
-                            <Ellipse x:Name="Thumb" Width="18" Height="18" Fill="White"
-                                     HorizontalAlignment="Left" Margin="3,0,0,0"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}"/>
-                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
-                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Page.Resources>
 
     <Grid>

@@ -264,6 +264,16 @@ public partial class EventManagementPanel : UserControl
     private void ClearSessionData_Click(object sender, RoutedEventArgs e)
     {
         if (!_selectedEventId.HasValue) return;
+
+        var result = MessageBox.Show(
+            "Clear all session data for this event?\n\nSession records and statistics will be deleted. Photos on disk are NOT deleted.",
+            "Clear Session Data",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result != MessageBoxResult.Yes) return;
+
         _events.ClearSessions(_selectedEventId.Value);
         RefreshSessionStats(_selectedEventId.Value);
     }
