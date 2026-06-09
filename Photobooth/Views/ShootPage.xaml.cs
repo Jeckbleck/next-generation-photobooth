@@ -24,12 +24,9 @@ namespace Photobooth.Views
 
         private readonly List<string> _capturedPaths = new();
         private bool _shooting;
-        private bool _evfRunning;
-        private bool _evfFramePending;
         private bool _sequenceAborted;
         private CancellationTokenSource _sessionCts = new();
-        private DateTime _lastEvfFrameTime;
-        private System.Threading.Timer? _evfWatchdog;
+        private EvfPump? _evfPump;
 
         private int? _sessionId;
         private string _sessionDir = string.Empty;
@@ -105,7 +102,6 @@ namespace Photobooth.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            _camera.EvfFrameReady      += OnEvfFrame;
             _camera.CameraDisconnected += OnCameraDisconnected;
             _camera.Error              += OnCameraError;
 
@@ -116,71 +112,38 @@ namespace Photobooth.Views
                 return;
             }
 
-            StartEvf();
+            _evfPump = new EvfPump(
+                _camera,
+                Dispatcher,
+                frame =>
+                {
+                    EvfImage.Source = frame;
+                    if (StatusText.Text == "Camera preview unavailable.")
+                        StatusText.Text = string.Empty;
+                },
+                onStall: () =>
+                {
+                    if (!_shooting)
+                    {
+                        Log.Warning("EVF stall detected — no frame for >5 s");
+                        StatusText.Text = "Camera preview unavailable.";
+                    }
+                },
+                pauseGuard: () => _shooting,
+                watchdogMs: 50);
+
+            _evfPump.Start();
             _ = AutoStartAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             Log.Information("ShootPage unloaded — stopping EVF");
-            _evfWatchdog?.Dispose();
-            _evfRunning = false;
+            _evfPump?.Stop();
             _sessionCts.Cancel();
-            _camera.StopLiveView();
 
-            _camera.EvfFrameReady      -= OnEvfFrame;
             _camera.CameraDisconnected -= OnCameraDisconnected;
             _camera.Error              -= OnCameraError;
-        }
-
-        // --- EVF -----------------------------------------------------------------
-
-        private void StartEvf()
-        {
-            _lastEvfFrameTime = DateTime.UtcNow;
-            _evfRunning = true;
-            _camera.StartLiveView();
-            RequestNextEvfFrame();
-
-            _evfWatchdog = new System.Threading.Timer(_ =>
-            {
-                if (!_evfRunning || _shooting) return;
-
-                _evfFramePending = false;
-                RequestNextEvfFrame();
-
-                if ((DateTime.UtcNow - _lastEvfFrameTime).TotalSeconds > 5)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        if (!_shooting && StatusText.Text != "Camera preview unavailable.")
-                        {
-                            Log.Warning("EVF stall detected — no frame for >5 s");
-                            StatusText.Text = "Camera preview unavailable.";
-                        }
-                    });
-                }
-            }, null, 50, 50);
-        }
-
-        private void RequestNextEvfFrame()
-        {
-            if (!_evfRunning || _shooting || _evfFramePending) return;
-            _evfFramePending = true;
-            _camera.RequestEvfFrame();
-        }
-
-        private void OnEvfFrame(object? sender, BitmapSource frame)
-        {
-            _evfFramePending = false;
-            _lastEvfFrameTime = DateTime.UtcNow;
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
-            {
-                EvfImage.Source = frame;
-                if (StatusText.Text == "Camera preview unavailable.")
-                    StatusText.Text = string.Empty;
-            });
-            RequestNextEvfFrame();
         }
 
         // --- Photo sequence ------------------------------------------------------
@@ -189,7 +152,7 @@ namespace Photobooth.Views
         {
             try { await Task.Delay(1500, _sessionCts.Token); }
             catch (OperationCanceledException) { return; }
-            if (!_evfRunning || _shooting) return;
+            if (_shooting) return;
             await RunSequenceAsync();
         }
 
@@ -264,10 +227,7 @@ namespace Photobooth.Views
                 LightUpDot(i);
 
                 if (i < 3)
-                {
                     _shooting = false;
-                    RequestNextEvfFrame();
-                }
             }
 
             if (ct.IsCancellationRequested) return;
@@ -366,8 +326,7 @@ namespace Photobooth.Views
         {
             Log.Warning("Camera disconnected during shoot page");
             _sequenceAborted = true;
-            _evfRunning = false;
-            _evfWatchdog?.Dispose();
+            _evfPump?.Stop();
 
             if (_sessionId.HasValue && _capturedPaths.Count == 0)
             {
@@ -389,8 +348,7 @@ namespace Photobooth.Views
         {
             Log.Information("User navigated back — aborting session");
             _sessionCts.Cancel();
-            _evfWatchdog?.Dispose();
-            _evfRunning = false;
+            _evfPump?.Stop();
 
             foreach (var p in _capturedPaths)
             {
