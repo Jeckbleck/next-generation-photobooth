@@ -11,7 +11,7 @@ internal static class EvfDecoder
     // Returns null on empty input or decode failure; never throws.
     internal static BitmapSource? Decode(byte[] data)
     {
-        if (data.Length == 0) return null;
+        if (data is null || data.Length == 0) return null;
         try
         {
             using var ms = new MemoryStream(data);
