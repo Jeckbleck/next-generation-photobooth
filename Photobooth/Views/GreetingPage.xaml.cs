@@ -106,6 +106,7 @@ namespace Photobooth.Views
         {
             _camera.CameraDisconnected    -= OnCameraDisconnected;
             _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            _eventPanel.ActiveEventChanged -= OnActiveEventChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
             StopInlinePreview();
