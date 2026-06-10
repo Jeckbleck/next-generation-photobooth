@@ -1,0 +1,151 @@
+<UserControl x:Class="Photobooth.Views.CameraSettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT: settings dropdowns -->
+        <StackPanel>
+            <TextBlock Text="Camera Settings"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
+
+            <!-- Camera status bar -->
+            <Border Background="#0D1B2A" CornerRadius="6" Padding="12,10" Margin="0,0,16,20">
+                <StackPanel>
+                    <TextBlock x:Name="CameraModelLabel"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="13" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="CameraSettingStatusText"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="EXPOSURE" Foreground="{DynamicResource AccentBrush}"
+                       FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="ISO" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"/>
+                <ComboBox x:Name="IsoComboBox" Grid.Column="1" Padding="8,6"
+                          SelectionChanged="CameraComboBox_SelectionChanged"/>
+            </Grid>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Shutter speed" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"/>
+                <ComboBox x:Name="TvComboBox" Grid.Column="1" Padding="8,6"
+                          SelectionChanged="CameraComboBox_SelectionChanged"/>
+            </Grid>
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Aperture" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"/>
+                <ComboBox x:Name="AvComboBox" Grid.Column="1" Padding="8,6"
+                          SelectionChanged="CameraComboBox_SelectionChanged"/>
+            </Grid>
+
+            <TextBlock Text="COLOR" Foreground="{DynamicResource AccentBrush}"
+                       FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="White balance" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"/>
+                <ComboBox x:Name="WhiteBalanceComboBox" Grid.Column="1" Padding="8,6"
+                          SelectionChanged="CameraComboBox_SelectionChanged"/>
+            </Grid>
+
+            <TextBlock Text="FILE" Foreground="{DynamicResource AccentBrush}"
+                       FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Image quality" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"/>
+                <ComboBox x:Name="ImageQualityComboBox" Grid.Column="1" Padding="8,6"
+                          SelectionChanged="CameraComboBox_SelectionChanged"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- RIGHT: live preview pane -->
+        <Border Grid.Column="1" Width="380" Background="#070E1A" Margin="16,0,0,0">
+            <Grid Margin="16,28,16,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="LIVE PREVIEW"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="11" FontWeight="Bold"
+                           Margin="0,0,0,10"/>
+
+                <Border Grid.Row="1" Background="#000" CornerRadius="6" ClipToBounds="True">
+                    <Grid>
+                        <Image x:Name="InlinePreviewImage"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="LowQuality"/>
+                        <TextBlock x:Name="InlinePreviewStatusText"
+                                   Text="Starting camera preview…"
+                                   Foreground="#55FFFFFF"
+                                   FontSize="13"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock Grid.Row="2"
+                           x:Name="InlinePreviewInfoText"
+                           Foreground="#44FFFFFF"
+                           FontSize="11"
+                           Margin="0,6,0,0"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"/>
+
+                <StackPanel Grid.Row="3" Margin="0,10,0,0">
+                    <Button x:Name="TakeTestShotButton"
+                            Content="Take Test Shot"
+                            Style="{StaticResource GhostButton}"
+                            HorizontalAlignment="Stretch"
+                            Padding="0,9" FontSize="13"
+                            Click="TakeTestShot_Click"/>
+                    <Button x:Name="ResumePreviewButton"
+                            Content="↺  Resume Preview"
+                            Style="{StaticResource GhostButton}"
+                            HorizontalAlignment="Stretch"
+                            Padding="0,9" FontSize="13"
+                            Margin="0,6,0,0"
+                            Visibility="Collapsed"
+                            Click="ResumePreview_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
