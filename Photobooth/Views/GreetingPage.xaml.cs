@@ -739,9 +739,10 @@ namespace Photobooth.Views
                 GreetingBgImage.Source       = bmp;
                 GreetingBgImage.Visibility   = Visibility.Visible;
                 GreetingBgOverlay.Visibility = Visibility.Visible;
-                BgPathBox.Text               = dlg.FileName;
-                BgPreviewImage.Source        = bmp;
-                BgPreviewBorder.Visibility   = Visibility.Visible;
+                // TODO(Task4): BgPathBox, BgPreviewImage, BgPreviewBorder moved to AppearancePanel
+                // BgPathBox.Text               = dlg.FileName;
+                // BgPreviewImage.Source        = bmp;
+                // BgPreviewBorder.Visibility   = Visibility.Visible;
                 Log.Information("Greeting background set: {Path}", dlg.FileName);
 
                 if (_eventPanel.SelectedEventId.HasValue)
@@ -765,9 +766,10 @@ namespace Photobooth.Views
             GreetingBgImage.Source       = null;
             GreetingBgImage.Visibility   = Visibility.Collapsed;
             GreetingBgOverlay.Visibility = Visibility.Collapsed;
-            BgPathBox.Text               = string.Empty;
-            BgPreviewImage.Source        = null;
-            BgPreviewBorder.Visibility   = Visibility.Collapsed;
+            // TODO(Task4): BgPathBox, BgPreviewImage, BgPreviewBorder moved to AppearancePanel
+            // BgPathBox.Text               = string.Empty;
+            // BgPreviewImage.Source        = null;
+            // BgPreviewBorder.Visibility   = Visibility.Collapsed;
             Log.Information("Greeting background cleared");
         }
 
@@ -779,9 +781,10 @@ namespace Photobooth.Views
             var bg     = ev.BackgroundColor ?? DefaultBackground;
             var surf   = ev.SurfaceColor    ?? DefaultSurface;
 
-            AccentHexBox.Text  = accent;
-            BgColorHexBox.Text = bg;
-            SurfaceHexBox.Text = surf;
+            // TODO(Task4): AccentHexBox, BgColorHexBox, SurfaceHexBox moved to AppearancePanel
+            // AccentHexBox.Text  = accent;
+            // BgColorHexBox.Text = bg;
+            // SurfaceHexBox.Text = surf;
 
             ApplyBrushColor("AccentBrush",     accent);
             ApplyBrushColor("BackgroundBrush", bg);
@@ -795,9 +798,10 @@ namespace Photobooth.Views
                     GreetingBgImage.Source       = bmp;
                     GreetingBgImage.Visibility   = Visibility.Visible;
                     GreetingBgOverlay.Visibility = Visibility.Visible;
-                    BgPathBox.Text               = ev.BackgroundImagePath;
-                    BgPreviewImage.Source        = bmp;
-                    BgPreviewBorder.Visibility   = Visibility.Visible;
+                    // TODO(Task4): BgPathBox, BgPreviewImage, BgPreviewBorder moved to AppearancePanel
+                    // BgPathBox.Text               = ev.BackgroundImagePath;
+                    // BgPreviewImage.Source        = bmp;
+                    // BgPreviewBorder.Visibility   = Visibility.Visible;
                 }
                 catch (Exception ex)
                 {
@@ -813,7 +817,8 @@ namespace Photobooth.Views
 
         private void ApplyAccentColor_Click(object sender, RoutedEventArgs e)
         {
-            var hex = AccentHexBox.Text.Trim();
+            // TODO(Task4): AccentHexBox moved to AppearancePanel — method body will be removed
+            var hex = string.Empty; // AccentHexBox.Text.Trim();
             ApplyBrushColor("AccentBrush", hex);
             if (_eventPanel.SelectedEventId.HasValue)
                 _events.SetAccentColor(_eventPanel.SelectedEventId.Value, hex);
@@ -821,7 +826,8 @@ namespace Photobooth.Views
 
         private void ApplyBgColor_Click(object sender, RoutedEventArgs e)
         {
-            var hex = BgColorHexBox.Text.Trim();
+            // TODO(Task4): BgColorHexBox moved to AppearancePanel — method body will be removed
+            var hex = string.Empty; // BgColorHexBox.Text.Trim();
             ApplyBrushColor("BackgroundBrush", hex);
             if (_eventPanel.SelectedEventId.HasValue)
                 _events.SetBackgroundColor(_eventPanel.SelectedEventId.Value, hex);
@@ -829,7 +835,8 @@ namespace Photobooth.Views
 
         private void ApplySurfaceColor_Click(object sender, RoutedEventArgs e)
         {
-            var hex = SurfaceHexBox.Text.Trim();
+            // TODO(Task4): SurfaceHexBox moved to AppearancePanel — method body will be removed
+            var hex = string.Empty; // SurfaceHexBox.Text.Trim();
             ApplyBrushColor("SurfaceBrush", hex);
             if (_eventPanel.SelectedEventId.HasValue)
                 _events.SetSurfaceColor(_eventPanel.SelectedEventId.Value, hex);
@@ -837,9 +844,10 @@ namespace Photobooth.Views
 
         private void RevertAppearance_Click(object sender, RoutedEventArgs e)
         {
-            AccentHexBox.Text  = DefaultAccent;
-            BgColorHexBox.Text = DefaultBackground;
-            SurfaceHexBox.Text = DefaultSurface;
+            // TODO(Task4): AccentHexBox, BgColorHexBox, SurfaceHexBox moved to AppearancePanel
+            // AccentHexBox.Text  = DefaultAccent;
+            // BgColorHexBox.Text = DefaultBackground;
+            // SurfaceHexBox.Text = DefaultSurface;
 
             ApplyBrushColor("AccentBrush",     DefaultAccent);
             ApplyBrushColor("BackgroundBrush", DefaultBackground);
