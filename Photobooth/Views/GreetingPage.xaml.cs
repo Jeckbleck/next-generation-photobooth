@@ -6,7 +6,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Photobooth.Camera;
-using Photobooth.Helpers;
 using Photobooth.Services;
 using Serilog;
 
@@ -26,7 +25,8 @@ namespace Photobooth.Views
         private FrameworkElement[]? _contentPanels;
 
         private EventManagementPanel _eventPanel = null!;
-        private AppearancePanel _appearancePanel = null!;
+        private AppearancePanel      _appearancePanel = null!;
+        private CameraSettingsPanel  _cameraPanel     = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -55,6 +55,8 @@ namespace Photobooth.Views
             _appearancePanel = new AppearancePanel(_events, _settings);
             AppearancePanelHost.Content = _appearancePanel;
             _appearancePanel.BackgroundImageChanged += OnBackgroundImageChanged;
+            _cameraPanel = new CameraSettingsPanel(_camera);
+            CameraSettingsPanelHost.Content = _cameraPanel;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -76,13 +78,12 @@ namespace Photobooth.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            _camera.CameraDisconnected    -= OnCameraDisconnected;
-            _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
+            _camera.CameraDisconnected -= OnCameraDisconnected;
             _eventPanel.ActiveEventChanged -= OnActiveEventChanged;
             _appearancePanel.BackgroundImageChanged -= OnBackgroundImageChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
-            StopInlinePreview();
+            _cameraPanel.Deactivate();
         }
 
         private void UpdateCameraStatus()
@@ -278,11 +279,7 @@ namespace Photobooth.Views
         private void SelectTab(int index)
         {
             if (ContentPanels[1].Visibility == Visibility.Visible && index != 1)
-            {
-                _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
-                StopInlinePreview();
-                CameraPreviewPanel.Visibility = Visibility.Collapsed;
-            }
+                _cameraPanel.Deactivate();
 
             for (int i = 0; i < NavButtons.Length; i++)
             {
@@ -292,8 +289,7 @@ namespace Photobooth.Views
             }
 
             if (index == 1)
-            {
-            }
+                _cameraPanel.Activate();
 
             if (index == 2)
             {
@@ -308,81 +304,6 @@ namespace Photobooth.Views
             if (index == 4) LoadDisplaySliders();
             if (index == 5) _ = TestAIConnectionAsync();
             if (index == 7) PopulateAboutTab();
-        }
-
-        // --- Camera settings tab -------------------------------------------------
-
-        private bool _settingCameraControls;
-
-        private void LoadCameraSettings()
-        {
-        }
-
-        private void RefreshCameraDropdown(ComboBox cb, uint propId,
-            Dictionary<uint, string> map, Func<uint, string> fallback)
-        {
-            _settingCameraControls = true;
-            try
-            {
-                uint currentValue = _camera.GetPropertyValue(propId) ?? 0xFFFFFFFF;
-                int[]? desc       = _camera.GetPropertyDesc(propId);
-
-                cb.Items.Clear();
-
-                IEnumerable<uint> values = (desc != null && desc.Length > 0)
-                    ? desc.Select(v => (uint)v)
-                    : map.Keys;
-
-                foreach (uint v in values)
-                {
-                    string label = map.TryGetValue(v, out var s) ? s : fallback(v);
-                    cb.Items.Add(new ComboBoxItem { Content = label, Tag = v });
-                }
-
-                foreach (ComboBoxItem item in cb.Items)
-                {
-                    if (item.Tag is uint v && v == currentValue)
-                    {
-                        cb.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-            finally
-            {
-                _settingCameraControls = false;
-            }
-        }
-
-        private void OnCameraPropertyChanged(object? sender, uint propId)
-        {
-        }
-
-        private void CameraComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-        }
-
-        // --- Inline live preview -------------------------------------------------
-
-        private EvfPump? _inlineEvfPump;
-
-        private void StartInlinePreview()
-        {
-        }
-
-        private void StopInlinePreview()
-        {
-            _inlineEvfPump?.Stop();
-            _inlineEvfPump = null;
-        }
-
-        private async void TakeTestShot_Click(object sender, RoutedEventArgs e)
-        {
-            await System.Threading.Tasks.Task.CompletedTask;
-        }
-
-        private void ResumePreview_Click(object sender, RoutedEventArgs e)
-        {
         }
 
         // --- Strip designer tab --------------------------------------------------
