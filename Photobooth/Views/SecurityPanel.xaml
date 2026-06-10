@@ -1,0 +1,26 @@
+<UserControl x:Class="Photobooth.Views.SecurityPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="SECURITY" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+        <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+        <TextBlock Text="New PIN" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <PasswordBox x:Name="NewPinBox"
+                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Padding="10,7" FontSize="13" MaxLength="6" Margin="0,0,0,10"/>
+
+        <TextBlock Text="Confirm PIN" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <PasswordBox x:Name="ConfirmPinBox"
+                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Padding="10,7" FontSize="13" MaxLength="6" Margin="0,0,0,8"/>
+
+        <TextBlock x:Name="PinChangeStatus" FontSize="12" Visibility="Collapsed" Margin="0,0,0,8"/>
+
+        <Button Content="Change PIN"
+                Style="{StaticResource GhostButton}"
+                HorizontalAlignment="Left" Padding="18,7" FontSize="13"
+                Margin="0,0,0,4"
+                Click="ChangePIN_Click"/>
+    </StackPanel>
+</UserControl>
