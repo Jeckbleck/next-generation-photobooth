@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Photobooth.Services;
-using Serilog;
 
 namespace Photobooth.Views;
 
@@ -18,9 +17,16 @@ public partial class SecurityPanel : UserControl
 
     private void ChangePIN_Click(object sender, RoutedEventArgs e)
     {
+        PinChangeStatus.Visibility = Visibility.Collapsed;
+
         var newPin     = NewPinBox.Password;
         var confirmPin = ConfirmPinBox.Password;
 
+        if (!newPin.All(char.IsDigit))
+        {
+            ShowPinStatus("PIN must contain digits only.", isError: true);
+            return;
+        }
         if (newPin.Length < 4)
         {
             ShowPinStatus("PIN must be at least 4 digits.", isError: true);
@@ -33,7 +39,6 @@ public partial class SecurityPanel : UserControl
         }
 
         _settings.SetPin(newPin);
-        Log.Information("PIN changed by operator");
         NewPinBox.Password     = string.Empty;
         ConfirmPinBox.Password = string.Empty;
         ShowPinStatus("PIN changed successfully.", isError: false);
