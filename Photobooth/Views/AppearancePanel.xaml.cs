@@ -39,6 +39,10 @@ public partial class AppearancePanel : UserControl
 
         SelectedEventId = id;
 
+        AccentHexBox.Text  = ev.AccentColor     ?? DefaultAccent;
+        BgColorHexBox.Text = ev.BackgroundColor ?? DefaultBackground;
+        SurfaceHexBox.Text = ev.SurfaceColor    ?? DefaultSurface;
+
         if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",     ev.AccentColor);
         if (!string.IsNullOrEmpty(ev.BackgroundColor)) ApplyBrushColor("BackgroundBrush", ev.BackgroundColor);
         if (!string.IsNullOrEmpty(ev.SurfaceColor))    ApplyBrushColor("SurfaceBrush",    ev.SurfaceColor);
