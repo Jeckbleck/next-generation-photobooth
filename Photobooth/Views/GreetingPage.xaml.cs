@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,6 +27,7 @@ namespace Photobooth.Views
         private AppearancePanel      _appearancePanel = null!;
         private CameraSettingsPanel  _cameraPanel     = null!;
         private AIConfigPanel        _aiPanel         = null!;
+        private PrinterPanel         _printerPanel    = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -61,6 +61,8 @@ namespace Photobooth.Views
             _aiPanel = new AIConfigPanel(_aiClient, _settings);
             AIConfigPanelHost.Content = _aiPanel;
             _aiPanel.AIEnhancementEnabledChanged += OnAIEnhancementEnabledChanged;
+            _printerPanel = new PrinterPanel(_settings);
+            PrinterPanelHost.Content = _printerPanel;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -268,8 +270,6 @@ namespace Photobooth.Views
         private void OpenSettings()
         {
             _eventPanel.Refresh();
-            PopulatePrinterDropdown();
-            AutoPrintToggle.IsChecked = _settings.AutoPrint;
             SelectTab(0);
         }
 
@@ -295,6 +295,8 @@ namespace Photobooth.Views
 
             if (index == 1)
                 _cameraPanel.Activate();
+
+            if (index == 3) _printerPanel.Activate();
 
             if (index == 2)
             {
@@ -365,66 +367,6 @@ namespace Photobooth.Views
             AboutSessionsPath.Text = string.IsNullOrWhiteSpace(_settings.StorageRoot)
                 ? "(not configured)"
                 : _settings.StorageRoot;
-        }
-
-        // --- Printer tab ---------------------------------------------------------
-
-        private void PopulatePrinterDropdown()
-        {
-            PrinterDropdown.IsEnabled        = false;
-            PrinterStatusText.Text           = "Loading printers…";
-            PrinterDropdown.SelectionChanged -= PrinterDropdown_SelectionChanged;
-            PrinterDropdown.Items.Clear();
-            PrinterDropdown.Items.Add("(none)");
-
-            string? saved = _settings.PrinterName;
-
-            _ = Task.Run(() =>
-            {
-                var printers = new List<string>();
-                foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
-                    printers.Add(name);
-                return printers;
-            }).ContinueWith(t =>
-            {
-                int selectIndex = 0;
-                foreach (var name in t.Result)
-                {
-                    PrinterDropdown.Items.Add(name);
-                    if (name == saved)
-                        selectIndex = PrinterDropdown.Items.Count - 1;
-                }
-
-                PrinterDropdown.SelectedIndex = selectIndex;
-                PrinterStatusText.Text = selectIndex == 0
-                    ? "No printer selected."
-                    : $"Active: {PrinterDropdown.SelectedItem}";
-
-                PrinterDropdown.IsEnabled = true;
-                PrinterDropdown.SelectionChanged += PrinterDropdown_SelectionChanged;
-            }, TaskScheduler.FromCurrentSynchronizationContext());
-        }
-
-        private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
-        {
-            _settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
-        }
-
-        private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (PrinterDropdown.SelectedIndex <= 0)
-            {
-                _settings.SetPrinterName(null);
-                PrinterStatusText.Text = "No printer selected.";
-                Log.Information("Printer selection cleared");
-            }
-            else
-            {
-                string name = (string)PrinterDropdown.SelectedItem;
-                _settings.SetPrinterName(name);
-                PrinterStatusText.Text = $"Active: {name}";
-                Log.Information("Printer selected: {Name}", name);
-            }
         }
 
         // --- Display tab: sliders ------------------------------------------------
