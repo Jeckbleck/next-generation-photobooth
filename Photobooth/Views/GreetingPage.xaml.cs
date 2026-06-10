@@ -5,7 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Microsoft.Win32;
 using Photobooth.Camera;
 using Photobooth.Helpers;
 using Photobooth.Services;
@@ -26,11 +25,8 @@ namespace Photobooth.Views
         private Button[]?           _navButtons;
         private FrameworkElement[]? _contentPanels;
 
-        private const string DefaultAccent     = "#E94560";
-        private const string DefaultBackground = "#1A1A2E";
-        private const string DefaultSurface    = "#16213E";
-
         private EventManagementPanel _eventPanel = null!;
+        private AppearancePanel _appearancePanel = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -56,6 +52,9 @@ namespace Photobooth.Views
             _eventPanel = new EventManagementPanel(_events, _settings, _fileStorage, _aiClient);
             EventPanelHost.Content = _eventPanel;
             _eventPanel.ActiveEventChanged += OnActiveEventChanged;
+            _appearancePanel = new AppearancePanel(_events, _settings);
+            AppearancePanelHost.Content = _appearancePanel;
+            _appearancePanel.BackgroundImageChanged += OnBackgroundImageChanged;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -71,35 +70,8 @@ namespace Photobooth.Views
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown += OnWindowKeyDown;
             UpdateCameraStatus();
-            ApplyActiveEventAppearance();
+            _appearancePanel.ApplyActiveEventAppearance();
             UpdateAIEnhancementButton();
-        }
-
-        private void ApplyActiveEventAppearance()
-        {
-            var id = _settings.ActiveEventId;
-            if (!id.HasValue) return;
-            var ev = _events.GetById(id.Value);
-            if (ev is null) return;
-
-            if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",     ev.AccentColor);
-            if (!string.IsNullOrEmpty(ev.BackgroundColor)) ApplyBrushColor("BackgroundBrush", ev.BackgroundColor);
-            if (!string.IsNullOrEmpty(ev.SurfaceColor))    ApplyBrushColor("SurfaceBrush",    ev.SurfaceColor);
-
-            if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
-            {
-                try
-                {
-                    var bmp = new BitmapImage(new Uri(ev.BackgroundImagePath));
-                    GreetingBgImage.Source       = bmp;
-                    GreetingBgImage.Visibility   = Visibility.Visible;
-                    GreetingBgOverlay.Visibility = Visibility.Visible;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to restore background image on load");
-                }
-            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -107,6 +79,7 @@ namespace Photobooth.Views
             _camera.CameraDisconnected    -= OnCameraDisconnected;
             _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
             _eventPanel.ActiveEventChanged -= OnActiveEventChanged;
+            _appearancePanel.BackgroundImageChanged -= OnBackgroundImageChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
             StopInlinePreview();
@@ -157,8 +130,16 @@ namespace Photobooth.Views
 
         private void OnActiveEventChanged(object? sender, Data.Models.Event? ev)
         {
-            if (ev is not null) LoadEventAppearance(ev);
+            _appearancePanel.SelectedEventId = ev?.Id;
+            if (ev is not null) _appearancePanel.LoadEventAppearance(ev);
             UpdateCameraStatus();
+        }
+
+        private void OnBackgroundImageChanged(object? sender, BitmapImage? bmp)
+        {
+            GreetingBgImage.Source       = bmp;
+            GreetingBgImage.Visibility   = bmp is null ? Visibility.Collapsed : Visibility.Visible;
+            GreetingBgOverlay.Visibility = bmp is null ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)
@@ -721,181 +702,6 @@ namespace Photobooth.Views
             if (_loadingDisplaySliders) return;
             _settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
         }
-
-        // --- Display tab: background image ---------------------------------------
-
-        private void BrowseGreetingBg_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog
-            {
-                Title  = "Select greeting background image",
-                Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp;*.tiff|All files|*.*"
-            };
-            if (dlg.ShowDialog() != true) return;
-
-            try
-            {
-                var bmp = new BitmapImage(new Uri(dlg.FileName));
-                GreetingBgImage.Source       = bmp;
-                GreetingBgImage.Visibility   = Visibility.Visible;
-                GreetingBgOverlay.Visibility = Visibility.Visible;
-                // TODO(Task4): BgPathBox, BgPreviewImage, BgPreviewBorder moved to AppearancePanel
-                // BgPathBox.Text               = dlg.FileName;
-                // BgPreviewImage.Source        = bmp;
-                // BgPreviewBorder.Visibility   = Visibility.Visible;
-                Log.Information("Greeting background set: {Path}", dlg.FileName);
-
-                if (_eventPanel.SelectedEventId.HasValue)
-                    _events.SetBackgroundImagePath(_eventPanel.SelectedEventId.Value, dlg.FileName);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Failed to load background image");
-            }
-        }
-
-        private void ClearGreetingBg_Click(object sender, RoutedEventArgs e)
-        {
-            ClearBackground();
-            if (_eventPanel.SelectedEventId.HasValue)
-                _events.SetBackgroundImagePath(_eventPanel.SelectedEventId.Value, null);
-        }
-
-        private void ClearBackground()
-        {
-            GreetingBgImage.Source       = null;
-            GreetingBgImage.Visibility   = Visibility.Collapsed;
-            GreetingBgOverlay.Visibility = Visibility.Collapsed;
-            // TODO(Task4): BgPathBox, BgPreviewImage, BgPreviewBorder moved to AppearancePanel
-            // BgPathBox.Text               = string.Empty;
-            // BgPreviewImage.Source        = null;
-            // BgPreviewBorder.Visibility   = Visibility.Collapsed;
-            Log.Information("Greeting background cleared");
-        }
-
-        // --- Display tab: color pickers ------------------------------------------
-
-        private void LoadEventAppearance(Data.Models.Event ev)
-        {
-            var accent = ev.AccentColor     ?? DefaultAccent;
-            var bg     = ev.BackgroundColor ?? DefaultBackground;
-            var surf   = ev.SurfaceColor    ?? DefaultSurface;
-
-            // TODO(Task4): AccentHexBox, BgColorHexBox, SurfaceHexBox moved to AppearancePanel
-            // AccentHexBox.Text  = accent;
-            // BgColorHexBox.Text = bg;
-            // SurfaceHexBox.Text = surf;
-
-            ApplyBrushColor("AccentBrush",     accent);
-            ApplyBrushColor("BackgroundBrush", bg);
-            ApplyBrushColor("SurfaceBrush",    surf);
-
-            if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
-            {
-                try
-                {
-                    var bmp = new BitmapImage(new Uri(ev.BackgroundImagePath));
-                    GreetingBgImage.Source       = bmp;
-                    GreetingBgImage.Visibility   = Visibility.Visible;
-                    GreetingBgOverlay.Visibility = Visibility.Visible;
-                    // TODO(Task4): BgPathBox, BgPreviewImage, BgPreviewBorder moved to AppearancePanel
-                    // BgPathBox.Text               = ev.BackgroundImagePath;
-                    // BgPreviewImage.Source        = bmp;
-                    // BgPreviewBorder.Visibility   = Visibility.Visible;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to restore background image for event {Id}", ev.Id);
-                    ClearBackground();
-                }
-            }
-            else
-            {
-                ClearBackground();
-            }
-        }
-
-        private void ApplyAccentColor_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO(Task4): AccentHexBox moved to AppearancePanel — method body will be removed
-            var hex = string.Empty; // AccentHexBox.Text.Trim();
-            ApplyBrushColor("AccentBrush", hex);
-            if (_eventPanel.SelectedEventId.HasValue)
-                _events.SetAccentColor(_eventPanel.SelectedEventId.Value, hex);
-        }
-
-        private void ApplyBgColor_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO(Task4): BgColorHexBox moved to AppearancePanel — method body will be removed
-            var hex = string.Empty; // BgColorHexBox.Text.Trim();
-            ApplyBrushColor("BackgroundBrush", hex);
-            if (_eventPanel.SelectedEventId.HasValue)
-                _events.SetBackgroundColor(_eventPanel.SelectedEventId.Value, hex);
-        }
-
-        private void ApplySurfaceColor_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO(Task4): SurfaceHexBox moved to AppearancePanel — method body will be removed
-            var hex = string.Empty; // SurfaceHexBox.Text.Trim();
-            ApplyBrushColor("SurfaceBrush", hex);
-            if (_eventPanel.SelectedEventId.HasValue)
-                _events.SetSurfaceColor(_eventPanel.SelectedEventId.Value, hex);
-        }
-
-        private void RevertAppearance_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO(Task4): AccentHexBox, BgColorHexBox, SurfaceHexBox moved to AppearancePanel
-            // AccentHexBox.Text  = DefaultAccent;
-            // BgColorHexBox.Text = DefaultBackground;
-            // SurfaceHexBox.Text = DefaultSurface;
-
-            ApplyBrushColor("AccentBrush",     DefaultAccent);
-            ApplyBrushColor("BackgroundBrush", DefaultBackground);
-            ApplyBrushColor("SurfaceBrush",    DefaultSurface);
-
-            ClearBackground();
-
-            if (_eventPanel.SelectedEventId.HasValue)
-            {
-                _events.SetAccentColor(_eventPanel.SelectedEventId.Value, null);
-                _events.SetBackgroundColor(_eventPanel.SelectedEventId.Value, null);
-                _events.SetSurfaceColor(_eventPanel.SelectedEventId.Value, null);
-                _events.SetBackgroundImagePath(_eventPanel.SelectedEventId.Value, null);
-            }
-
-            Log.Information("Appearance reverted to defaults");
-        }
-
-        private static void ApplyBrushColor(string resourceKey, string hex)
-        {
-            try
-            {
-                var color = (Color)ColorConverter.ConvertFromString(hex);
-                Application.Current.Resources[resourceKey] = new SolidColorBrush(color);
-
-                if (resourceKey == "AccentBrush")
-                {
-                    Application.Current.Resources["AccentHoverBrush"]   = new SolidColorBrush(Lighten(color, 0.12));
-                    Application.Current.Resources["AccentPressedBrush"] = new SolidColorBrush(Darken(color, 0.22));
-                }
-
-                Log.Information("Applied {Key} = {Hex}", resourceKey, hex);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Invalid color value '{Hex}' for {Key}", hex, resourceKey);
-            }
-        }
-
-        private static Color Lighten(Color c, double amount) => Color.FromArgb(c.A,
-            (byte)Math.Min(255, c.R + (int)((255 - c.R) * amount)),
-            (byte)Math.Min(255, c.G + (int)((255 - c.G) * amount)),
-            (byte)Math.Min(255, c.B + (int)((255 - c.B) * amount)));
-
-        private static Color Darken(Color c, double amount) => Color.FromArgb(c.A,
-            (byte)(c.R * (1.0 - amount)),
-            (byte)(c.G * (1.0 - amount)),
-            (byte)(c.B * (1.0 - amount)));
 
         // --- Security: change PIN ------------------------------------------------
 
