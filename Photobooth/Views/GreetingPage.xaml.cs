@@ -27,6 +27,7 @@ namespace Photobooth.Views
         private EventManagementPanel _eventPanel = null!;
         private AppearancePanel      _appearancePanel = null!;
         private CameraSettingsPanel  _cameraPanel     = null!;
+        private AIConfigPanel        _aiPanel         = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -57,6 +58,9 @@ namespace Photobooth.Views
             _appearancePanel.BackgroundImageChanged += OnBackgroundImageChanged;
             _cameraPanel = new CameraSettingsPanel(_camera);
             CameraSettingsPanelHost.Content = _cameraPanel;
+            _aiPanel = new AIConfigPanel(_aiClient, _settings);
+            AIConfigPanelHost.Content = _aiPanel;
+            _aiPanel.AIEnhancementEnabledChanged += OnAIEnhancementEnabledChanged;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -81,6 +85,7 @@ namespace Photobooth.Views
             _camera.CameraDisconnected -= OnCameraDisconnected;
             _eventPanel.ActiveEventChanged -= OnActiveEventChanged;
             _appearancePanel.BackgroundImageChanged -= OnBackgroundImageChanged;
+            _aiPanel.AIEnhancementEnabledChanged -= OnAIEnhancementEnabledChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
             _cameraPanel.Deactivate();
@@ -142,6 +147,9 @@ namespace Photobooth.Views
             GreetingBgImage.Visibility   = bmp is null ? Visibility.Collapsed : Visibility.Visible;
             GreetingBgOverlay.Visibility = bmp is null ? Visibility.Collapsed : Visibility.Visible;
         }
+
+        private void OnAIEnhancementEnabledChanged(object? sender, bool enabled)
+            => UpdateAIEnhancementButton();
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)
         {
@@ -262,9 +270,6 @@ namespace Photobooth.Views
             _eventPanel.Refresh();
             PopulatePrinterDropdown();
             AutoPrintToggle.IsChecked = _settings.AutoPrint;
-            AIEnableToggle.IsChecked  = _settings.AIEnhancementEnabled;
-            AIServerUrlBox.Text       = _settings.AIServerUrl;
-            AIApiKeyBox.Text          = _settings.AIApiKey;
             SelectTab(0);
         }
 
@@ -302,7 +307,7 @@ namespace Photobooth.Views
             }
 
             if (index == 4) LoadDisplaySliders();
-            if (index == 5) _ = TestAIConnectionAsync();
+            if (index == 5) _aiPanel.Activate();
             if (index == 7) PopulateAboutTab();
         }
 
@@ -403,52 +408,6 @@ namespace Photobooth.Views
         private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
         {
             _settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
-        }
-
-        private void AIEnableToggle_Click(object sender, RoutedEventArgs e)
-        {
-            _settings.SetAIEnhancementEnabled(AIEnableToggle.IsChecked == true);
-            UpdateAIEnhancementButton();
-        }
-
-        private void AIServerUrl_LostFocus(object sender, RoutedEventArgs e)
-        {
-            var url = AIServerUrlBox.Text.Trim();
-            if (!string.IsNullOrEmpty(url))
-            {
-                _settings.SetAIServerUrl(url);
-                _ = TestAIConnectionAsync();
-            }
-        }
-
-        private void TestAIConnection_Click(object sender, RoutedEventArgs e) => _ = TestAIConnectionAsync();
-
-        private async Task TestAIConnectionAsync()
-        {
-            AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
-            AIStatusText.Text       = "Testing…";
-            AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x77));
-
-            try
-            {
-                var styles = await _aiClient.GetStylesAsync();
-                AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
-                AIStatusText.Text       = $"Connected — {styles.Count} style{(styles.Count == 1 ? "" : "s")} available";
-                AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
-                Log.Information("AI connection test OK — {Count} style(s)", styles.Count);
-            }
-            catch (Exception ex)
-            {
-                AIStatusDot.Fill        = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
-                AIStatusText.Text       = $"Could not connect: {ex.Message}";
-                AIStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
-                Log.Warning(ex, "AI connection test failed");
-            }
-        }
-
-        private void AIApiKey_LostFocus(object sender, RoutedEventArgs e)
-        {
-            _settings.SetAIApiKey(AIApiKeyBox.Text.Trim());
         }
 
         private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)
