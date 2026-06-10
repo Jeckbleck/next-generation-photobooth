@@ -293,12 +293,6 @@ namespace Photobooth.Views
 
             if (index == 1)
             {
-                LoadCameraSettings();
-                CameraPreviewPanel.Visibility = Visibility.Visible;
-                InlinePreviewImage.Source = null;
-                InlinePreviewStatusText.Text      = "Starting camera preview…";
-                InlinePreviewStatusText.Visibility = Visibility.Visible;
-                StartInlinePreview();
             }
 
             if (index == 2)
@@ -322,30 +316,6 @@ namespace Photobooth.Views
 
         private void LoadCameraSettings()
         {
-            if (!_camera.IsConnected)
-            {
-                CameraModelLabel.Text        = "No camera connected";
-                CameraSettingStatusText.Text = "Connect a camera and retry.";
-                IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
-                    WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = false;
-                return;
-            }
-
-            CameraModelLabel.Text        = _camera.ModelName ?? "Camera";
-            CameraSettingStatusText.Text = "Loading valid values from camera…";
-            IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
-                WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = true;
-
-            _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
-            _camera.CameraPropertyChanged += OnCameraPropertyChanged;
-
-            RefreshCameraDropdown(IsoComboBox,          EDSDKLib.EDSDK.PropID_ISOSpeed,     CameraPropertyMaps.Iso,          CameraPropertyMaps.LookupIso);
-            RefreshCameraDropdown(TvComboBox,           EDSDKLib.EDSDK.PropID_Tv,           CameraPropertyMaps.Tv,           CameraPropertyMaps.LookupTv);
-            RefreshCameraDropdown(AvComboBox,           EDSDKLib.EDSDK.PropID_Av,           CameraPropertyMaps.Av,           CameraPropertyMaps.LookupAv);
-            RefreshCameraDropdown(WhiteBalanceComboBox, EDSDKLib.EDSDK.PropID_WhiteBalance, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
-            RefreshCameraDropdown(ImageQualityComboBox, EDSDKLib.EDSDK.PropID_ImageQuality, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
-
-            _camera.RequestPropertyDescs();
         }
 
         private void RefreshCameraDropdown(ComboBox cb, uint propId,
@@ -386,50 +356,10 @@ namespace Photobooth.Views
 
         private void OnCameraPropertyChanged(object? sender, uint propId)
         {
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (PanelCamera.Visibility != Visibility.Visible) return;
-
-                switch (propId)
-                {
-                    case EDSDKLib.EDSDK.PropID_ISOSpeed:
-                        RefreshCameraDropdown(IsoComboBox, propId, CameraPropertyMaps.Iso, CameraPropertyMaps.LookupIso);
-                        break;
-                    case EDSDKLib.EDSDK.PropID_Tv:
-                        RefreshCameraDropdown(TvComboBox, propId, CameraPropertyMaps.Tv, CameraPropertyMaps.LookupTv);
-                        break;
-                    case EDSDKLib.EDSDK.PropID_Av:
-                        RefreshCameraDropdown(AvComboBox, propId, CameraPropertyMaps.Av, CameraPropertyMaps.LookupAv);
-                        break;
-                    case EDSDKLib.EDSDK.PropID_WhiteBalance:
-                        RefreshCameraDropdown(WhiteBalanceComboBox, propId, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
-                        break;
-                    case EDSDKLib.EDSDK.PropID_ImageQuality:
-                        RefreshCameraDropdown(ImageQualityComboBox, propId, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
-                        break;
-                }
-
-                CameraSettingStatusText.Text = string.Empty;
-            });
         }
 
         private void CameraComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_settingCameraControls) return;
-            if (sender is not ComboBox cb) return;
-            if (cb.SelectedItem is not ComboBoxItem item) return;
-            if (item.Tag is not uint value) return;
-
-            uint propId = cb == IsoComboBox          ? EDSDKLib.EDSDK.PropID_ISOSpeed
-                        : cb == TvComboBox            ? EDSDKLib.EDSDK.PropID_Tv
-                        : cb == AvComboBox            ? EDSDKLib.EDSDK.PropID_Av
-                        : cb == WhiteBalanceComboBox  ? EDSDKLib.EDSDK.PropID_WhiteBalance
-                        : cb == ImageQualityComboBox  ? EDSDKLib.EDSDK.PropID_ImageQuality
-                        : 0u;
-
-            if (propId == 0) return;
-            Log.Information("Camera property 0x{PropId:X8} → 0x{Value:X8}", propId, value);
-            _camera.SetProperty(propId, value);
         }
 
         // --- Inline live preview -------------------------------------------------
@@ -438,22 +368,6 @@ namespace Photobooth.Views
 
         private void StartInlinePreview()
         {
-            if (!_camera.IsConnected) return;
-            _inlineEvfPump = new EvfPump(
-                _camera,
-                Dispatcher,
-                frame =>
-                {
-                    InlinePreviewImage.Source = frame;
-                    InlinePreviewStatusText.Visibility = Visibility.Collapsed;
-                },
-                onStall: () =>
-                {
-                    InlinePreviewStatusText.Text = "Camera preview unavailable.";
-                    InlinePreviewStatusText.Visibility = Visibility.Visible;
-                },
-                watchdogMs: 100);
-            _inlineEvfPump.Start();
         }
 
         private void StopInlinePreview()
@@ -464,57 +378,11 @@ namespace Photobooth.Views
 
         private async void TakeTestShot_Click(object sender, RoutedEventArgs e)
         {
-            if (!_camera.IsConnected) return;
-
-            TakeTestShotButton.IsEnabled = false;
-            ResumePreviewButton.Visibility = Visibility.Collapsed;
-
-            _inlineEvfPump?.Stop();
-            _inlineEvfPump = null;
-
-            InlinePreviewStatusText.Text = "Capturing…";
-            InlinePreviewStatusText.Visibility = Visibility.Visible;
-            InlinePreviewInfoText.Text = string.Empty;
-
-            try
-            {
-                string path = await _camera.TakePictureAsync();
-
-                var bitmap = BitmapHelper.LoadFromFile(path);
-
-                InlinePreviewImage.Source          = bitmap;
-                InlinePreviewStatusText.Visibility = Visibility.Collapsed;
-                InlinePreviewInfoText.Text         = $"Saved: {System.IO.Path.GetFileName(path)}";
-                ResumePreviewButton.Visibility     = Visibility.Visible;
-
-                Log.Information("Test shot saved: {Path}", path);
-            }
-            catch (OperationCanceledException)
-            {
-                InlinePreviewStatusText.Text   = "Capture timed out.";
-                ResumePreviewButton.Visibility = Visibility.Visible;
-                Log.Warning("Test shot timed out");
-            }
-            catch (Exception ex)
-            {
-                InlinePreviewStatusText.Text   = $"Error: {ex.Message}";
-                ResumePreviewButton.Visibility = Visibility.Visible;
-                Log.Error(ex, "Test shot failed");
-            }
-            finally
-            {
-                TakeTestShotButton.IsEnabled = true;
-            }
+            await System.Threading.Tasks.Task.CompletedTask;
         }
 
         private void ResumePreview_Click(object sender, RoutedEventArgs e)
         {
-            ResumePreviewButton.Visibility     = Visibility.Collapsed;
-            InlinePreviewImage.Source          = null;
-            InlinePreviewStatusText.Text       = "Starting camera preview…";
-            InlinePreviewStatusText.Visibility = Visibility.Visible;
-            InlinePreviewInfoText.Text         = string.Empty;
-            StartInlinePreview();
         }
 
         // --- Strip designer tab --------------------------------------------------

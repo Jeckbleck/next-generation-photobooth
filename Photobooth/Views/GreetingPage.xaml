@@ -319,57 +319,7 @@
 
                                 <!-- CAMERA SETTINGS -->
                                 <StackPanel x:Name="PanelCamera" Visibility="Collapsed">
-                                    <TextBlock Text="Camera Settings" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
-
-                                    <!-- Camera status bar -->
-                                    <Border Background="#0D1B2A" CornerRadius="6" Padding="12,10" Margin="0,0,0,20">
-                                        <StackPanel>
-                                            <TextBlock x:Name="CameraModelLabel" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" FontWeight="SemiBold"/>
-                                            <TextBlock x:Name="CameraSettingStatusText" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <TextBlock Text="EXPOSURE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="ISO" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="IsoComboBox" Grid.Column="1" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Shutter speed" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="TvComboBox" Grid.Column="1" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,20">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Aperture" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="AvComboBox" Grid.Column="1" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
-                                    </Grid>
-
-                                    <TextBlock Text="COLOR" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-                                    <Grid Margin="0,0,0,20">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="White balance" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="WhiteBalanceComboBox" Grid.Column="1" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
-                                    </Grid>
-
-                                    <TextBlock Text="FILE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-                                    <Grid>
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Image quality" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="ImageQualityComboBox" Grid.Column="1" Padding="8,6"
-                                                  SelectionChanged="CameraComboBox_SelectionChanged"/>
-                                    </Grid>
+                                    <ContentControl x:Name="CameraSettingsPanelHost"/>
                                 </StackPanel>
 
                                 <!-- STRIP CUSTOMIZATION — canvas lives in StripDesignerPanel (full-width overlay) -->
