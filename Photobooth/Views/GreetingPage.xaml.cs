@@ -2,7 +2,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Photobooth.Camera;
 using Photobooth.Services;
@@ -28,6 +27,7 @@ namespace Photobooth.Views
         private CameraSettingsPanel  _cameraPanel     = null!;
         private AIConfigPanel        _aiPanel         = null!;
         private PrinterPanel         _printerPanel    = null!;
+        private SecurityPanel        _securityPanel   = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -63,6 +63,8 @@ namespace Photobooth.Views
             _aiPanel.AIEnhancementEnabledChanged += OnAIEnhancementEnabledChanged;
             _printerPanel = new PrinterPanel(_settings);
             PrinterPanelHost.Content = _printerPanel;
+            _securityPanel = new SecurityPanel(_settings);
+            SecurityPanelHost.Content = _securityPanel;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -391,39 +393,6 @@ namespace Photobooth.Views
         {
             if (_loadingDisplaySliders) return;
             _settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
-        }
-
-        // --- Security: change PIN ------------------------------------------------
-
-        private void ChangePIN_Click(object sender, RoutedEventArgs e)
-        {
-            var newPin     = NewPinBox.Password;
-            var confirmPin = ConfirmPinBox.Password;
-
-            if (newPin.Length < 4)
-            {
-                ShowPinStatus("PIN must be at least 4 digits.", isError: true);
-                return;
-            }
-            if (newPin != confirmPin)
-            {
-                ShowPinStatus("PINs do not match.", isError: true);
-                return;
-            }
-
-            _settings.SetPin(newPin);
-            NewPinBox.Password     = string.Empty;
-            ConfirmPinBox.Password = string.Empty;
-            ShowPinStatus("PIN changed successfully.", isError: false);
-        }
-
-        private void ShowPinStatus(string message, bool isError)
-        {
-            PinChangeStatus.Text = message;
-            PinChangeStatus.Foreground = isError
-                ? new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B))
-                : new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
-            PinChangeStatus.Visibility = Visibility.Visible;
         }
 
         // --- Close ---------------------------------------------------------------
