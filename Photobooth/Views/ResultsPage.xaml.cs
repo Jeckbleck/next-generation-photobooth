@@ -182,10 +182,17 @@ namespace Photobooth.Views
         {
             PrintStatusText.Text = "Printing your strip…";
 
-            var eventId = _settings.ActiveEventId ?? 0;
-            var strip   = _strip ?? await PrintHelper.ComposeStripAsync(eventId, _paths);
+            PrintResult result;
+            if (_strip is not null)
+            {
+                result = await PrintHelper.PrintSessionAsync(_sessionId, _strip);
+            }
+            else
+            {
+                var eventId = _settings.ActiveEventId ?? 0;
+                result = await PrintHelper.PrintSessionAsync(_sessionId, eventId, _paths);
+            }
 
-            var result = await PrintHelper.PrintSessionAsync(_sessionId, strip);
             PrintStatusText.Text = result.Message;
         }
 

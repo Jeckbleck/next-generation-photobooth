@@ -180,6 +180,7 @@ namespace Photobooth.Data.Repositories
 
         public List<Session> GetSessionsWithPhotos(int eventId) =>
             _db.Sessions
+               .AsNoTracking()
                .Include(s => s.Photos)
                    .ThenInclude(p => p.EnhancedVariants)
                .Where(s => s.EventId == eventId)
