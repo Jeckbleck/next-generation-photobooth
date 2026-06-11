@@ -270,6 +270,7 @@
                                            FontSize="17" FontWeight="Bold"
                                            Margin="20,0,20,20"/>
                                 <Button x:Name="NavEvents"  Content="Event Management"  Style="{StaticResource SettingsNavButtonActive}" Click="Nav_Click"/>
+                                <Button x:Name="NavStats"   Content="Statistics"        Style="{StaticResource SettingsNavButton}"       Click="Nav_Click"/>
                                 <Button x:Name="NavCamera"  Content="Camera"            Style="{StaticResource SettingsNavButton}"       Click="Nav_Click"/>
                                 <Button x:Name="NavStrip"   Content="Strip"             Style="{StaticResource SettingsNavButton}"       Click="Nav_Click"/>
                                 <Button x:Name="NavPrinter" Content="Printer"           Style="{StaticResource SettingsNavButton}"       Click="Nav_Click"/>
@@ -295,6 +296,11 @@
                                 <StackPanel x:Name="PanelEvents" Visibility="Visible">
                                     <ContentControl x:Name="EventPanelHost"/>
                                     <ContentControl x:Name="SecurityPanelHost"/>
+                                </StackPanel>
+
+                                <!-- STATISTICS -->
+                                <StackPanel x:Name="PanelStats" Visibility="Collapsed">
+                                    <ContentControl x:Name="StatsPanelHost"/>
                                 </StackPanel>
 
                                 <!-- CAMERA SETTINGS -->

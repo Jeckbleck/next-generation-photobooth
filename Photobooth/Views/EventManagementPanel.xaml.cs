@@ -16,7 +16,6 @@ public partial class EventManagementPanel : UserControl
 
     private int?  _selectedEventId;
     private bool  _loadingEvents;
-    private EventStatsPanel _statsPanel = null!;
 
     public int? SelectedEventId => _selectedEventId;
 
@@ -33,8 +32,6 @@ public partial class EventManagementPanel : UserControl
         _fileStorage = fileStorage;
         _aiClient    = aiClient;
         InitializeComponent();
-        _statsPanel = new EventStatsPanel(_events, _aiClient, _fileStorage);
-        StatsPanelHost.Content = _statsPanel;
     }
 
     // Called by GreetingPage.OpenSettings() when the settings panel opens.
@@ -84,7 +81,6 @@ public partial class EventManagementPanel : UserControl
             if (ev is not null)
             {
                 PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
-                _statsPanel.Refresh(id);
                 ActiveEventChanged.Invoke(this, ev);
             }
         }
@@ -119,7 +115,6 @@ public partial class EventManagementPanel : UserControl
         SaveImagesToggle.IsChecked      = true;
         PrintLimitBox.Text              = string.Empty;
         SessionLimitBox.Text            = string.Empty;
-        _statsPanel.Clear();
         ArchiveEventButton.IsEnabled    = false;
     }
 
@@ -258,7 +253,6 @@ public partial class EventManagementPanel : UserControl
 
         SetSelectedEvent(id);
         PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
-        _statsPanel.Refresh(id);
         ActiveEventChanged.Invoke(this, ev);
     }
 

@@ -119,7 +119,5 @@
                    Foreground="#E9A020" FontSize="12" TextWrapping="Wrap"
                    Visibility="Collapsed" Margin="0,0,0,14"/>
         <Rectangle Height="0" Margin="0,0,0,6"/>
-
-        <ContentControl x:Name="StatsPanelHost"/>
     </StackPanel>
 </UserControl>

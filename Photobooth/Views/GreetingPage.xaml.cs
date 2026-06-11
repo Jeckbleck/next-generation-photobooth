@@ -28,12 +28,13 @@ namespace Photobooth.Views
         private AIConfigPanel        _aiPanel         = null!;
         private PrinterPanel         _printerPanel    = null!;
         private SecurityPanel        _securityPanel   = null!;
+        private EventStatsPanel      _statsPanel      = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
-            { NavEvents, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
+            { NavEvents, NavStats, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
 
         private FrameworkElement[] ContentPanels => _contentPanels ??= new FrameworkElement[]
-            { PanelEvents, PanelCamera, PanelStrip, PanelPrinter, PanelDisplay, PanelAI, PanelSync, PanelAbout };
+            { PanelEvents, PanelStats, PanelCamera, PanelStrip, PanelPrinter, PanelDisplay, PanelAI, PanelSync, PanelAbout };
 
         public GreetingPage(
             CameraService       camera,
@@ -65,6 +66,8 @@ namespace Photobooth.Views
             PrinterPanelHost.Content = _printerPanel;
             _securityPanel = new SecurityPanel(_settings);
             SecurityPanelHost.Content = _securityPanel;
+            _statsPanel = new EventStatsPanel(_events, _aiClient, _fileStorage);
+            StatsPanelHost.Content = _statsPanel;
             _loadingDisplaySliders = false;
 
             Log.Information("Navigated to GreetingPage");
@@ -143,6 +146,8 @@ namespace Photobooth.Views
             _appearancePanel.SelectedEventId = ev?.Id;
             if (ev is not null) _appearancePanel.LoadEventAppearance(ev);
             UpdateCameraStatus();
+            if (ev is not null) _statsPanel.Refresh(ev.Id);
+            else                _statsPanel.Clear();
         }
 
         private void OnBackgroundImageChanged(object? sender, BitmapImage? bmp)
@@ -285,7 +290,7 @@ namespace Photobooth.Views
 
         private void SelectTab(int index)
         {
-            if (ContentPanels[1].Visibility == Visibility.Visible && index != 1)
+            if (ContentPanels[2].Visibility == Visibility.Visible && index != 2)
                 _cameraPanel.Deactivate();
 
             for (int i = 0; i < NavButtons.Length; i++)
@@ -295,12 +300,11 @@ namespace Photobooth.Views
                 ContentPanels[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            if (index == 1)
-                _cameraPanel.Activate();
+            if (index == 1) RefreshStatsTab();
+            if (index == 2) _cameraPanel.Activate();
+            if (index == 4) _printerPanel.Activate();
 
-            if (index == 3) _printerPanel.Activate();
-
-            if (index == 2)
+            if (index == 3)
             {
                 StripDesignerPanel.Visibility = Visibility.Visible;
                 LoadStripDesigner();
@@ -310,9 +314,16 @@ namespace Photobooth.Views
                 StripDesignerPanel.Visibility = Visibility.Collapsed;
             }
 
-            if (index == 4) LoadDisplaySliders();
-            if (index == 5) _aiPanel.Activate();
-            if (index == 7) PopulateAboutTab();
+            if (index == 5) LoadDisplaySliders();
+            if (index == 6) _aiPanel.Activate();
+            if (index == 8) PopulateAboutTab();
+        }
+
+        private void RefreshStatsTab()
+        {
+            var id = _settings.ActiveEventId;
+            if (id.HasValue) _statsPanel.Refresh(id.Value);
+            else             _statsPanel.Clear();
         }
 
         // --- Strip designer tab --------------------------------------------------
