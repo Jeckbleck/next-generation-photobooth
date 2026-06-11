@@ -66,7 +66,7 @@ namespace Photobooth.Views
             PrinterPanelHost.Content = _printerPanel;
             _securityPanel = new SecurityPanel(_settings);
             SecurityPanelHost.Content = _securityPanel;
-            _statsPanel = new EventStatsPanel(_events, _aiClient, _fileStorage);
+            _statsPanel = new EventStatsPanel(_events);
             StatsPanelHost.Content = _statsPanel;
             _loadingDisplaySliders = false;
 

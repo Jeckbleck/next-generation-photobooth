@@ -1,7 +1,10 @@
+using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
+using Photobooth.Helpers;
 using Photobooth.Services;
 using Serilog;
 
@@ -16,6 +19,7 @@ public partial class EventManagementPanel : UserControl
 
     private int?  _selectedEventId;
     private bool  _loadingEvents;
+    private int   _previewVersion;
 
     public int? SelectedEventId => _selectedEventId;
 
@@ -83,6 +87,7 @@ public partial class EventManagementPanel : UserControl
                 PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
                 ActiveEventChanged.Invoke(this, ev);
             }
+            _ = RefreshSessionPreviewAsync(id);
         }
         else
         {
@@ -116,6 +121,7 @@ public partial class EventManagementPanel : UserControl
         PrintLimitBox.Text              = string.Empty;
         SessionLimitBox.Text            = string.Empty;
         ArchiveEventButton.IsEnabled    = false;
+        SessionPreviewList.ItemsSource  = null;
     }
 
     private void SaveEvent_Click(object sender, RoutedEventArgs e)
@@ -254,6 +260,75 @@ public partial class EventManagementPanel : UserControl
         SetSelectedEvent(id);
         PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
         ActiveEventChanged.Invoke(this, ev);
+        _ = RefreshSessionPreviewAsync(id);
+    }
+
+    // --- Session preview -----------------------------------------------------
+
+    private sealed class SessionPreviewItem
+    {
+        public int    SessionId  { get; init; }
+        public string Date       { get; init; } = "";
+        public List<System.Windows.Media.ImageSource> Thumbnails { get; init; } = new();
+    }
+
+    private async Task RefreshSessionPreviewAsync(int eventId)
+    {
+        var version = ++_previewVersion;
+        SessionPreviewList.ItemsSource = null;
+
+        var items = await Task.Run(() =>
+        {
+            var sessions = _events.GetSessionsWithPhotos(eventId);
+            return sessions.Select(s =>
+            {
+                var thumbs = s.Photos
+                    .Where(p => p.FilePath != null && File.Exists(p.FilePath))
+                    .OrderBy(p => p.Sequence)
+                    .Select(p =>
+                    {
+                        try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(p.FilePath!, fallbackDecodeWidth: 80); }
+                        catch { return null; }
+                    })
+                    .Where(b => b != null)
+                    .Cast<System.Windows.Media.ImageSource>()
+                    .ToList();
+
+                return new SessionPreviewItem
+                {
+                    SessionId  = s.Id,
+                    Date       = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
+                    Thumbnails = thumbs,
+                };
+            }).ToList();
+        });
+
+        if (_previewVersion != version) return;
+        SessionPreviewList.ItemsSource = items;
+    }
+
+    private void SessionPreviewCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        if (((Button)sender).DataContext is not SessionPreviewItem item) return;
+        OpenSessionBrowserAt(item.SessionId);
+    }
+
+    private void OpenSessionBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        OpenSessionBrowserAt(null);
+    }
+
+    private void OpenSessionBrowserAt(int? sessionId)
+    {
+        var browser = new SessionBrowserWindow(
+            _selectedEventId!.Value, _events, _aiClient, _fileStorage, sessionId)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        browser.ShowDialog();
+        _ = RefreshSessionPreviewAsync(_selectedEventId.Value);
     }
 
     // --- Storage path --------------------------------------------------------
