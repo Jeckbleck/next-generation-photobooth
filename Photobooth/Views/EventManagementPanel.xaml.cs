@@ -1,11 +1,7 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using Microsoft.Win32;
-using Photobooth.Helpers;
 using Photobooth.Services;
 using Serilog;
 
@@ -20,7 +16,7 @@ public partial class EventManagementPanel : UserControl
 
     private int?  _selectedEventId;
     private bool  _loadingEvents;
-    private int   _previewVersion;
+    private EventStatsPanel _statsPanel = null!;
 
     public int? SelectedEventId => _selectedEventId;
 
@@ -37,6 +33,8 @@ public partial class EventManagementPanel : UserControl
         _fileStorage = fileStorage;
         _aiClient    = aiClient;
         InitializeComponent();
+        _statsPanel = new EventStatsPanel(_events, _aiClient, _fileStorage);
+        StatsPanelHost.Content = _statsPanel;
     }
 
     // Called by GreetingPage.OpenSettings() when the settings panel opens.
@@ -86,7 +84,7 @@ public partial class EventManagementPanel : UserControl
             if (ev is not null)
             {
                 PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
-                RefreshSessionStats(id);
+                _statsPanel.Refresh(id);
                 ActiveEventChanged.Invoke(this, ev);
             }
         }
@@ -121,91 +119,8 @@ public partial class EventManagementPanel : UserControl
         SaveImagesToggle.IsChecked      = true;
         PrintLimitBox.Text              = string.Empty;
         SessionLimitBox.Text            = string.Empty;
-        SessionCountText.Text           = "—";
-        PhotoCountText.Text             = "—";
-        PrintCountText.Text             = "—";
-        AICountText.Text                = "—";
-        SessionPreviewList.ItemsSource  = null;
+        _statsPanel.Clear();
         ArchiveEventButton.IsEnabled    = false;
-    }
-
-    private void RefreshSessionStats(int eventId)
-    {
-        var (sessions, photos, prints, ai) = _events.GetStats(eventId);
-        SessionCountText.Text = sessions.ToString();
-        PhotoCountText.Text   = photos.ToString();
-        PrintCountText.Text   = prints.ToString();
-        AICountText.Text      = ai.ToString();
-        _ = RefreshSessionPreviewAsync(eventId);
-    }
-
-    private sealed class SessionPreviewItem
-    {
-        public int    SessionId  { get; init; }
-        public string Date       { get; init; } = "";
-        public List<System.Windows.Media.ImageSource> Thumbnails { get; init; } = new();
-    }
-
-    private async Task RefreshSessionPreviewAsync(int eventId)
-    {
-        var version = ++_previewVersion;
-        SessionPreviewList.ItemsSource = null;
-
-        var items = await Task.Run(() =>
-        {
-            var sessions = _events.GetSessionsWithPhotos(eventId);
-            return sessions.Select(s =>
-            {
-                var thumbs = s.Photos
-                    .Where(p => p.FilePath != null && File.Exists(p.FilePath))
-                    .OrderBy(p => p.Sequence)
-                    .Select(p =>
-                    {
-                        try
-                        {
-                            return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(p.FilePath!, fallbackDecodeWidth: 80);
-                        }
-                        catch { return null; }
-                    })
-                    .Where(b => b != null)
-                    .Cast<System.Windows.Media.ImageSource>()
-                    .ToList();
-
-                return new SessionPreviewItem
-                {
-                    SessionId  = s.Id,
-                    Date       = s.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt"),
-                    Thumbnails = thumbs,
-                };
-            }).ToList();
-        });
-
-        if (_previewVersion != version) return;
-        SessionPreviewList.ItemsSource = items;
-    }
-
-    private void SessionPreviewCard_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_selectedEventId.HasValue) return;
-        if (((Button)sender).DataContext is not SessionPreviewItem item) return;
-        OpenSessionBrowserAt(item.SessionId);
-    }
-
-    private void OpenSessionBrowser_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_selectedEventId.HasValue) return;
-        OpenSessionBrowserAt(null);
-    }
-
-    private void OpenSessionBrowserAt(int? sessionId)
-    {
-        var browser = new SessionBrowserWindow(
-            _selectedEventId!.Value, _events, _aiClient, _fileStorage, sessionId)
-        {
-            Owner = Window.GetWindow(this)
-        };
-        browser.ShowDialog();
-        RefreshSessionStats(_selectedEventId.Value);
     }
 
     private void SaveEvent_Click(object sender, RoutedEventArgs e)
@@ -259,23 +174,6 @@ public partial class EventManagementPanel : UserControl
         SetSelectedEvent(null);
         ClearEventFields();
         ActiveEventChanged.Invoke(this, null);
-    }
-
-    private void ClearSessionData_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_selectedEventId.HasValue) return;
-
-        var result = MessageBox.Show(
-            "Clear all session data for this event?\n\nSession records and statistics will be deleted. Photos on disk are NOT deleted.",
-            "Clear Session Data",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning,
-            MessageBoxResult.No);
-
-        if (result != MessageBoxResult.Yes) return;
-
-        _events.ClearSessions(_selectedEventId.Value);
-        RefreshSessionStats(_selectedEventId.Value);
     }
 
     private void ArchiveEvent_Click(object sender, RoutedEventArgs e)
@@ -360,7 +258,7 @@ public partial class EventManagementPanel : UserControl
 
         SetSelectedEvent(id);
         PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
-        RefreshSessionStats(id);
+        _statsPanel.Refresh(id);
         ActiveEventChanged.Invoke(this, ev);
     }
 
