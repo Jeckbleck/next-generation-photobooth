@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,6 +29,7 @@ namespace Photobooth.Views
         private PrinterPanel         _printerPanel    = null!;
         private SecurityPanel        _securityPanel   = null!;
         private EventStatsPanel      _statsPanel      = null!;
+        private AboutPanel           _aboutPanel      = null!;
 
         private Button[] NavButtons => _navButtons ??= new[]
             { NavEvents, NavStats, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
@@ -70,6 +70,8 @@ namespace Photobooth.Views
             SecurityPanelHost.Content = _securityPanel;
             _statsPanel = new EventStatsPanel(_events);
             StatsPanelHost.Content = _statsPanel;
+            _aboutPanel = new AboutPanel(_camera, _settings);
+            AboutPanelHost.Content = _aboutPanel;
             Log.Information("Navigated to GreetingPage");
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
@@ -316,7 +318,7 @@ namespace Photobooth.Views
 
             if (index == 5) _displayPanel.Activate();
             if (index == 6) _aiPanel.Activate();
-            if (index == 8) PopulateAboutTab();
+            if (index == 8) _aboutPanel.Activate();
         }
 
         private void RefreshStatsTab()
@@ -344,42 +346,6 @@ namespace Photobooth.Views
                 }
             }
             StripDesigner.LoadForEvent(null, null, null, null);
-        }
-
-        // --- About tab (read-only live data) -------------------------------------
-
-        private void PopulateAboutTab()
-        {
-            if (_camera.IsConnected)
-            {
-                AboutCameraModel.Text  = _camera.ModelName ?? "Canon camera";
-                AboutCameraStatus.Text = "Connected";
-            }
-            else
-            {
-                AboutCameraModel.Text  = "Not connected";
-                AboutCameraStatus.Text = "Supports Canon EOS cameras via EDSDK";
-            }
-
-            var printerName = _settings.PrinterName;
-            if (!string.IsNullOrEmpty(printerName))
-            {
-                AboutPrinterModel.Text  = printerName;
-                AboutPrinterStatus.Text = "Selected";
-            }
-            else
-            {
-                AboutPrinterModel.Text  = "Not selected";
-                AboutPrinterStatus.Text = "Supports DNP DS620A · any Windows printer";
-            }
-
-            AboutLogPath.Text = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Photobooth", "Logs");
-
-            AboutSessionsPath.Text = string.IsNullOrWhiteSpace(_settings.StorageRoot)
-                ? "(not configured)"
-                : _settings.StorageRoot;
         }
 
         // --- Close ---------------------------------------------------------------
