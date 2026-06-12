@@ -17,9 +17,7 @@ namespace Photobooth.Views
         private readonly AIEnhancementClient _aiClient;
         private readonly FlowController      _flow;
 
-        // Lazily initialised — named elements aren't available until after InitializeComponent.
-        private Button[]?           _navButtons;
-        private FrameworkElement[]? _contentPanels;
+        private SettingsTabController _tabController = null!;
 
         private EventManagementPanel _eventPanel = null!;
         private AppearancePanel      _appearancePanel = null!;
@@ -30,12 +28,6 @@ namespace Photobooth.Views
         private SecurityPanel        _securityPanel   = null!;
         private EventStatsPanel      _statsPanel      = null!;
         private AboutPanel           _aboutPanel      = null!;
-
-        private Button[] NavButtons => _navButtons ??= new[]
-            { NavEvents, NavStats, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
-
-        private FrameworkElement[] ContentPanels => _contentPanels ??= new FrameworkElement[]
-            { PanelEvents, PanelStats, PanelCamera, PanelStrip, PanelPrinter, PanelDisplay, PanelAI, PanelSync, PanelAbout };
 
         public GreetingPage(
             CameraService       camera,
@@ -72,6 +64,11 @@ namespace Photobooth.Views
             StatsPanelHost.Content = _statsPanel;
             _aboutPanel = new AboutPanel(_camera, _settings);
             AboutPanelHost.Content = _aboutPanel;
+            _tabController = new SettingsTabController(
+                new[] { NavEvents, NavStats, NavCamera, NavStrip, NavPrinter, NavDisplay, NavAI, NavSync, NavAbout },
+                new FrameworkElement[] { PanelEvents, PanelStats, PanelCamera, PanelStrip, PanelPrinter, PanelDisplay, PanelAI, PanelSync, PanelAbout },
+                this);
+            _tabController.TabChanged += OnTabChanged;
             Log.Information("Navigated to GreetingPage");
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
@@ -286,27 +283,29 @@ namespace Photobooth.Views
 
         private void Nav_Click(object sender, RoutedEventArgs e)
         {
-            int index = Array.IndexOf(NavButtons, (Button)sender);
-            if (index >= 0) SelectTab(index);
+            var navButtons = new[] { NavEvents, NavStats, NavCamera, NavStrip,
+                                     NavPrinter, NavDisplay, NavAI, NavSync, NavAbout };
+            int index = Array.IndexOf(navButtons, (Button)sender);
+            if (index >= 0) _tabController.SelectTab(index);
         }
 
-        private void SelectTab(int index)
-        {
-            if (ContentPanels[2].Visibility == Visibility.Visible && index != 2)
-                _cameraPanel.Deactivate();
+        private void SelectTab(int index) => _tabController.SelectTab(index);
 
-            for (int i = 0; i < NavButtons.Length; i++)
+        private void OnTabChanged(int previous, int next)
+        {
+            if (previous == 2 && next != 2) _cameraPanel.Deactivate();
+
+            switch (next)
             {
-                NavButtons[i].Style = (Style)FindResource(
-                    i == index ? "SettingsNavButtonActive" : "SettingsNavButton");
-                ContentPanels[i].Visibility = i == index ? Visibility.Visible : Visibility.Collapsed;
+                case 1: RefreshStatsTab();        break;
+                case 2: _cameraPanel.Activate();  break;
+                case 4: _printerPanel.Activate(); break;
+                case 5: _displayPanel.Activate(); break;
+                case 6: _aiPanel.Activate();      break;
+                case 8: _aboutPanel.Activate();   break;
             }
 
-            if (index == 1) RefreshStatsTab();
-            if (index == 2) _cameraPanel.Activate();
-            if (index == 4) _printerPanel.Activate();
-
-            if (index == 3)
+            if (next == 3)
             {
                 StripDesignerPanel.Visibility = Visibility.Visible;
                 LoadStripDesigner();
@@ -315,10 +314,6 @@ namespace Photobooth.Views
             {
                 StripDesignerPanel.Visibility = Visibility.Collapsed;
             }
-
-            if (index == 5) _displayPanel.Activate();
-            if (index == 6) _aiPanel.Activate();
-            if (index == 8) _aboutPanel.Activate();
         }
 
         private void RefreshStatsTab()
