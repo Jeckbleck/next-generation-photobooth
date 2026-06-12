@@ -24,6 +24,7 @@ namespace Photobooth.Views
 
         private EventManagementPanel _eventPanel = null!;
         private AppearancePanel      _appearancePanel = null!;
+        private DisplayPanel         _displayPanel    = null!;
         private CameraSettingsPanel  _cameraPanel     = null!;
         private AIConfigPanel        _aiPanel         = null!;
         private PrinterPanel         _printerPanel    = null!;
@@ -55,8 +56,9 @@ namespace Photobooth.Views
             EventPanelHost.Content = _eventPanel;
             _eventPanel.ActiveEventChanged += OnActiveEventChanged;
             _appearancePanel = new AppearancePanel(_events, _settings);
-            AppearancePanelHost.Content = _appearancePanel;
-            _appearancePanel.BackgroundImageChanged += OnBackgroundImageChanged;
+            _displayPanel = new DisplayPanel(_settings, _appearancePanel);
+            DisplayPanelHost.Content = _displayPanel;
+            _displayPanel.BackgroundImageChanged += OnBackgroundImageChanged;
             _cameraPanel = new CameraSettingsPanel(_camera);
             CameraSettingsPanelHost.Content = _cameraPanel;
             _aiPanel = new AIConfigPanel(_aiClient, _settings);
@@ -68,8 +70,6 @@ namespace Photobooth.Views
             SecurityPanelHost.Content = _securityPanel;
             _statsPanel = new EventStatsPanel(_events);
             StatsPanelHost.Content = _statsPanel;
-            _loadingDisplaySliders = false;
-
             Log.Information("Navigated to GreetingPage");
             Loaded   += OnLoaded;
             Unloaded += OnUnloaded;
@@ -91,7 +91,7 @@ namespace Photobooth.Views
         {
             _camera.CameraDisconnected -= OnCameraDisconnected;
             _eventPanel.ActiveEventChanged -= OnActiveEventChanged;
-            _appearancePanel.BackgroundImageChanged -= OnBackgroundImageChanged;
+            _displayPanel.BackgroundImageChanged -= OnBackgroundImageChanged;
             _aiPanel.AIEnhancementEnabledChanged -= OnAIEnhancementEnabledChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
@@ -314,7 +314,7 @@ namespace Photobooth.Views
                 StripDesignerPanel.Visibility = Visibility.Collapsed;
             }
 
-            if (index == 5) LoadDisplaySliders();
+            if (index == 5) _displayPanel.Activate();
             if (index == 6) _aiPanel.Activate();
             if (index == 8) PopulateAboutTab();
         }
@@ -380,30 +380,6 @@ namespace Photobooth.Views
             AboutSessionsPath.Text = string.IsNullOrWhiteSpace(_settings.StorageRoot)
                 ? "(not configured)"
                 : _settings.StorageRoot;
-        }
-
-        // --- Display tab: sliders ------------------------------------------------
-
-        private bool _loadingDisplaySliders = true; // true until after InitializeComponent so XAML default values don't overwrite saved settings
-
-        private void LoadDisplaySliders()
-        {
-            _loadingDisplaySliders = true;
-            CountdownSlider.Value   = _settings.CountdownSeconds;
-            PreviewHoldSlider.Value = _settings.PreviewHoldSeconds;
-            _loadingDisplaySliders = false;
-        }
-
-        private void CountdownSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_loadingDisplaySliders) return;
-            _settings.SetCountdownSeconds((int)CountdownSlider.Value);
-        }
-
-        private void PreviewHoldSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_loadingDisplaySliders) return;
-            _settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
         }
 
         // --- Close ---------------------------------------------------------------
