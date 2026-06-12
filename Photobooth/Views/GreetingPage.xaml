@@ -375,47 +375,7 @@
 
                                 <!-- ABOUT -->
                                 <StackPanel x:Name="PanelAbout" Visibility="Collapsed">
-                                    <TextBlock Text="The Next Generation Photobooth" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,4"/>
-                                    <TextBlock x:Name="AboutVersion" Text="Version 1.0.0-dev" Foreground="{DynamicResource AccentBrush}" FontSize="13" Margin="0,0,0,24"/>
-
-                                    <TextBlock Text="DEVICES" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-                                    <Grid Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Camera" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock x:Name="AboutCameraModel" Text="—" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
-                                            <TextBlock x:Name="AboutCameraStatus" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"/>
-                                        </StackPanel>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,20">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Printer" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock x:Name="AboutPrinterModel" Text="—" Foreground="{StaticResource TextPrimaryBrush}" FontSize="13"/>
-                                            <TextBlock x:Name="AboutPrinterStatus" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <TextBlock Text="FILES" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Log files" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                        <TextBlock x:Name="AboutLogPath" Grid.Column="1" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" TextWrapping="Wrap"/>
-                                    </Grid>
-                                    <Grid Margin="0,0,0,20">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="Sessions" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
-                                        <TextBlock x:Name="AboutSessionsPath" Grid.Column="1" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" TextWrapping="Wrap"/>
-                                    </Grid>
-
-                                    <TextBlock Text="RUNTIME" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-                                    <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-                                    <TextBlock Text=".NET 10  ·  Canon EDSDK 13.20.10  ·  WPF" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
-
+                                    <ContentControl x:Name="AboutPanelHost"/>
                                 </StackPanel>
 
                             </Grid>
