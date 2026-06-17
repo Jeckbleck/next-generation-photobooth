@@ -29,6 +29,21 @@
                        Text="{Binding Value, ElementName=PreviewHoldSlider, StringFormat='{}{0:0} s'}"
                        Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
         </Grid>
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
+            <TextBlock Text="Retake window" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+            <Slider x:Name="RetakeHoldSlider" Grid.Column="1" Minimum="2" Maximum="10" Value="3" ValueChanged="RetakeHoldSlider_ValueChanged"/>
+            <TextBlock Grid.Column="2"
+                       Text="{Binding Value, ElementName=RetakeHoldSlider, StringFormat='{}{0:0} s'}"
+                       Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
+        </Grid>
+        <Grid Margin="0,0,0,20">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
+            <TextBlock Text="Max retakes" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+            <Slider x:Name="MaxRetakesSlider" Grid.Column="1" Minimum="0" Maximum="10" Value="3" ValueChanged="MaxRetakesSlider_ValueChanged"/>
+            <TextBlock x:Name="MaxRetakesLabel" Grid.Column="2"
+                       Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>
+        </Grid>
         <Grid Margin="0,0,0,20">
             <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <TextBlock Text="Idle return" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>

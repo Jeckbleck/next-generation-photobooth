@@ -33,6 +33,9 @@ public partial class DisplayPanel : UserControl
         _loading = true;
         CountdownSlider.Value   = _settings.CountdownSeconds;
         PreviewHoldSlider.Value = _settings.PreviewHoldSeconds;
+        RetakeHoldSlider.Value  = _settings.RetakeHoldSeconds;
+        MaxRetakesSlider.Value  = _settings.MaxRetakesPerSlot;
+        UpdateMaxRetakesLabel();
         _loading = false;
     }
 
@@ -48,5 +51,24 @@ public partial class DisplayPanel : UserControl
     {
         if (_loading) return;
         _settings.SetPreviewHoldSeconds((int)PreviewHoldSlider.Value);
+    }
+
+    private void RetakeHoldSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_loading) return;
+        _settings.SetRetakeHoldSeconds((int)RetakeHoldSlider.Value);
+    }
+
+    private void MaxRetakesSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_loading) return;
+        UpdateMaxRetakesLabel();
+        _settings.SetMaxRetakesPerSlot((int)MaxRetakesSlider.Value);
+    }
+
+    private void UpdateMaxRetakesLabel()
+    {
+        var v = (int)MaxRetakesSlider.Value;
+        MaxRetakesLabel.Text = v == 0 ? "∞" : v.ToString();
     }
 }
