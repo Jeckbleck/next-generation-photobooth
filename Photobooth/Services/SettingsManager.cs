@@ -90,6 +90,21 @@ namespace Photobooth.Services
             Save();
         }
 
+        public int RetakeHoldSeconds => _settings.RetakeHoldSeconds;
+        public int MaxRetakesPerSlot => _settings.MaxRetakesPerSlot;
+
+        public void SetRetakeHoldSeconds(int value)
+        {
+            _settings.RetakeHoldSeconds = Math.Clamp(value, 2, 10);
+            Save();
+        }
+
+        public void SetMaxRetakesPerSlot(int value)
+        {
+            _settings.MaxRetakesPerSlot = Math.Clamp(value, 0, 10);
+            Save();
+        }
+
         public bool   AIEnhancementEnabled => _settings.AIEnhancementEnabled;
         public string AIServerUrl          => _settings.AIServerUrl;
         public string AIApiKey             => _settings.AIApiKey;
@@ -185,6 +200,8 @@ namespace Photobooth.Services
         public string  BrandingText          { get; set; } = "THE NEXT GENERATION PHOTOBOOTH";
         public int     CountdownSeconds       { get; set; } = 3;
         public int     PreviewHoldSeconds    { get; set; } = 5;
+        public int     RetakeHoldSeconds     { get; set; } = 3;
+        public int     MaxRetakesPerSlot     { get; set; } = 3;
         public bool    AIEnhancementEnabled  { get; set; } = false;
         public string  AIServerUrl           { get; set; } = "http://localhost:8000";
         public string  AIApiKey              { get; set; } = "";
