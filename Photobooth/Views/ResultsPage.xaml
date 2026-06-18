@@ -29,7 +29,7 @@
             <!-- Back copy — tilted left, translated, faded -->
             <Image x:Name="StripBack"
                    Stretch="Uniform"
-                   MaxHeight="500"
+                   MaxHeight="680"
                    RenderOptions.BitmapScalingMode="HighQuality"
                    Opacity="0.70"
                    Panel.ZIndex="0"
@@ -48,7 +48,7 @@
             <!-- Front copy — slight right tilt, full opacity, prominent shadow -->
             <Image x:Name="StripPreview"
                    Stretch="Uniform"
-                   MaxHeight="500"
+                   MaxHeight="680"
                    RenderOptions.BitmapScalingMode="HighQuality"
                    Panel.ZIndex="1"
                    RenderTransformOrigin="0.5,0.5">

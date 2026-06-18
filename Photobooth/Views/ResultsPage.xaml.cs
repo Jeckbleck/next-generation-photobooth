@@ -120,9 +120,10 @@ namespace Photobooth.Views
 
                 _strip?.Dispose();
                 _strip = await PrintHelper.ComposeStripAsync(eventId, enhancedPaths);
-                var source = await Task.Run(() => BitmapToSource(_strip));
-                StripPreview.Source = source;
-                StripBack.Source    = source;
+                var full   = await Task.Run(() => BitmapToSource(_strip));
+                var single = CropToSingleStrip(full);
+                StripPreview.Source = single;
+                StripBack.Source    = single;
 
                 AIStatusText.Text = "Enhancement complete!";
                 AIStatusDot.Fill  = System.Windows.Media.Brushes.LimeGreen;
@@ -146,14 +147,22 @@ namespace Photobooth.Views
             {
                 var eventId = _settings.ActiveEventId ?? 0;
                 _strip = await PrintHelper.ComposeStripAsync(eventId, _paths);
-                var source = await Task.Run(() => BitmapToSource(_strip));
-                StripPreview.Source = source;
-                StripBack.Source    = source;
+                var full   = await Task.Run(() => BitmapToSource(_strip));
+                var single = CropToSingleStrip(full);
+                StripPreview.Source = single;
+                StripBack.Source    = single;
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to compose photostrip for display");
             }
+        }
+
+        private static System.Windows.Media.Imaging.BitmapSource CropToSingleStrip(
+            System.Windows.Media.Imaging.BitmapSource full)
+        {
+            var rect = new System.Windows.Int32Rect(0, 0, full.PixelWidth / 2, full.PixelHeight);
+            return new System.Windows.Media.Imaging.CroppedBitmap(full, rect);
         }
 
         private static System.Windows.Media.Imaging.BitmapSource BitmapToSource(Bitmap bitmap)
