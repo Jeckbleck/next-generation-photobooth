@@ -367,6 +367,7 @@ namespace Photobooth.Views
         {
             Log.Warning("Camera disconnected during shoot page");
             _sequenceAborted = true;
+            _sessionCts.Cancel();
             _evfPump?.Stop();
 
             if (_sessionId.HasValue && _capturedPaths.Count == 0)
