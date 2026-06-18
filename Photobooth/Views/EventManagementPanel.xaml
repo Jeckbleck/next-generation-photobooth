@@ -41,6 +41,26 @@
         </Grid>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,20"/>
 
+        <TextBlock Text="GREETING TEXT" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Text="Leave blank to use the default text." Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,10"/>
+        <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+        <TextBlock Text="Eyebrow line" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox x:Name="GreetingEyebrowBox"
+                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+
+        <TextBlock Text="Main title" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox x:Name="GreetingTitleBox"
+                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+
+        <TextBlock Text="Subtitle" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox x:Name="GreetingSubtitleBox"
+                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,20"
+                 TextWrapping="Wrap"/>
+
         <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 

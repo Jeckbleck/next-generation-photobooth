@@ -44,7 +44,7 @@
 
     </Page.Resources>
 
-    <Grid>
+    <Grid Background="Transparent" MouseLeftButtonDown="Screen_Tapped">
         <!-- Greeting background image + dim overlay (managed from Display → Appearance) -->
         <Image x:Name="GreetingBgImage"
                Stretch="UniformToFill"
@@ -58,13 +58,15 @@
         <!-- Main greeting content -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
-            <TextBlock Text="THE NEXT GENERATION"
+            <TextBlock x:Name="EyebrowText"
+                       Text="THE NEXT GENERATION"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="20" FontWeight="Light"
                        TextAlignment="Center"
                        Margin="0,0,0,8"/>
 
-            <TextBlock Text="PHOTOBOOTH"
+            <TextBlock x:Name="TitleText"
+                       Text="PHOTOBOOTH"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        FontSize="72" FontWeight="Bold"
                        TextAlignment="Center"
@@ -76,7 +78,7 @@
                        Margin="0,0,0,24"/>
 
             <TextBlock x:Name="SubtitleText"
-                       Text="Tap the button below to start your session"
+                       Text="Tap anywhere to start your session"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="18" TextAlignment="Center"
                        Margin="0,0,0,40"/>
@@ -87,12 +89,6 @@
                        FontSize="18" TextAlignment="Center"
                        Visibility="Collapsed"
                        Margin="0,0,0,40"/>
-
-            <Button x:Name="StartButton"
-                    Content="START SESSION"
-                    Style="{StaticResource KioskButton}"
-                    HorizontalAlignment="Center"
-                    Click="StartSession_Click"/>
 
             <Button x:Name="AIEnhancementButton"
                     Content="✦ AI ENHANCEMENT"

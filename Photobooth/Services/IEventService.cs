@@ -37,6 +37,9 @@ namespace Photobooth.Services
         /// <summary>Updates the core details of an existing event and persists.</summary>
         void UpdateDetails(int id, string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession);
 
+        /// <summary>Sets the greeting-page text overrides for the event. Pass null or empty to restore defaults.</summary>
+        void SetGreetingText(int id, string? eyebrow, string? title, string? subtitle);
+
         /// <summary>Toggles the paywall flag and persists immediately.</summary>
         void SetPaywall(int id, bool enabled);
 

@@ -25,6 +25,9 @@ namespace Photobooth.Migrations
                 b.Property<string>("BackgroundColor").HasMaxLength(20).HasColumnType("TEXT");
                 b.Property<string>("BackgroundImagePath").HasColumnType("TEXT");
                 b.Property<DateTime>("CreatedAt").HasColumnType("TEXT");
+                b.Property<string>("GreetingEyebrow").HasMaxLength(200).HasColumnType("TEXT");
+                b.Property<string>("GreetingSubtitle").HasMaxLength(500).HasColumnType("TEXT");
+                b.Property<string>("GreetingTitle").HasMaxLength(200).HasColumnType("TEXT");
                 b.Property<string>("Name").IsRequired().HasMaxLength(200).HasColumnType("TEXT");
                 b.Property<bool>("PaywallEnabled").HasColumnType("INTEGER");
                 b.Property<int?>("PrintLimitPerEvent").HasColumnType("INTEGER");

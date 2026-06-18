@@ -77,6 +77,15 @@ namespace Photobooth.Services
             Log.Information("Updated event '{Name}'", ev.Name);
         }
 
+        public void SetGreetingText(int id, string? eyebrow, string? title, string? subtitle)
+        {
+            var ev = Require(id);
+            ev.GreetingEyebrow  = string.IsNullOrWhiteSpace(eyebrow)  ? null : eyebrow.Trim();
+            ev.GreetingTitle    = string.IsNullOrWhiteSpace(title)    ? null : title.Trim();
+            ev.GreetingSubtitle = string.IsNullOrWhiteSpace(subtitle) ? null : subtitle.Trim();
+            _repo.SaveChanges();
+        }
+
         public void SetPaywall(int id, bool enabled)
         {
             Require(id).PaywallEnabled = enabled;

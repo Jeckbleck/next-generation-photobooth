@@ -32,6 +32,15 @@ namespace Photobooth.Data.Models
         public string?  BackgroundImagePath    { get; set; }
         public string?  PhotostripTemplatePath { get; set; }
 
+        [MaxLength(200)]
+        public string?  GreetingEyebrow       { get; set; }
+
+        [MaxLength(200)]
+        public string?  GreetingTitle         { get; set; }
+
+        [MaxLength(500)]
+        public string?  GreetingSubtitle      { get; set; }
+
         public ICollection<Session> Sessions   { get; set; } = new List<Session>();
     }
 }

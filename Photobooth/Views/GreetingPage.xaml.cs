@@ -111,16 +111,13 @@ namespace Photobooth.Views
 
             if (paywallActive)
             {
-                StartButton.Visibility  = Visibility.Collapsed;
                 SubtitleText.Visibility = Visibility.Collapsed;
                 PaywallText.Visibility  = Visibility.Visible;
             }
             else
             {
-                StartButton.Visibility  = Visibility.Visible;
                 SubtitleText.Visibility = Visibility.Visible;
                 PaywallText.Visibility  = Visibility.Collapsed;
-                StartButton.IsEnabled   = connected && hasEvent;
             }
 
             CameraStatusText.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
@@ -147,6 +144,10 @@ namespace Photobooth.Views
             UpdateCameraStatus();
             if (ev is not null) _statsPanel.Refresh(ev.Id);
             else                _statsPanel.Clear();
+
+            EyebrowText.Text  = ev?.GreetingEyebrow  ?? "THE NEXT GENERATION";
+            TitleText.Text    = ev?.GreetingTitle    ?? "PHOTOBOOTH";
+            SubtitleText.Text = ev?.GreetingSubtitle ?? "Tap anywhere to start your session";
         }
 
         private void OnBackgroundImageChanged(object? sender, BitmapImage? bmp)
@@ -195,23 +196,24 @@ namespace Photobooth.Views
             UpdateCameraStatus();
         }
 
-        private void StartSession_Click(object sender, RoutedEventArgs e)
+        private void Screen_Tapped(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (!_camera.IsConnected)
+            if (SettingsOverlay.Visibility      == Visibility.Visible ||
+                SettingsContentPanel.Visibility == Visibility.Visible) return;
+
+            bool connected = _camera.IsConnected;
+            bool hasEvent  = _settings.ActiveEventId.HasValue;
+
+            if (!connected || !hasEvent)
             {
-                Log.Warning("Start tapped but camera not connected — blocked navigation");
                 UpdateCameraStatus();
                 return;
             }
 
-            if (!_settings.ActiveEventId.HasValue)
-            {
-                Log.Warning("Start tapped but no active event selected — blocked navigation");
-                UpdateCameraStatus();
-                return;
-            }
+            var ev = _events.GetById(_settings.ActiveEventId!.Value);
+            if (ev?.PaywallEnabled == true) return;
 
-            Log.Information("Session started by user");
+            Log.Information("Session started by screen tap");
             _flow.Trigger(FlowTrigger.StartNormal);
         }
 

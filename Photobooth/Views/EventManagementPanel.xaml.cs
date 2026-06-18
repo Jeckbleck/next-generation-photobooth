@@ -84,7 +84,8 @@ public partial class EventManagementPanel : UserControl
             var ev = _events.GetById(id);
             if (ev is not null)
             {
-                PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
+                PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession,
+                    ev.GreetingEyebrow, ev.GreetingTitle, ev.GreetingSubtitle);
                 ActiveEventChanged.Invoke(this, ev);
             }
             _ = RefreshSessionPreviewAsync(id);
@@ -103,13 +104,18 @@ public partial class EventManagementPanel : UserControl
         _settings.SetActiveEventId(id);
     }
 
-    private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled, int? printLimitPerEvent, int? printLimitPerSession)
+    private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled,
+        int? printLimitPerEvent, int? printLimitPerSession,
+        string? greetingEyebrow, string? greetingTitle, string? greetingSubtitle)
     {
         EventNameBox.Text              = name;
         PaywallToggle.IsChecked        = paywallEnabled;
         SaveImagesToggle.IsChecked     = saveImagesEnabled;
         PrintLimitBox.Text             = printLimitPerEvent?.ToString()   ?? string.Empty;
         SessionLimitBox.Text           = printLimitPerSession?.ToString() ?? string.Empty;
+        GreetingEyebrowBox.Text        = greetingEyebrow  ?? string.Empty;
+        GreetingTitleBox.Text          = greetingTitle    ?? string.Empty;
+        GreetingSubtitleBox.Text       = greetingSubtitle ?? string.Empty;
         ArchiveEventButton.IsEnabled   = true;
     }
 
@@ -120,6 +126,9 @@ public partial class EventManagementPanel : UserControl
         SaveImagesToggle.IsChecked      = true;
         PrintLimitBox.Text              = string.Empty;
         SessionLimitBox.Text            = string.Empty;
+        GreetingEyebrowBox.Text         = string.Empty;
+        GreetingTitleBox.Text           = string.Empty;
+        GreetingSubtitleBox.Text        = string.Empty;
         ArchiveEventButton.IsEnabled    = false;
         SessionPreviewList.ItemsSource  = null;
     }
@@ -162,6 +171,11 @@ public partial class EventManagementPanel : UserControl
                 printLimitPerSession);
             savedId = ev.Id;
         }
+
+        _events.SetGreetingText(savedId,
+            GreetingEyebrowBox.Text,
+            GreetingTitleBox.Text,
+            GreetingSubtitleBox.Text);
 
         LoadEvents();
         SelectEventById(savedId);
@@ -258,7 +272,8 @@ public partial class EventManagementPanel : UserControl
         }
 
         SetSelectedEvent(id);
-        PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession);
+        PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession,
+            ev.GreetingEyebrow, ev.GreetingTitle, ev.GreetingSubtitle);
         ActiveEventChanged.Invoke(this, ev);
         _ = RefreshSessionPreviewAsync(id);
     }
