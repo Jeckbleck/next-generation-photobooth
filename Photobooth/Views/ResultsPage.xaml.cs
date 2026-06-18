@@ -122,6 +122,7 @@ namespace Photobooth.Views
                 _strip = await PrintHelper.ComposeStripAsync(eventId, enhancedPaths);
                 var source = await Task.Run(() => BitmapToSource(_strip));
                 StripPreview.Source = source;
+                StripBack.Source    = source;
 
                 AIStatusText.Text = "Enhancement complete!";
                 AIStatusDot.Fill  = System.Windows.Media.Brushes.LimeGreen;
@@ -147,6 +148,7 @@ namespace Photobooth.Views
                 _strip = await PrintHelper.ComposeStripAsync(eventId, _paths);
                 var source = await Task.Run(() => BitmapToSource(_strip));
                 StripPreview.Source = source;
+                StripBack.Source    = source;
             }
             catch (Exception ex)
             {
