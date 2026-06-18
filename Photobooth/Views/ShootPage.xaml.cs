@@ -190,6 +190,7 @@ namespace Photobooth.Views
 
                     _shooting = true;
                     StatusText.Text = "Please wait…";
+                    CaptureSpinner.Visibility = Visibility.Visible;
 
                     string path;
                     try
@@ -210,6 +211,7 @@ namespace Photobooth.Views
                     catch (OperationCanceledException)
                     {
                         _shooting = false;
+                        CaptureSpinner.Visibility = Visibility.Collapsed;
                         if (_sequenceAborted)
                         {
                             Log.Warning("Photo {N} cancelled — camera disconnected mid-shoot", i);
@@ -223,12 +225,14 @@ namespace Photobooth.Views
                     catch (InvalidOperationException ex)
                     {
                         _shooting = false;
+                        CaptureSpinner.Visibility = Visibility.Collapsed;
                         Log.Error("Hard camera error on photo {N}: {Message}", i, ex.Message);
                         StatusText.Text = $"Camera error — {ex.Message}";
                         return;
                     }
 
                     // _shooting stays true: EVF pump stays paused so captured photo stays visible
+                    CaptureSpinner.Visibility = Visibility.Collapsed;
                     await HoldFlash();
                     await ShowCapturedPreview(path, ct);
 

@@ -30,6 +30,7 @@ public partial class CameraSettingsPanel : UserControl
         InlinePreviewStatusText.Visibility = Visibility.Visible;
         InlinePreviewInfoText.Text         = string.Empty;
         ResumePreviewButton.Visibility     = Visibility.Collapsed;
+        PreviewSpinner.Visibility          = _camera.IsConnected ? Visibility.Visible : Visibility.Collapsed;
         StartInlinePreview();
     }
 
@@ -164,10 +165,12 @@ public partial class CameraSettingsPanel : UserControl
             frame =>
             {
                 InlinePreviewImage.Source          = frame;
+                PreviewSpinner.Visibility          = Visibility.Collapsed;
                 InlinePreviewStatusText.Visibility = Visibility.Collapsed;
             },
             onStall: () =>
             {
+                PreviewSpinner.Visibility          = Visibility.Collapsed;
                 InlinePreviewStatusText.Text       = "Camera preview unavailable.";
                 InlinePreviewStatusText.Visibility = Visibility.Visible;
             },
@@ -194,6 +197,7 @@ public partial class CameraSettingsPanel : UserControl
         InlinePreviewStatusText.Text       = "Capturing…";
         InlinePreviewStatusText.Visibility = Visibility.Visible;
         InlinePreviewInfoText.Text         = string.Empty;
+        PreviewSpinner.Visibility          = Visibility.Visible;
 
         try
         {
@@ -225,6 +229,7 @@ public partial class CameraSettingsPanel : UserControl
         }
         finally
         {
+            if (IsVisible) PreviewSpinner.Visibility = Visibility.Collapsed;
             TakeTestShotButton.IsEnabled = true;
         }
     }
@@ -236,18 +241,23 @@ public partial class CameraSettingsPanel : UserControl
         InlinePreviewStatusText.Text       = "Starting camera preview…";
         InlinePreviewStatusText.Visibility = Visibility.Visible;
         InlinePreviewInfoText.Text         = string.Empty;
+        PreviewSpinner.Visibility          = Visibility.Visible;
         StartInlinePreview();
     }
 
     private void ReconnectCamera_Click(object sender, RoutedEventArgs e)
     {
-        ReconnectCameraButton.IsEnabled  = false;
+        ReconnectCameraButton.Visibility = Visibility.Collapsed;
+        ReconnectSpinner.Visibility      = Visibility.Visible;
         CameraSettingStatusText.Text     = "Searching for camera…";
         bool ok = _camera.Initialize();
-        ReconnectCameraButton.IsEnabled  = true;
+        ReconnectSpinner.Visibility      = Visibility.Collapsed;
         if (ok)
             Activate();
         else
-            CameraSettingStatusText.Text = "No camera found — check USB and retry.";
+        {
+            ReconnectCameraButton.Visibility = Visibility.Visible;
+            CameraSettingStatusText.Text     = "No camera found — check USB and retry.";
+        }
     }
 }
