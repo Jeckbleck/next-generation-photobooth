@@ -289,11 +289,6 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Camera panel: outside ScrollViewer so it stretches to fill the row height -->
-                        <Grid x:Name="PanelCamera" Grid.Row="0" Visibility="Collapsed" Margin="28,28,28,0">
-                            <ContentControl x:Name="CameraSettingsPanelHost"/>
-                        </Grid>
-
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="28,28,28,0">
                             <Grid Margin="0,0,12,0">
 
@@ -382,6 +377,11 @@
 
                             </Grid>
                         </ScrollViewer>
+
+                        <!-- Camera panel: after ScrollViewer so it renders on top (higher Z-order) -->
+                        <Grid x:Name="PanelCamera" Grid.Row="0" Visibility="Collapsed" Margin="28,28,28,0">
+                            <ContentControl x:Name="CameraSettingsPanelHost"/>
+                        </Grid>
 
                         <!-- Footer -->
                         <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="28,14,28,22">
