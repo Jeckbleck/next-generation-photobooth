@@ -15,14 +15,27 @@
 
             <!-- Camera status bar -->
             <Border Background="#0D1B2A" CornerRadius="6" Padding="12,10" Margin="0,0,16,20">
-                <StackPanel>
-                    <TextBlock x:Name="CameraModelLabel"
-                               Foreground="{StaticResource TextPrimaryBrush}"
-                               FontSize="13" FontWeight="SemiBold"/>
-                    <TextBlock x:Name="CameraSettingStatusText"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontSize="12" Margin="0,2,0,0"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="CameraModelLabel"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   FontSize="13" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="CameraSettingStatusText"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="12" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <Button x:Name="ReconnectCameraButton"
+                            Grid.Column="1"
+                            Content="↺  Reconnect"
+                            Style="{StaticResource GhostButton}"
+                            Padding="12,6" FontSize="12"
+                            VerticalAlignment="Center"
+                            Click="ReconnectCamera_Click"/>
+                </Grid>
             </Border>
 
             <TextBlock Text="EXPOSURE" Foreground="{DynamicResource AccentBrush}"

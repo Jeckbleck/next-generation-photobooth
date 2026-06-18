@@ -289,6 +289,11 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
+                        <!-- Camera panel: outside ScrollViewer so it stretches to fill the row height -->
+                        <Grid x:Name="PanelCamera" Grid.Row="0" Visibility="Collapsed" Margin="28,28,28,0">
+                            <ContentControl x:Name="CameraSettingsPanelHost"/>
+                        </Grid>
+
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="28,28,28,0">
                             <Grid Margin="0,0,12,0">
 
@@ -303,10 +308,7 @@
                                     <ContentControl x:Name="StatsPanelHost"/>
                                 </StackPanel>
 
-                                <!-- CAMERA SETTINGS -->
-                                <StackPanel x:Name="PanelCamera" Visibility="Collapsed">
-                                    <ContentControl x:Name="CameraSettingsPanelHost"/>
-                                </StackPanel>
+                                <!-- CAMERA SETTINGS — moved outside ScrollViewer; see Grid.Row="0" sibling below -->
 
                                 <!-- STRIP CUSTOMIZATION — canvas lives in StripDesignerPanel (full-width overlay) -->
                                 <StackPanel x:Name="PanelStrip" Visibility="Collapsed"/>

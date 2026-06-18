@@ -235,4 +235,16 @@ public partial class CameraSettingsPanel : UserControl
         InlinePreviewInfoText.Text         = string.Empty;
         StartInlinePreview();
     }
+
+    private void ReconnectCamera_Click(object sender, RoutedEventArgs e)
+    {
+        ReconnectCameraButton.IsEnabled  = false;
+        CameraSettingStatusText.Text     = "Searching for camera…";
+        bool ok = _camera.Initialize();
+        ReconnectCameraButton.IsEnabled  = true;
+        if (ok)
+            Activate();
+        else
+            CameraSettingStatusText.Text = "No camera found — check USB and retry.";
+    }
 }
