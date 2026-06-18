@@ -27,6 +27,8 @@ namespace Photobooth.Views
         private bool _sequenceAborted;
         private CancellationTokenSource _sessionCts = new();
         private EvfPump? _evfPump;
+        private bool _paywallActive;
+        private CancellationTokenSource? _retakeCts;
 
         private int? _sessionId;
         private string _sessionDir = string.Empty;
@@ -56,6 +58,7 @@ namespace Photobooth.Views
             if (!eventId.HasValue)
             {
                 Log.Warning("ShootPage opened with no active event — session will not be tracked");
+                _paywallActive = false;
                 _sessionDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                     "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
@@ -68,6 +71,7 @@ namespace Photobooth.Views
             if (ev is null)
             {
                 Log.Warning("Active event {Id} not found — session will not be tracked", eventId.Value);
+                _paywallActive = false;
                 _sessionDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                     "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
@@ -75,6 +79,8 @@ namespace Photobooth.Views
                 _camera.SessionDirectory = _sessionDir;
                 return;
             }
+
+            _paywallActive = ev.PaywallEnabled;
 
             try
             {
@@ -90,6 +96,7 @@ namespace Photobooth.Views
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to create DB session — photos will not be tracked");
+                _paywallActive = false;
                 _sessionDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                     "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
@@ -170,67 +177,102 @@ namespace Photobooth.Views
             {
                 if (ct.IsCancellationRequested) return;
 
-                StatusText.Text = $"Photo {i} of 3 — get ready!";
-                await RunCountdown(_settings.CountdownSeconds, ct);
+                int  retakeCount     = 0;
+                bool retakeRequested;
 
-                if (ct.IsCancellationRequested) return;
-
-                _shooting = true;
-                StatusText.Text = "Please wait…";
-
-                string path;
-                try
+                do
                 {
-                    Log.Information("Taking photo {N}/3", i);
-                    var rawPath = await _camera.TakePictureAsync(ct);
+                    retakeRequested = false;
 
-                    var date    = DateTime.Today.ToString("yyyyMMdd");
-                    var sid     = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
-                    var stem    = Path.GetFileNameWithoutExtension(rawPath);
-                    var ext     = Path.GetExtension(rawPath);
-                    var dest    = Path.Combine(_sessionDir, $"{stem}_{date}_s{sid}_p{i}{ext}");
-                    File.Move(rawPath, dest, overwrite: true);
-                    path = dest;
+                    StatusText.Text = $"Photo {i} of 3 — get ready!";
+                    await RunCountdown(_settings.CountdownSeconds, ct);
+                    if (ct.IsCancellationRequested) return;
 
-                    _ = Task.Run(() => BitmapHelper.GenerateThumbnail(dest));
+                    _shooting = true;
+                    StatusText.Text = "Please wait...";
 
-                    _capturedPaths.Add(path);
-
-                    if (_sessionId.HasValue)
+                    string path;
+                    try
                     {
-                        try { _events.RecordPhoto(_sessionId.Value, i, path); }
-                        catch (Exception dbEx) { Log.Error(dbEx, "Failed to record photo {N} in DB", i); }
+                        Log.Information("Taking photo {N}/3 (attempt {Attempt})", i, retakeCount + 1);
+                        var rawPath = await _camera.TakePictureAsync(ct);
+
+                        var date = DateTime.Today.ToString("yyyyMMdd");
+                        var sid  = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
+                        var stem = Path.GetFileNameWithoutExtension(rawPath);
+                        var ext  = Path.GetExtension(rawPath);
+                        var dest = Path.Combine(_sessionDir, $"{stem}_{date}_s{sid}_p{i}{ext}");
+                        File.Move(rawPath, dest, overwrite: true);
+                        path = dest;
+
+                        _ = Task.Run(() => BitmapHelper.GenerateThumbnail(dest));
                     }
-                }
-                catch (OperationCanceledException)
-                {
-                    _shooting = false;
-                    if (_sequenceAborted)
+                    catch (OperationCanceledException)
                     {
-                        Log.Warning("Photo {N} cancelled — camera disconnected mid-shoot", i);
+                        _shooting = false;
+                        if (_sequenceAborted)
+                        {
+                            Log.Warning("Photo {N} cancelled — camera disconnected mid-shoot", i);
+                            return;
+                        }
+                        if (ct.IsCancellationRequested) return;
+                        Log.Error("Photo {N} timed out waiting for download", i);
+                        StatusText.Text = "Camera timed out — check the USB connection and try again.";
                         return;
                     }
-                    if (ct.IsCancellationRequested) return;
-                    Log.Error("Photo {N} timed out waiting for download", i);
-                    StatusText.Text = "Camera timed out — check the USB connection and try again.";
-                    return;
-                }
-                catch (InvalidOperationException ex)
-                {
+                    catch (InvalidOperationException ex)
+                    {
+                        _shooting = false;
+                        Log.Error("Hard camera error on photo {N}: {Message}", i, ex.Message);
+                        StatusText.Text = $"Camera error — {ex.Message}";
+                        return;
+                    }
+
+                    // _shooting stays true: EVF pump stays paused so captured photo stays visible
+                    await HoldFlash();
+                    await ShowCapturedPreview(path, ct);
+
+                    bool canRetake = !_paywallActive &&
+                                     (_settings.MaxRetakesPerSlot == 0 || retakeCount < _settings.MaxRetakesPerSlot);
+
+                    if (canRetake)
+                    {
+                        Dispatcher.Invoke(() => RetakeButton.Visibility = Visibility.Visible);
+                        retakeRequested = await ShowRetakeWindowAsync(_settings.RetakeHoldSeconds, ct);
+                        Dispatcher.Invoke(() => RetakeButton.Visibility = Visibility.Collapsed);
+                    }
+                    else
+                    {
+                        try { await Task.Delay(_settings.RetakeHoldSeconds * 1000, ct); }
+                        catch (OperationCanceledException) { _shooting = false; return; }
+                    }
+
                     _shooting = false;
-                    Log.Error("Hard camera error on photo {N}: {Message}", i, ex.Message);
-                    StatusText.Text = $"Camera error — {ex.Message}";
-                    return;
-                }
 
-                await HoldFlash();
-                await ShowCapturedPreview(path, ct);
-                LightUpDot(i);
+                    if (retakeRequested)
+                    {
+                        Log.Information("Retake requested for photo {N} (retake #{Count})", i, retakeCount + 1);
+                        try { File.Delete(path); }
+                        catch (Exception ex) { Log.Warning(ex, "Failed to delete retake photo {Path}", path); }
+                        retakeCount++;
+                    }
+                    else
+                    {
+                        _capturedPaths.Add(path);
 
-                _shooting = false;
+                        if (_sessionId.HasValue)
+                        {
+                            try { _events.RecordPhoto(_sessionId.Value, i, path); }
+                            catch (Exception dbEx) { Log.Error(dbEx, "Failed to record photo {N} in DB", i); }
+                        }
+
+                        LightUpDot(i);
+                    }
+
+                } while (retakeRequested && !ct.IsCancellationRequested);
+
+                if (ct.IsCancellationRequested) return;
             }
-
-            if (ct.IsCancellationRequested) return;
 
             Log.Information("Sequence complete — {Count} photos", _capturedPaths.Count);
             await FadeOutFlash();
@@ -290,7 +332,6 @@ namespace Photobooth.Views
 
                 await Dispatcher.InvokeAsync(() => EvfImage.Source = bmp);
                 await FadeOutFlash();
-                await Task.Delay(1000, ct);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -365,6 +406,30 @@ namespace Photobooth.Views
             _flow.Trigger(FlowTrigger.SessionAborted);
         }
 
-        private void RetakeButton_Click(object sender, RoutedEventArgs e) { }
+        private async Task<bool> ShowRetakeWindowAsync(int holdSeconds, CancellationToken sessionCt)
+        {
+            _retakeCts = new CancellationTokenSource();
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(sessionCt, _retakeCts.Token);
+            bool tappedRetake = false;
+            try
+            {
+                await Task.Delay(holdSeconds * 1000, linked.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                tappedRetake = _retakeCts.IsCancellationRequested && !sessionCt.IsCancellationRequested;
+            }
+            finally
+            {
+                _retakeCts.Dispose();
+                _retakeCts = null;
+            }
+            return tappedRetake;
+        }
+
+        private void RetakeButton_Click(object sender, RoutedEventArgs e)
+        {
+            _retakeCts?.Cancel();
+        }
     }
 }
