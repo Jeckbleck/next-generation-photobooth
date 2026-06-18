@@ -249,6 +249,12 @@ namespace Photobooth.Views
 
                     _shooting = false;
 
+                    if (ct.IsCancellationRequested)
+                    {
+                        BitmapHelper.DeleteWithThumbnail(path);
+                        return;
+                    }
+
                     if (retakeRequested)
                     {
                         Log.Information("Retake requested for photo {N} (retake #{Count})", i, retakeCount + 1);
