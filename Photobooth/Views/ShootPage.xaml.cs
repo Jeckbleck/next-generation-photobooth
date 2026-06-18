@@ -252,8 +252,7 @@ namespace Photobooth.Views
                     if (retakeRequested)
                     {
                         Log.Information("Retake requested for photo {N} (retake #{Count})", i, retakeCount + 1);
-                        try { File.Delete(path); }
-                        catch (Exception ex) { Log.Warning(ex, "Failed to delete retake photo {Path}", path); }
+                        BitmapHelper.DeleteWithThumbnail(path);
                         retakeCount++;
                     }
                     else
@@ -393,10 +392,7 @@ namespace Photobooth.Views
             _evfPump?.Stop();
 
             foreach (var p in _capturedPaths)
-            {
-                try { File.Delete(p); }
-                catch (Exception ex) { Log.Warning(ex, "Failed to delete abandoned photo {Path}", p); }
-            }
+                BitmapHelper.DeleteWithThumbnail(p);
 
             if (_sessionId.HasValue)
             {

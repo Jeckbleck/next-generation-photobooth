@@ -75,6 +75,20 @@ namespace Photobooth.Helpers
             }
         }
 
+        // Deletes a photo file and its thumbnail sidecar if it exists.
+        internal static void DeleteWithThumbnail(string path)
+        {
+            try { File.Delete(path); }
+            catch (Exception ex) { Log.Warning(ex, "Failed to delete photo {Path}", path); }
+
+            var thumb = ThumbPathFor(path);
+            if (File.Exists(thumb))
+            {
+                try { File.Delete(thumb); }
+                catch (Exception ex) { Log.Warning(ex, "Failed to delete thumbnail {Path}", thumb); }
+            }
+        }
+
         // Derives the sidecar path: Photos/img.jpg → Photos/Thumbs/img.jpg
         // The subfolder name makes the _thumb suffix redundant.
         private static string ThumbPathFor(string sourcePath) =>
