@@ -189,7 +189,7 @@ namespace Photobooth.Views
                     if (ct.IsCancellationRequested) return;
 
                     _shooting = true;
-                    StatusText.Text = "Please wait...";
+                    StatusText.Text = "Please wait…";
 
                     string path;
                     try
