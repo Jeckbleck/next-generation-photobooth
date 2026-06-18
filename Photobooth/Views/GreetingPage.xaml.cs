@@ -84,6 +84,7 @@ namespace Photobooth.Views
             UpdateCameraStatus();
             _appearancePanel.ApplyActiveEventAppearance();
             UpdateAIEnhancementButton();
+            ApplyGreetingText();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -144,6 +145,13 @@ namespace Photobooth.Views
             UpdateCameraStatus();
             if (ev is not null) _statsPanel.Refresh(ev.Id);
             else                _statsPanel.Clear();
+            ApplyGreetingText(ev);
+        }
+
+        private void ApplyGreetingText(Data.Models.Event? ev = null)
+        {
+            if (ev is null && _settings.ActiveEventId.HasValue)
+                ev = _events.GetById(_settings.ActiveEventId.Value);
 
             EyebrowText.Text  = ev?.GreetingEyebrow  ?? "THE NEXT GENERATION";
             TitleText.Text    = ev?.GreetingTitle    ?? "PHOTOBOOTH";
