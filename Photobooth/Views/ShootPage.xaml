@@ -82,11 +82,20 @@
         <Border VerticalAlignment="Bottom"
                 Background="#80000000"
                 Padding="24,16">
-            <Button Content="← Back"
-                    Style="{StaticResource GhostButton}"
-                    HorizontalAlignment="Left"
-                    Padding="20,10" FontSize="16"
-                    Click="Back_Click"/>
+            <Grid>
+                <Button Content="← Back"
+                        Style="{StaticResource GhostButton}"
+                        HorizontalAlignment="Left"
+                        Padding="20,10" FontSize="16"
+                        Click="Back_Click"/>
+                <Button x:Name="RetakeButton"
+                        Content="↺ Retake"
+                        Style="{StaticResource GhostButton}"
+                        HorizontalAlignment="Center"
+                        Padding="20,10" FontSize="16"
+                        Visibility="Collapsed"
+                        Click="RetakeButton_Click"/>
+            </Grid>
         </Border>
     </Grid>
 </Page>

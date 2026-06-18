@@ -364,5 +364,7 @@ namespace Photobooth.Views
 
             _flow.Trigger(FlowTrigger.SessionAborted);
         }
+
+        private void RetakeButton_Click(object sender, RoutedEventArgs e) { }
     }
 }
