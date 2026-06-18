@@ -44,12 +44,15 @@ public partial class CameraSettingsPanel : UserControl
     {
         if (!_camera.IsConnected)
         {
-            CameraModelLabel.Text        = "No camera connected";
-            CameraSettingStatusText.Text = "Connect a camera and retry.";
+            CameraModelLabel.Text            = "No camera connected";
+            CameraSettingStatusText.Text     = "Connect a camera and retry.";
+            ReconnectCameraButton.Visibility = Visibility.Visible;
             IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
                 WhiteBalanceComboBox.IsEnabled = ImageQualityComboBox.IsEnabled = false;
             return;
         }
+
+        ReconnectCameraButton.Visibility = Visibility.Collapsed;
 
         CameraModelLabel.Text        = _camera.ModelName ?? "Camera";
         CameraSettingStatusText.Text = "Loading valid values from camera…";

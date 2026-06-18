@@ -34,6 +34,7 @@
                             Style="{StaticResource GhostButton}"
                             Padding="12,6" FontSize="12"
                             VerticalAlignment="Center"
+                            Visibility="Collapsed"
                             Click="ReconnectCamera_Click"/>
                 </Grid>
             </Border>
