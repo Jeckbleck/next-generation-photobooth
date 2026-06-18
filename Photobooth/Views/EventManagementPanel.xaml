@@ -58,8 +58,17 @@
         <TextBlock Text="Subtitle" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <TextBox x:Name="GreetingSubtitleBox"
                  Background="#0D1B2A" Foreground="White" BorderBrush="#334"
-                 Padding="10,7" FontSize="13" Margin="0,0,0,20"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,10"
                  TextWrapping="Wrap"/>
+
+        <Button x:Name="SaveGreetingButton"
+                Content="Save greeting text"
+                Style="{StaticResource KioskButton}"
+                HorizontalAlignment="Right"
+                Padding="18,7" FontSize="13"
+                IsEnabled="False"
+                Margin="0,0,0,20"
+                Click="SaveGreeting_Click"/>
 
         <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>

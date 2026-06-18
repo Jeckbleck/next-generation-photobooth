@@ -117,6 +117,7 @@ public partial class EventManagementPanel : UserControl
         GreetingTitleBox.Text          = greetingTitle    ?? string.Empty;
         GreetingSubtitleBox.Text       = greetingSubtitle ?? string.Empty;
         ArchiveEventButton.IsEnabled   = true;
+        SaveGreetingButton.IsEnabled   = true;
     }
 
     private void ClearEventFields()
@@ -130,6 +131,7 @@ public partial class EventManagementPanel : UserControl
         GreetingTitleBox.Text           = string.Empty;
         GreetingSubtitleBox.Text        = string.Empty;
         ArchiveEventButton.IsEnabled    = false;
+        SaveGreetingButton.IsEnabled    = false;
         SessionPreviewList.ItemsSource  = null;
     }
 
@@ -179,6 +181,17 @@ public partial class EventManagementPanel : UserControl
 
         LoadEvents();
         SelectEventById(savedId);
+    }
+
+    private void SaveGreeting_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        _events.SetGreetingText(_selectedEventId.Value,
+            GreetingEyebrowBox.Text,
+            GreetingTitleBox.Text,
+            GreetingSubtitleBox.Text);
+        var ev = _events.GetById(_selectedEventId.Value);
+        ActiveEventChanged.Invoke(this, ev);
     }
 
     private void ClearEvent_Click(object sender, RoutedEventArgs e)
