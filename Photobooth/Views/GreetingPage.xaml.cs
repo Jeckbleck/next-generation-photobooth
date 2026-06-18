@@ -18,6 +18,7 @@ namespace Photobooth.Views
         private readonly FlowController      _flow;
 
         private SettingsTabController _tabController = null!;
+        private bool _tapsEnabled;
 
         private EventManagementPanel _eventPanel = null!;
         private AppearancePanel      _appearancePanel = null!;
@@ -85,6 +86,14 @@ namespace Photobooth.Views
             _appearancePanel.ApplyActiveEventAppearance();
             UpdateAIEnhancementButton();
             ApplyGreetingText();
+
+            _tapsEnabled = false;
+            var cooldown = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(800)
+            };
+            cooldown.Tick += (_, _) => { _tapsEnabled = true; cooldown.Stop(); };
+            cooldown.Start();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -206,6 +215,7 @@ namespace Photobooth.Views
 
         private void Screen_Tapped(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if (!_tapsEnabled) return;
             if (SettingsOverlay.Visibility      == Visibility.Visible ||
                 SettingsContentPanel.Visibility == Visibility.Visible) return;
 
