@@ -18,20 +18,59 @@
                                VerticalAlignment="Center"
                                Visibility="Collapsed"/>
 
-        <!-- Status bar at top -->
+        <!-- Status bar at top: [✕] [status text] [dots] -->
         <Border VerticalAlignment="Top"
                 Background="#80000000"
-                Padding="24,12">
+                Padding="16,10">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- X / back button -->
+                <Button Grid.Column="0"
+                        Content="✕"
+                        FontSize="26" FontWeight="Bold"
+                        Foreground="White"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Width="44" Height="44"
+                        Cursor="Hand"
+                        VerticalAlignment="Center"
+                        Click="Back_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bg"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="22">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="#30FFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="#50FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
                 <TextBlock x:Name="StatusText"
+                           Grid.Column="1"
                            Text="Get ready!"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            FontSize="20"
-                           HorizontalAlignment="Center"/>
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
 
                 <!-- Photo indicators -->
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right"
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
                             VerticalAlignment="Center">
                     <Ellipse x:Name="Dot1" Width="16" Height="16" Fill="#334" Margin="0,0,10,0"/>
                     <Ellipse x:Name="Dot2" Width="16" Height="16" Fill="#334" Margin="0,0,10,0"/>
@@ -86,20 +125,49 @@
             </Border>
         </Grid>
 
-        <!-- Bottom bar -->
+        <!-- Bottom bar: captured thumbnails (centre) + Retake (right) -->
         <Border VerticalAlignment="Bottom"
                 Background="#80000000"
-                Padding="24,16">
+                Padding="16,12">
             <Grid>
-                <Button Content="← Back"
-                        Style="{StaticResource GhostButton}"
-                        HorizontalAlignment="Left"
-                        Padding="20,10" FontSize="16"
-                        Click="Back_Click"/>
+                <!-- Thumbnail slots -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Border Width="72" Height="108" CornerRadius="6" ClipToBounds="True"
+                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
+                            Margin="0,0,10,0">
+                        <Grid>
+                            <TextBlock Text="1" Foreground="#334" FontSize="28" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Thumb1" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+                    <Border Width="72" Height="108" CornerRadius="6" ClipToBounds="True"
+                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
+                            Margin="0,0,10,0">
+                        <Grid>
+                            <TextBlock Text="2" Foreground="#334" FontSize="28" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Thumb2" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+                    <Border Width="72" Height="108" CornerRadius="6" ClipToBounds="True"
+                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="3" Foreground="#334" FontSize="28" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Thumb3" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Retake button — right side, visible only during retake window -->
                 <Button x:Name="RetakeButton"
                         Content="↺ Retake"
                         Style="{StaticResource GhostButton}"
-                        HorizontalAlignment="Center"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
                         Padding="20,10" FontSize="16"
                         Visibility="Collapsed"
                         Click="RetakeButton_Click"/>

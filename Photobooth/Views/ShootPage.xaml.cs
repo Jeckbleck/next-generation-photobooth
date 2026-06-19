@@ -276,6 +276,7 @@ namespace Photobooth.Views
                         }
 
                         LightUpDot(i);
+                        _ = SetThumbnailAsync(i, path);
                     }
 
                 } while (retakeRequested && !ct.IsCancellationRequested);
@@ -357,6 +358,9 @@ namespace Photobooth.Views
             Dot1.Fill = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x44));
             Dot2.Fill = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x44));
             Dot3.Fill = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x44));
+            Thumb1.Source = null;
+            Thumb2.Source = null;
+            Thumb3.Source = null;
         }
 
         private void LightUpDot(int n)
@@ -368,6 +372,20 @@ namespace Photobooth.Views
                 if (n == 2) Dot2.Fill = accent;
                 if (n == 3) Dot3.Fill = accent;
             });
+        }
+
+        private async Task SetThumbnailAsync(int n, string path)
+        {
+            try
+            {
+                var src = await Task.Run(() => BitmapHelper.LoadThumbnail(path, fallbackDecodeWidth: 200));
+                var img = n switch { 1 => Thumb1, 2 => Thumb2, _ => Thumb3 };
+                img.Source = src;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Could not load thumbnail for slot {N}", n);
+            }
         }
 
         // --- Error / disconnect --------------------------------------------------
