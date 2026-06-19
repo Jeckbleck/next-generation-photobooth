@@ -255,13 +255,15 @@ namespace Photobooth.Views
 
         // --- Settings overlay (PIN gate) -----------------------------------------
 
+        private string _pinEntry = "";
+
         private void GearButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Debug("Settings gear button tapped — showing PIN overlay");
-            PinBox.Password = string.Empty;
+            _pinEntry = "";
             PinError.Visibility = Visibility.Collapsed;
+            UpdatePinDots();
             SettingsOverlay.Visibility = Visibility.Visible;
-            PinBox.Focus();
         }
 
         private void CancelSettings_Click(object sender, RoutedEventArgs e)
@@ -270,16 +272,44 @@ namespace Photobooth.Views
             SettingsOverlay.Visibility = Visibility.Collapsed;
         }
 
-        private void UnlockSettings_Click(object sender, RoutedEventArgs e) => TryUnlock();
-
-        private void PinBox_KeyDown(object sender, KeyEventArgs e)
+        private void NumpadKey_Click(object sender, RoutedEventArgs e)
         {
-            if (e.Key == Key.Enter) TryUnlock();
+            var tag = ((Button)sender).Tag?.ToString();
+            switch (tag)
+            {
+                case "back":
+                    if (_pinEntry.Length > 0)
+                        _pinEntry = _pinEntry[..^1];
+                    PinError.Visibility = Visibility.Collapsed;
+                    break;
+                case "confirm":
+                    TryUnlock();
+                    return;
+                default:
+                    if (_pinEntry.Length < 6 && tag is not null)
+                    {
+                        _pinEntry += tag;
+                        PinError.Visibility = Visibility.Collapsed;
+                    }
+                    break;
+            }
+            UpdatePinDots();
+        }
+
+        private void UpdatePinDots()
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < 6; i++)
+            {
+                if (i > 0) sb.Append("  ");
+                sb.Append(i < _pinEntry.Length ? '●' : '○');
+            }
+            PinDotsDisplay.Text = sb.ToString();
         }
 
         private void TryUnlock()
         {
-            if (_settings.VerifyPin(PinBox.Password))
+            if (_settings.VerifyPin(_pinEntry))
             {
                 SettingsOverlay.Visibility = Visibility.Collapsed;
                 OpenSettings();
@@ -289,7 +319,8 @@ namespace Photobooth.Views
             {
                 Log.Warning("Incorrect PIN attempt");
                 PinError.Visibility = Visibility.Visible;
-                PinBox.Password = string.Empty;
+                _pinEntry = "";
+                UpdatePinDots();
             }
         }
 
