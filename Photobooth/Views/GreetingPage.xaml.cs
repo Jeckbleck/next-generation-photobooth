@@ -281,33 +281,35 @@ namespace Photobooth.Views
                     if (_pinEntry.Length > 0)
                         _pinEntry = _pinEntry[..^1];
                     PinError.Visibility = Visibility.Collapsed;
+                    UpdatePinDots();
                     break;
                 case "confirm":
-                    TryUnlock();
-                    return;
+                    TryUnlock(showError: true);
+                    break;
                 default:
                     if (_pinEntry.Length < 6 && tag is not null)
                     {
                         _pinEntry += tag;
                         PinError.Visibility = Visibility.Collapsed;
+                        UpdatePinDots();
+                        TryUnlock(showError: false);
                     }
                     break;
             }
-            UpdatePinDots();
         }
 
         private void UpdatePinDots()
         {
             var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < _pinEntry.Length; i++)
             {
                 if (i > 0) sb.Append("  ");
-                sb.Append(i < _pinEntry.Length ? '●' : '○');
+                sb.Append('●');
             }
             PinDotsDisplay.Text = sb.ToString();
         }
 
-        private void TryUnlock()
+        private void TryUnlock(bool showError = true)
         {
             if (_settings.VerifyPin(_pinEntry))
             {
@@ -315,7 +317,7 @@ namespace Photobooth.Views
                 OpenSettings();
                 SettingsContentPanel.Visibility = Visibility.Visible;
             }
-            else
+            else if (showError)
             {
                 Log.Warning("Incorrect PIN attempt");
                 PinError.Visibility = Visibility.Visible;

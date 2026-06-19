@@ -164,7 +164,7 @@
 
                     <!-- PIN dot display -->
                     <TextBlock x:Name="PinDotsDisplay"
-                               Text="○  ○  ○  ○  ○  ○"
+                               Text=""
                                FontSize="22"
                                HorizontalAlignment="Center"
                                Foreground="{DynamicResource AccentBrush}"
