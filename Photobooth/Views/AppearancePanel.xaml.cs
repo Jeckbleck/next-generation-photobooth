@@ -1,12 +1,11 @@
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Photobooth.Services;
+using Photobooth.Views;
 using Serilog;
 
 namespace Photobooth.Views;
@@ -207,61 +206,12 @@ public partial class AppearancePanel : UserControl
     private void OpenColorPicker(string resourceKey, Action<string> save)
     {
         var current = GetCurrentColor(resourceKey);
-        var picked  = ShowNativeColorDialog(current);
+        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+        var picked  = popup.ShowPickedColor();
         if (picked is null) return;
 
         var hex = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
         ApplyBrushColor(resourceKey, hex);
         save(hex);
-    }
-
-    // Win32 ChooseColor — same dialog ColorDialog wraps, no WinForms dependency needed.
-    [StructLayout(LayoutKind.Sequential)]
-    private struct CHOOSECOLOR
-    {
-        public uint   lStructSize;
-        public IntPtr hwndOwner;
-        public IntPtr hInstance;
-        public uint   rgbResult;
-        public IntPtr lpCustColors;
-        public uint   Flags;
-        public IntPtr lCustData;
-        public IntPtr lpfnHook;
-        public IntPtr lpTemplateName;
-    }
-
-    [DllImport("comdlg32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ChooseColor(ref CHOOSECOLOR cc);
-
-    private static readonly uint[] _customColors = new uint[16];
-
-    private Color? ShowNativeColorDialog(Color current)
-    {
-        var owner = Window.GetWindow(this);
-        uint rgb = (uint)(current.R | (current.G << 8) | (current.B << 16));
-        var cc = new CHOOSECOLOR
-        {
-            lStructSize = (uint)Marshal.SizeOf<CHOOSECOLOR>(),
-            hwndOwner   = owner is not null ? new WindowInteropHelper(owner).Handle : IntPtr.Zero,
-            rgbResult   = rgb,
-            Flags       = 0x0001 | 0x0002, // CC_RGBINIT | CC_FULLOPEN
-        };
-
-        var handle = GCHandle.Alloc(_customColors, GCHandleType.Pinned); // pin uint[] so GC doesn't move it during P/Invoke
-        try
-        {
-            cc.lpCustColors = handle.AddrOfPinnedObject();
-            if (!ChooseColor(ref cc)) return null;
-
-            byte r = (byte)(cc.rgbResult & 0xFF);
-            byte g = (byte)((cc.rgbResult >> 8) & 0xFF);
-            byte b = (byte)((cc.rgbResult >> 16) & 0xFF);
-            return Color.FromRgb(r, g, b);
-        }
-        finally
-        {
-            handle.Free();
-        }
     }
 }
