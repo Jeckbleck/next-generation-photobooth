@@ -25,7 +25,7 @@
 
                 <!-- Saturation / Brightness canvas -->
                 <Canvas x:Name="SbCanvas" Width="360" Height="280"
-                        ClipToBounds="False" Cursor="Crosshair"
+                        ClipToBounds="False" Cursor="Cross"
                         MouseDown="SbCanvas_MouseDown"
                         MouseMove="SbCanvas_MouseMove"
                         MouseUp="SbCanvas_MouseUp">
