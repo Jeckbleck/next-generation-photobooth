@@ -34,61 +34,40 @@
         </Border>
 
         <TextBlock Text="Accent color" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border Width="34" Height="34" CornerRadius="6"
-                    Background="{DynamicResource AccentBrush}" Margin="0,0,8,0"/>
-            <TextBox x:Name="AccentHexBox" Grid.Column="1"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
-                     Padding="10,7" FontSize="13" Text="#E94560"
-                     VerticalContentAlignment="Center"/>
-            <Button Grid.Column="2" Content="Apply"
-                    Style="{StaticResource GhostButton}"
-                    Padding="14,6" FontSize="13" Margin="8,0,0,0"
-                    Click="ApplyAccentColor_Click"/>
-        </Grid>
+        <Button Width="34" Height="34" HorizontalAlignment="Left" Cursor="Hand"
+                Margin="0,0,0,10" Click="PickAccentColor_Click" ToolTip="Click to pick accent color">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border Width="34" Height="34" CornerRadius="6"
+                            Background="{DynamicResource AccentBrush}"
+                            BorderBrush="#555" BorderThickness="1"/>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
 
         <TextBlock Text="App background" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border Width="34" Height="34" CornerRadius="6"
-                    Background="{DynamicResource BackgroundBrush}" Margin="0,0,8,0"/>
-            <TextBox x:Name="BgColorHexBox" Grid.Column="1"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
-                     Padding="10,7" FontSize="13" Text="#1A1A2E"
-                     VerticalContentAlignment="Center"/>
-            <Button Grid.Column="2" Content="Apply"
-                    Style="{StaticResource GhostButton}"
-                    Padding="14,6" FontSize="13" Margin="8,0,0,0"
-                    Click="ApplyBgColor_Click"/>
-        </Grid>
+        <Button Width="34" Height="34" HorizontalAlignment="Left" Cursor="Hand"
+                Margin="0,0,0,10" Click="PickBgColor_Click" ToolTip="Click to pick background color">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border Width="34" Height="34" CornerRadius="6"
+                            Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="#555" BorderThickness="1"/>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
 
         <TextBlock Text="Surface" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <Grid Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border Width="34" Height="34" CornerRadius="6"
-                    Background="{DynamicResource SurfaceBrush}" Margin="0,0,8,0"/>
-            <TextBox x:Name="SurfaceHexBox" Grid.Column="1"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
-                     Padding="10,7" FontSize="13" Text="#16213E"
-                     VerticalContentAlignment="Center"/>
-            <Button Grid.Column="2" Content="Apply"
-                    Style="{StaticResource GhostButton}"
-                    Padding="14,6" FontSize="13" Margin="8,0,0,0"
-                    Click="ApplySurfaceColor_Click"/>
-        </Grid>
+        <Button Width="34" Height="34" HorizontalAlignment="Left" Cursor="Hand"
+                Margin="0,0,0,20" Click="PickSurfaceColor_Click" ToolTip="Click to pick surface color">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border Width="34" Height="34" CornerRadius="6"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="#555" BorderThickness="1"/>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
 
         <Button Content="Revert to defaults"
                 Style="{StaticResource GhostButton}"
