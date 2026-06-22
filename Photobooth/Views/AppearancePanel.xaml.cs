@@ -2,6 +2,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -233,19 +234,21 @@ public partial class AppearancePanel : UserControl
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ChooseColor(ref CHOOSECOLOR cc);
 
-    private static readonly int[] _customColors = new int[16];
+    private static readonly uint[] _customColors = new uint[16];
 
-    private static Color? ShowNativeColorDialog(Color current)
+    private Color? ShowNativeColorDialog(Color current)
     {
+        var owner = Window.GetWindow(this);
         uint rgb = (uint)(current.R | (current.G << 8) | (current.B << 16));
         var cc = new CHOOSECOLOR
         {
             lStructSize = (uint)Marshal.SizeOf<CHOOSECOLOR>(),
+            hwndOwner   = owner is not null ? new WindowInteropHelper(owner).Handle : IntPtr.Zero,
             rgbResult   = rgb,
             Flags       = 0x0001 | 0x0002, // CC_RGBINIT | CC_FULLOPEN
         };
 
-        var handle = GCHandle.Alloc(_customColors, GCHandleType.Pinned);
+        var handle = GCHandle.Alloc(_customColors, GCHandleType.Pinned); // pin uint[] so GC doesn't move it during P/Invoke
         try
         {
             cc.lpCustColors = handle.AddrOfPinnedObject();
