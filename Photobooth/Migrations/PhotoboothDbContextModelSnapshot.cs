@@ -36,6 +36,7 @@ namespace Photobooth.Migrations
                 b.Property<bool>("SaveImagesEnabled").HasColumnType("INTEGER");
                 b.Property<string>("Slug").IsRequired().HasMaxLength(100).HasColumnType("TEXT");
                 b.Property<string>("SurfaceColor").HasMaxLength(20).HasColumnType("TEXT");
+                b.Property<string>("NavColor").HasMaxLength(20).HasColumnType("TEXT");
                 b.HasKey("Id");
                 b.HasIndex("Slug").IsUnique();
                 b.ToTable("Events");

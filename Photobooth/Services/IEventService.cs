@@ -66,6 +66,7 @@ namespace Photobooth.Services
         void SetAccentColor(int id, string? color);
         void SetBackgroundColor(int id, string? color);
         void SetSurfaceColor(int id, string? color);
+        void SetNavColor(int id, string? color);
         void SetBackgroundImagePath(int id, string? path);
         void SetPhotostripTemplatePath(int id, string? path);
 

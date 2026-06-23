@@ -15,7 +15,7 @@
                        FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
             <!-- Camera status bar -->
-            <Border Background="#0D1B2A" CornerRadius="6" Padding="12,10" Margin="0,0,16,20">
+            <Border Background="{DynamicResource NavBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,16,20">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>

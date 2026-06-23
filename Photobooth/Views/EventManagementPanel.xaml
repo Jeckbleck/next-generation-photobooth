@@ -15,7 +15,7 @@
 
         <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <TextBox x:Name="EventNameBox"
-                 Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
         <Grid Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -47,17 +47,17 @@
 
         <TextBlock Text="Eyebrow line" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <TextBox x:Name="GreetingEyebrowBox"
-                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                  Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
 
         <TextBlock Text="Main title" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <TextBox x:Name="GreetingTitleBox"
-                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                  Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
 
         <TextBlock Text="Subtitle" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <TextBox x:Name="GreetingSubtitleBox"
-                 Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                  Padding="10,7" FontSize="13" Margin="0,0,0,10"
                  TextWrapping="Wrap"/>
 
@@ -104,7 +104,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox x:Name="PrintLimitBox"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                      Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
                      PreviewTextInput="PrintLimitBox_PreviewTextInput"
                      LostFocus="PrintLimitBox_LostFocus"/>
@@ -118,7 +118,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox x:Name="SessionLimitBox"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                      Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
                      PreviewTextInput="SessionLimitBox_PreviewTextInput"
                      LostFocus="SessionLimitBox_LostFocus"/>
@@ -135,7 +135,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox x:Name="StoragePathBox"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                      Padding="10,7" FontSize="12" IsReadOnly="True"
                      VerticalContentAlignment="Center"/>
             <Button Grid.Column="1" Content="Browse"
@@ -196,7 +196,7 @@
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="CardBorder"
-                                            Background="#0D1B2A" CornerRadius="6"
+                                            Background="{DynamicResource NavBrush}" CornerRadius="6"
                                             Margin="0,0,8,4" BorderBrush="#1E2F4A"
                                             BorderThickness="1" Width="110" Padding="8,8">
                                         <StackPanel>

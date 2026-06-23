@@ -18,6 +18,7 @@ public partial class AppearancePanel : UserControl
     private const string DefaultAccent     = "#E94560";
     private const string DefaultBackground = "#1A1A2E";
     private const string DefaultSurface    = "#16213E";
+    private const string DefaultNav        = "#0D1424";
 
     public int? SelectedEventId { get; set; }
 
@@ -43,6 +44,7 @@ public partial class AppearancePanel : UserControl
         if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",     ev.AccentColor);
         if (!string.IsNullOrEmpty(ev.BackgroundColor)) ApplyBrushColor("BackgroundBrush", ev.BackgroundColor);
         if (!string.IsNullOrEmpty(ev.SurfaceColor))    ApplyBrushColor("SurfaceBrush",    ev.SurfaceColor);
+        if (!string.IsNullOrEmpty(ev.NavColor))        ApplyBrushColor("NavBrush",        ev.NavColor);
 
         if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
         {
@@ -65,10 +67,12 @@ public partial class AppearancePanel : UserControl
         var accent = ev.AccentColor     ?? DefaultAccent;
         var bg     = ev.BackgroundColor ?? DefaultBackground;
         var surf   = ev.SurfaceColor    ?? DefaultSurface;
+        var nav    = ev.NavColor        ?? DefaultNav;
 
         ApplyBrushColor("AccentBrush",     accent);
         ApplyBrushColor("BackgroundBrush", bg);
         ApplyBrushColor("SurfaceBrush",    surf);
+        ApplyBrushColor("NavBrush",        nav);
 
         if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
         {
@@ -104,11 +108,16 @@ public partial class AppearancePanel : UserControl
         OpenColorPicker("SurfaceBrush",
             hex => { if (SelectedEventId.HasValue) _events.SetSurfaceColor(SelectedEventId.Value, hex); });
 
+    private void PickNavColor_Click(object sender, RoutedEventArgs e) =>
+        OpenColorPicker("NavBrush",
+            hex => { if (SelectedEventId.HasValue) _events.SetNavColor(SelectedEventId.Value, hex); });
+
     private void RevertAppearance_Click(object sender, RoutedEventArgs e)
     {
         ApplyBrushColor("AccentBrush",     DefaultAccent);
         ApplyBrushColor("BackgroundBrush", DefaultBackground);
         ApplyBrushColor("SurfaceBrush",    DefaultSurface);
+        ApplyBrushColor("NavBrush",        DefaultNav);
 
         ClearBackground();
 
@@ -117,6 +126,7 @@ public partial class AppearancePanel : UserControl
             _events.SetAccentColor(SelectedEventId.Value, null);
             _events.SetBackgroundColor(SelectedEventId.Value, null);
             _events.SetSurfaceColor(SelectedEventId.Value, null);
+            _events.SetNavColor(SelectedEventId.Value, null);
             _events.SetBackgroundImagePath(SelectedEventId.Value, null);
         }
 

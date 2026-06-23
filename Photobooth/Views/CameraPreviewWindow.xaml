@@ -5,7 +5,7 @@
         Width="860" Height="660"
         MinWidth="480" MinHeight="360"
         WindowStartupLocation="CenterOwner"
-        Background="#0D1B2A"
+        Background="{DynamicResource NavBrush}"
         ResizeMode="CanResizeWithGrip">
 
     <Grid>

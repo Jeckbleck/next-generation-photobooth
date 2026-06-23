@@ -53,7 +53,7 @@
                         <Border x:Name="CardBorder"
                                 Width="190" Height="90"
                                 CornerRadius="8"
-                                Background="#0D1B2A"
+                                Background="{DynamicResource NavBrush}"
                                 BorderThickness="2" BorderBrush="#1E2F4A"
                                 Padding="14,10">
                             <StackPanel>
@@ -94,7 +94,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header bar -->
-        <Border Grid.Row="0" Background="#0D1424" BorderBrush="#1E2F4A" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="{DynamicResource NavBrush}" BorderBrush="#1E2F4A" BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="BackButton"
@@ -168,7 +168,7 @@
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="CardBorder"
-                                                Background="#0D1B2A" CornerRadius="8"
+                                                Background="{DynamicResource NavBrush}" CornerRadius="8"
                                                 BorderBrush="#1E2F4A" BorderThickness="1"
                                                 Padding="14,12">
                                             <ContentPresenter/>
@@ -286,13 +286,13 @@
                     <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="#0D1B2A" CornerRadius="8" ClipToBounds="True">
+                <Border Grid.Column="0" Background="{DynamicResource NavBrush}" CornerRadius="8" ClipToBounds="True">
                     <Image x:Name="DetailPhoto1" Stretch="Uniform"/>
                 </Border>
-                <Border Grid.Column="2" Background="#0D1B2A" CornerRadius="8" ClipToBounds="True">
+                <Border Grid.Column="2" Background="{DynamicResource NavBrush}" CornerRadius="8" ClipToBounds="True">
                     <Image x:Name="DetailPhoto2" Stretch="Uniform"/>
                 </Border>
-                <Border Grid.Column="4" Background="#0D1B2A" CornerRadius="8" ClipToBounds="True">
+                <Border Grid.Column="4" Background="{DynamicResource NavBrush}" CornerRadius="8" ClipToBounds="True">
                     <Image x:Name="DetailPhoto3" Stretch="Uniform"/>
                 </Border>
             </Grid>
@@ -399,7 +399,7 @@
             <!-- Centred card -->
             <Border MaxWidth="700" MaxHeight="530"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="#0D1B2A" CornerRadius="12"
+                    Background="{DynamicResource NavBrush}" CornerRadius="12"
                     BorderBrush="#1E2F4A" BorderThickness="1"
                     Padding="28,24">
                 <Grid>

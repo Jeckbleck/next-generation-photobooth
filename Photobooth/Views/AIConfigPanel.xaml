@@ -20,10 +20,10 @@
         </Grid>
 
         <TextBlock Text="Server URL" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,10,0,4"/>
-        <TextBox x:Name="AIServerUrlBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8" LostFocus="AIServerUrl_LostFocus"/>
+        <TextBox x:Name="AIServerUrlBox" Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8" LostFocus="AIServerUrl_LostFocus"/>
 
         <TextBlock Text="API Key" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <TextBox x:Name="AIApiKeyBox" Background="#0D1B2A" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,12" LostFocus="AIApiKey_LostFocus"/>
+        <TextBox x:Name="AIApiKeyBox" Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,12" LostFocus="AIApiKey_LostFocus"/>
 
         <Button Content="Test Connection" Click="TestAIConnection_Click"
                 Style="{StaticResource GhostButton}" HorizontalAlignment="Left"

@@ -7,12 +7,12 @@
 
         <TextBlock Text="New PIN" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <PasswordBox x:Name="NewPinBox"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                      Padding="10,7" FontSize="13" MaxLength="6" Margin="0,0,0,10"/>
 
         <TextBlock Text="Confirm PIN" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <PasswordBox x:Name="ConfirmPinBox"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                      Padding="10,7" FontSize="13" MaxLength="6" Margin="0,0,0,8"/>
 
         <TextBlock x:Name="PinChangeStatus" FontSize="12" Visibility="Collapsed" Margin="0,0,0,8"/>

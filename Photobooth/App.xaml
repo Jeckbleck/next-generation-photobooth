@@ -10,6 +10,7 @@
             <SolidColorBrush x:Key="AccentHoverBrush"   Color="#FF2040"/>
             <SolidColorBrush x:Key="AccentPressedBrush" Color="#C0304A"/>
             <SolidColorBrush x:Key="SurfaceBrush"       Color="#16213E"/>
+            <SolidColorBrush x:Key="NavBrush"           Color="#0D1424"/>
             <SolidColorBrush x:Key="TextPrimaryBrush"   Color="#FFFFFF"/>
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A0A0C0"/>
 
@@ -218,7 +219,7 @@
 
             <!-- Dark ComboBox -->
             <Style TargetType="ComboBox">
-                <Setter Property="Background"        Value="#0D1B2A"/>
+                <Setter Property="Background"        Value="{DynamicResource NavBrush}"/>
                 <Setter Property="Foreground"        Value="{StaticResource TextPrimaryBrush}"/>
                 <Setter Property="BorderBrush"       Value="#334"/>
                 <Setter Property="BorderThickness"   Value="1"/>
@@ -295,7 +296,7 @@
                                        AllowsTransparency="True"
                                        PopupAnimation="Fade"
                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
-                                    <Border Background="#0D1B2A"
+                                    <Border Background="{DynamicResource NavBrush}"
                                             BorderBrush="{DynamicResource AccentBrush}"
                                             BorderThickness="1"
                                             CornerRadius="4"

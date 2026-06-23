@@ -13,7 +13,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox x:Name="BgPathBox"
-                     Background="#0D1B2A" Foreground="White" BorderBrush="#334"
+                     Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
                      Padding="10,7" FontSize="12" IsReadOnly="True"
                      VerticalContentAlignment="Center"/>
             <Button Grid.Column="1" Content="Browse"
@@ -27,47 +27,89 @@
         </Grid>
         <Border x:Name="BgPreviewBorder"
                 Height="64" CornerRadius="6"
-                Background="#0D1B2A" BorderBrush="#1E2F4A" BorderThickness="1"
+                Background="{DynamicResource NavBrush}" BorderBrush="#1E2F4A" BorderThickness="1"
                 Margin="0,0,0,20" ClipToBounds="True"
                 Visibility="Collapsed">
             <Image x:Name="BgPreviewImage" Stretch="UniformToFill"/>
         </Border>
 
-        <TextBlock Text="Accent color" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <Button Width="34" Height="34" HorizontalAlignment="Left" Cursor="Hand"
-                Margin="0,0,0,10" Click="PickAccentColor_Click" ToolTip="Click to pick accent color">
-            <Button.Template>
-                <ControlTemplate TargetType="Button">
-                    <Border Width="34" Height="34" CornerRadius="6"
-                            Background="{DynamicResource AccentBrush}"
-                            BorderBrush="#555" BorderThickness="1"/>
-                </ControlTemplate>
-            </Button.Template>
-        </Button>
+        <TextBlock Text="Colors" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,10"/>
+        <Grid Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-        <TextBlock Text="App background" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <Button Width="34" Height="34" HorizontalAlignment="Left" Cursor="Hand"
-                Margin="0,0,0,10" Click="PickBgColor_Click" ToolTip="Click to pick background color">
-            <Button.Template>
-                <ControlTemplate TargetType="Button">
-                    <Border Width="34" Height="34" CornerRadius="6"
-                            Background="{DynamicResource BackgroundBrush}"
-                            BorderBrush="#555" BorderThickness="1"/>
-                </ControlTemplate>
-            </Button.Template>
-        </Button>
+            <!-- Accent -->
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                <Button Width="56" Height="56" Cursor="Hand"
+                        Click="PickAccentColor_Click" ToolTip="Accent color">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="56" Height="56" CornerRadius="10"
+                                    Background="{DynamicResource AccentBrush}"
+                                    BorderBrush="#555" BorderThickness="1.5"/>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <TextBlock Text="Accent" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
+            </StackPanel>
 
-        <TextBlock Text="Surface" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <Button Width="34" Height="34" HorizontalAlignment="Left" Cursor="Hand"
-                Margin="0,0,0,20" Click="PickSurfaceColor_Click" ToolTip="Click to pick surface color">
-            <Button.Template>
-                <ControlTemplate TargetType="Button">
-                    <Border Width="34" Height="34" CornerRadius="6"
-                            Background="{DynamicResource SurfaceBrush}"
-                            BorderBrush="#555" BorderThickness="1"/>
-                </ControlTemplate>
-            </Button.Template>
-        </Button>
+            <!-- Background -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                <Button Width="56" Height="56" Cursor="Hand"
+                        Click="PickBgColor_Click" ToolTip="App background">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="56" Height="56" CornerRadius="10"
+                                    Background="{DynamicResource BackgroundBrush}"
+                                    BorderBrush="#555" BorderThickness="1.5"/>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <TextBlock Text="Background" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
+            </StackPanel>
+
+            <!-- Surface -->
+            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                <Button Width="56" Height="56" Cursor="Hand"
+                        Click="PickSurfaceColor_Click" ToolTip="Surface / panels">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="56" Height="56" CornerRadius="10"
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    BorderBrush="#555" BorderThickness="1.5"/>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <TextBlock Text="Surface" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
+            </StackPanel>
+
+            <!-- Navigation -->
+            <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                <Button Width="56" Height="56" Cursor="Hand"
+                        Click="PickNavColor_Click" ToolTip="Navigation / input wells">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Width="56" Height="56" CornerRadius="10"
+                                    Background="{DynamicResource NavBrush}"
+                                    BorderBrush="#555" BorderThickness="1.5"/>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <TextBlock Text="Navigation" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
+            </StackPanel>
+        </Grid>
 
         <Button Content="Revert to defaults"
                 Style="{StaticResource GhostButton}"

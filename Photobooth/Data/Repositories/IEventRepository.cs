@@ -58,6 +58,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Sets the surface colour override for the event. Null clears the override.</summary>
         void SetSurfaceColor(int eventId, string? color);
 
+        /// <summary>Sets the navigation/deep-background colour override for the event. Null clears the override.</summary>
+        void SetNavColor(int eventId, string? color);
+
         /// <summary>Sets the background image path for the event. Null removes it.</summary>
         void SetBackgroundImagePath(int eventId, string? path);
 

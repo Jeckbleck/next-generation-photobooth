@@ -155,6 +155,14 @@ namespace Photobooth.Services
             Log.Debug("Event {Id} surface color → {Value}", id, color ?? "default");
         }
 
+        public void SetNavColor(int id, string? color)
+        {
+            Require(id);
+            _repo.SetNavColor(id, color);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} nav color → {Value}", id, color ?? "default");
+        }
+
         public void SetBackgroundImagePath(int id, string? path)
         {
             Require(id);

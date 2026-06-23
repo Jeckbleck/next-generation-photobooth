@@ -72,7 +72,7 @@
             <!-- AI status — full-width, centered -->
             <Border x:Name="AIStatusPanel"
                     Grid.Row="0"
-                    Background="#0D1B2A"
+                    Background="{DynamicResource NavBrush}"
                     CornerRadius="8"
                     Padding="20,12"
                     Margin="0,0,0,16"

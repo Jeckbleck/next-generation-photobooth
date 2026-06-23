@@ -15,7 +15,7 @@
                         <Border x:Name="CardBorder"
                                 Width="230" Height="110"
                                 CornerRadius="10"
-                                Background="#0D1B2A"
+                                Background="{DynamicResource NavBrush}"
                                 BorderThickness="2"
                                 BorderBrush="#1E2F4A"
                                 Padding="18,14">
