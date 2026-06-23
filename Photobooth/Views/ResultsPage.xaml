@@ -7,7 +7,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -22,106 +21,100 @@
                        HorizontalAlignment="Center"/>
         </StackPanel>
 
-        <!-- Layered photostrip display -->
-        <Grid Grid.Row="1"
-              HorizontalAlignment="Center" VerticalAlignment="Center"
-              Margin="80,20">
-            <!-- Back copy — tilted left, translated, faded -->
-            <Image x:Name="StripBack"
-                   Stretch="Uniform"
-                   MaxHeight="680"
-                   RenderOptions.BitmapScalingMode="HighQuality"
-                   Opacity="0.70"
-                   Panel.ZIndex="0"
-                   RenderTransformOrigin="0.5,0.5">
-                <Image.RenderTransform>
-                    <TransformGroup>
-                        <RotateTransform Angle="-7"/>
-                        <TranslateTransform X="-22" Y="12"/>
-                    </TransformGroup>
-                </Image.RenderTransform>
-                <Image.Effect>
-                    <DropShadowEffect ShadowDepth="5" Direction="270"
-                                      BlurRadius="14" Opacity="0.40"/>
-                </Image.Effect>
-            </Image>
-            <!-- Front copy — slight right tilt, full opacity, prominent shadow -->
-            <Image x:Name="StripPreview"
-                   Stretch="Uniform"
-                   MaxHeight="680"
-                   RenderOptions.BitmapScalingMode="HighQuality"
-                   Panel.ZIndex="1"
-                   RenderTransformOrigin="0.5,0.5">
-                <Image.RenderTransform>
-                    <RotateTransform Angle="5"/>
-                </Image.RenderTransform>
-                <Image.Effect>
-                    <DropShadowEffect ShadowDepth="10" Direction="270"
-                                      BlurRadius="26" Opacity="0.60"/>
-                </Image.Effect>
-            </Image>
-        </Grid>
+        <!-- ── 3-COLUMN MAIN CONTENT ─────────────────────────────────────── -->
+        <Grid Grid.Row="1" Margin="60,0,60,40">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- Footer -->
-        <Grid Grid.Row="2" Margin="40,20,40,40">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            <!-- LEFT: AI status + print controls -->
+            <StackPanel Grid.Column="0"
+                        VerticalAlignment="Center"
+                        Margin="0,0,32,0">
 
-            <!-- AI status — full-width, centered -->
-            <Border x:Name="AIStatusPanel"
-                    Grid.Row="0"
-                    Background="{DynamicResource NavBrush}"
-                    CornerRadius="8"
-                    Padding="20,12"
-                    Margin="0,0,0,16"
-                    Visibility="Collapsed">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Ellipse x:Name="AIStatusDot" Width="8" Height="8"
-                             Fill="{DynamicResource AccentBrush}"
-                             VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock x:Name="AIStatusText"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontSize="15" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Border>
+                <Border x:Name="AIStatusPanel"
+                        Background="{DynamicResource NavBrush}"
+                        CornerRadius="8"
+                        Padding="16,12"
+                        Margin="0,0,0,20"
+                        Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="AIStatusDot" Width="8" Height="8"
+                                 Fill="{DynamicResource AccentBrush}"
+                                 VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock x:Name="AIStatusText"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="14" VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
 
-            <!-- Button row: Print on left, Start Again on right -->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="PrintStatusText"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="14" TextWrapping="Wrap"
+                           Margin="0,0,0,14"/>
+                <Button x:Name="PrintButton"
+                        Content="PRINT STRIP"
+                        Style="{StaticResource KioskButton}"
+                        HorizontalAlignment="Left"
+                        Visibility="Collapsed"
+                        Click="PrintButton_Click"/>
+            </StackPanel>
 
-                <!-- Left: print status + button -->
-                <StackPanel Grid.Column="0"
-                            HorizontalAlignment="Left" VerticalAlignment="Center">
-                    <TextBlock x:Name="PrintStatusText"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontSize="14"
-                               Margin="0,0,0,8"/>
-                    <Button x:Name="PrintButton"
-                            Content="PRINT STRIP"
-                            Style="{StaticResource KioskButton}"
-                            HorizontalAlignment="Left"
-                            Visibility="Collapsed"
-                            Click="PrintButton_Click"/>
-                </StackPanel>
+            <!-- CENTER: layered photostrip — fills column height, fully responsive -->
+            <Grid Grid.Column="1" Margin="0,16,0,16">
 
-                <!-- Right: countdown + start again -->
-                <StackPanel Grid.Column="1"
-                            HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <TextBlock x:Name="ReturnCountdown"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontSize="16" TextAlignment="Right"
-                               Margin="0,0,0,12"/>
-                    <Button Content="START AGAIN"
-                            Style="{StaticResource KioskButton}"
-                            HorizontalAlignment="Right"
-                            Click="StartAgain_Click"/>
-                </StackPanel>
+                <!-- Back copy — tilted left, faded -->
+                <Image x:Name="StripBack"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       Opacity="0.70"
+                       Panel.ZIndex="0"
+                       RenderTransformOrigin="0.5,0.5">
+                    <Image.RenderTransform>
+                        <TransformGroup>
+                            <RotateTransform Angle="-7"/>
+                            <TranslateTransform X="-22" Y="12"/>
+                        </TransformGroup>
+                    </Image.RenderTransform>
+                    <Image.Effect>
+                        <DropShadowEffect ShadowDepth="5" Direction="270"
+                                          BlurRadius="14" Opacity="0.40"/>
+                    </Image.Effect>
+                </Image>
+
+                <!-- Front copy — slight right tilt, full opacity -->
+                <Image x:Name="StripPreview"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       Panel.ZIndex="1"
+                       RenderTransformOrigin="0.5,0.5">
+                    <Image.RenderTransform>
+                        <RotateTransform Angle="5"/>
+                    </Image.RenderTransform>
+                    <Image.Effect>
+                        <DropShadowEffect ShadowDepth="10" Direction="270"
+                                          BlurRadius="26" Opacity="0.60"/>
+                    </Image.Effect>
+                </Image>
+
             </Grid>
+
+            <!-- RIGHT: countdown + start again -->
+            <StackPanel Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Margin="32,0,0,0">
+                <TextBlock x:Name="ReturnCountdown"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="16" TextWrapping="Wrap"
+                           Margin="0,0,0,20"/>
+                <Button Content="START AGAIN"
+                        Style="{StaticResource KioskButton}"
+                        Click="StartAgain_Click"/>
+            </StackPanel>
+
         </Grid>
     </Grid>
 </Page>

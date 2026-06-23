@@ -5,86 +5,149 @@
       Background="{DynamicResource BackgroundBrush}">
 
     <Grid>
-        <!-- Live view feed -->
-        <Image x:Name="EvfImage"
-               Stretch="Uniform"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <!-- Loading spinner: centered overlay while waiting for photo download -->
-        <local:LoadingSpinner x:Name="CaptureSpinner"
-                               Width="64" Height="64"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Visibility="Collapsed"/>
-
-        <!-- Status bar at top: [✕] [status text] [dots] -->
-        <Border VerticalAlignment="Top"
-                Background="#80000000"
-                Padding="16,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- X / back button -->
-                <Button Grid.Column="0"
-                        Content="✕"
-                        FontSize="26" FontWeight="Bold"
-                        Foreground="White"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Width="44" Height="44"
-                        Cursor="Hand"
-                        VerticalAlignment="Center"
-                        Click="Back_Click">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Bg"
-                                    Background="{TemplateBinding Background}"
-                                    CornerRadius="22">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bg" Property="Background" Value="#30FFFFFF"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Bg" Property="Background" Value="#50FFFFFF"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-
+        <!-- ── TOP BAR ───────────────────────────────────────────────────── -->
+        <!-- BackgroundBrush rect behind a semi-transparent dark overlay      -->
+        <Grid Grid.Row="0">
+            <Border Background="{DynamicResource BackgroundBrush}"/>
+            <Border Background="#66000000" Padding="20,14">
                 <TextBlock x:Name="StatusText"
-                           Grid.Column="1"
                            Text="Get ready!"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            FontSize="20"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
 
-                <!-- Photo indicators -->
-                <StackPanel Grid.Column="2"
-                            Orientation="Horizontal"
+        <!-- ── EVF ROW ───────────────────────────────────────────────────── -->
+        <!-- EVF fills the full row. Side buttons float over the edges.       -->
+        <Grid Grid.Row="1">
+
+            <!-- Live view feed — fills edge-to-edge, hits pass through -->
+            <Image x:Name="EvfImage"
+                   Stretch="UniformToFill"
+                   IsHitTestVisible="False"/>
+
+            <!-- Loading spinner while waiting for photo download -->
+            <local:LoadingSpinner x:Name="CaptureSpinner"
+                                   Width="64" Height="64"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
+
+            <!-- Cancel — left semi-circle (flat edge on left, curve opens right) -->
+            <Button Width="130" Height="260"
+                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                    BorderThickness="0" Cursor="Hand"
+                    Click="Back_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                CornerRadius="0,130,130,0"
+                                Background="{DynamicResource AccentBrush}">
+                            <TextBlock Text="✕"
+                                       FontSize="36" FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <!-- Retake — right semi-circle (curve opens left). Always visible; disabled until retake window. -->
+            <Button x:Name="RetakeButton"
+                    Width="130" Height="260"
+                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                    BorderThickness="0" Cursor="Hand"
+                    IsEnabled="False"
+                    Click="RetakeButton_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                CornerRadius="130,0,0,130"
+                                Background="{DynamicResource AccentBrush}">
+                            <TextBlock Text="↺"
+                                       FontSize="36" FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.28"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+
+        <!-- ── BOTTOM BAR ───────────────────────────────────────────────── -->
+        <Grid Grid.Row="2">
+            <Border Background="{DynamicResource BackgroundBrush}"/>
+            <Border Background="#66000000" Padding="16,12">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
                             VerticalAlignment="Center">
-                    <Ellipse x:Name="Dot1" Width="16" Height="16" Fill="#334" Margin="0,0,10,0"/>
-                    <Ellipse x:Name="Dot2" Width="16" Height="16" Fill="#334" Margin="0,0,10,0"/>
-                    <Ellipse x:Name="Dot3" Width="16" Height="16" Fill="#334"/>
+                    <Border Width="162" Height="108" CornerRadius="6" ClipToBounds="True"
+                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
+                            Margin="0,0,10,0">
+                        <Grid>
+                            <TextBlock Text="1" Foreground="#334" FontSize="28" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Thumb1" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+                    <Border Width="162" Height="108" CornerRadius="6" ClipToBounds="True"
+                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
+                            Margin="0,0,10,0">
+                        <Grid>
+                            <TextBlock Text="2" Foreground="#334" FontSize="28" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Thumb2" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
+                    <Border Width="162" Height="108" CornerRadius="6" ClipToBounds="True"
+                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="3" Foreground="#334" FontSize="28" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image x:Name="Thumb3" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Border>
                 </StackPanel>
-            </Grid>
-        </Border>
+            </Border>
+        </Grid>
 
-        <!-- Countdown overlay -->
+        <!-- ── FULL-SCREEN OVERLAYS (span all rows) ─────────────────────── -->
+
+        <!-- Countdown number -->
         <TextBlock x:Name="CountdownText"
+                   Grid.RowSpan="3"
                    Visibility="Collapsed"
                    Foreground="White"
-                   FontSize="200"
-                   FontWeight="Bold"
+                   FontSize="200" FontWeight="Bold"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Opacity="0.85">
@@ -93,19 +156,19 @@
             </TextBlock.Effect>
         </TextBlock>
 
-        <!-- Flash overlay (white flash on capture) -->
+        <!-- White flash on capture -->
         <Rectangle x:Name="FlashOverlay"
-                   Fill="White"
-                   Opacity="0"
+                   Grid.RowSpan="3"
+                   Fill="White" Opacity="0"
                    IsHitTestVisible="False"/>
 
-        <!-- Disconnect overlay (shown when camera disconnects mid-session) -->
-        <Grid x:Name="DisconnectOverlay" Visibility="Collapsed">
+        <!-- Camera-disconnected modal -->
+        <Grid x:Name="DisconnectOverlay"
+              Grid.RowSpan="3"
+              Visibility="Collapsed">
             <Rectangle Fill="#CC000000"/>
             <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="12"
-                    Width="440"
-                    Padding="40"
+                    CornerRadius="12" Width="440" Padding="40"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
                     <TextBlock Text="Camera Disconnected"
@@ -125,53 +188,5 @@
             </Border>
         </Grid>
 
-        <!-- Bottom bar: captured thumbnails (centre) + Retake (right) -->
-        <Border VerticalAlignment="Bottom"
-                Background="#80000000"
-                Padding="16,12">
-            <Grid>
-                <!-- Thumbnail slots -->
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <Border Width="72" Height="108" CornerRadius="6" ClipToBounds="True"
-                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
-                            Margin="0,0,10,0">
-                        <Grid>
-                            <TextBlock Text="1" Foreground="#334" FontSize="28" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Thumb1" Stretch="UniformToFill"/>
-                        </Grid>
-                    </Border>
-                    <Border Width="72" Height="108" CornerRadius="6" ClipToBounds="True"
-                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
-                            Margin="0,0,10,0">
-                        <Grid>
-                            <TextBlock Text="2" Foreground="#334" FontSize="28" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Thumb2" Stretch="UniformToFill"/>
-                        </Grid>
-                    </Border>
-                    <Border Width="72" Height="108" CornerRadius="6" ClipToBounds="True"
-                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1">
-                        <Grid>
-                            <TextBlock Text="3" Foreground="#334" FontSize="28" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Thumb3" Stretch="UniformToFill"/>
-                        </Grid>
-                    </Border>
-                </StackPanel>
-
-                <!-- Retake button — right side, visible only during retake window -->
-                <Button x:Name="RetakeButton"
-                        Content="↺ Retake"
-                        Style="{StaticResource GhostButton}"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center"
-                        Padding="20,10" FontSize="16"
-                        Visibility="Collapsed"
-                        Click="RetakeButton_Click"/>
-            </Grid>
-        </Border>
     </Grid>
 </Page>

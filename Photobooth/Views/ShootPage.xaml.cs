@@ -241,9 +241,9 @@ namespace Photobooth.Views
 
                     if (canRetake)
                     {
-                        Dispatcher.Invoke(() => RetakeButton.Visibility = Visibility.Visible);
+                        Dispatcher.Invoke(() => RetakeButton.IsEnabled = true);
                         retakeRequested = await ShowRetakeWindowAsync(_settings.RetakeHoldSeconds, ct);
-                        Dispatcher.Invoke(() => RetakeButton.Visibility = Visibility.Collapsed);
+                        Dispatcher.Invoke(() => RetakeButton.IsEnabled = false);
                     }
                     else
                     {
@@ -351,28 +351,14 @@ namespace Photobooth.Views
             }
         }
 
-        // --- Dot indicators ------------------------------------------------------
-
         private void ResetDots()
         {
-            Dot1.Fill = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x44));
-            Dot2.Fill = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x44));
-            Dot3.Fill = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x44));
             Thumb1.Source = null;
             Thumb2.Source = null;
             Thumb3.Source = null;
         }
 
-        private void LightUpDot(int n)
-        {
-            var accent = (SolidColorBrush)Application.Current.Resources["AccentBrush"];
-            Dispatcher.Invoke(() =>
-            {
-                if (n == 1) Dot1.Fill = accent;
-                if (n == 2) Dot2.Fill = accent;
-                if (n == 3) Dot3.Fill = accent;
-            });
-        }
+        private void LightUpDot(int n) { }
 
         private async Task SetThumbnailAsync(int n, string path)
         {

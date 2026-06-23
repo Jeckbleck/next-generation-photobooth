@@ -1,6 +1,6 @@
 <UserControl x:Class="Photobooth.Views.AppearancePanel"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:Photobooth.Views">
     <StackPanel>
         <TextBlock Text="APPEARANCE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
@@ -110,6 +110,9 @@
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>
         </Grid>
+
+        <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+        <v:ThemePreviewPanel Margin="0,0,0,20"/>
 
         <Button Content="Revert to defaults"
                 Style="{StaticResource GhostButton}"
