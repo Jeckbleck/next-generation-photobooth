@@ -13,6 +13,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Returns all non-archived events, newest first.</summary>
         List<Event> GetActive();
 
+        /// <summary>Returns all events including archived ones, newest first.</summary>
+        List<Event> GetAllIncludingArchived();
+
         /// <summary>Returns the event with the given id, or null if not found.</summary>
         Event? FindById(int id);
 

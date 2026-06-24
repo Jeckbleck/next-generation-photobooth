@@ -14,6 +14,15 @@ namespace Photobooth.Services
         /// <summary>Returns all active (non-archived) events, newest first.</summary>
         List<Event> GetActive();
 
+        /// <summary>Returns the <paramref name="count"/> most recently created active events, newest first.</summary>
+        List<Event> GetRecent(int count);
+
+        /// <summary>
+        /// Returns a filtered, sorted, paginated page of events plus the total matching count.
+        /// All query logic executes in the service layer.
+        /// </summary>
+        (List<Event> Events, int TotalCount) QueryEvents(EventQuery query);
+
         /// <summary>Returns the event with the given id, or null if not found.</summary>
         Event? GetById(int id);
 

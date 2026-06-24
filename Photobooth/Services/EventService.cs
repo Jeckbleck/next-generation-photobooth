@@ -25,6 +25,34 @@ namespace Photobooth.Services
 
         public List<Event> GetActive() => _repo.GetActive();
 
+        public List<Event> GetRecent(int count) =>
+            _repo.GetActive().Take(count).ToList();
+
+        public (List<Event> Events, int TotalCount) QueryEvents(EventQuery query)
+        {
+            IEnumerable<Event> source = query.IncludeArchived
+                ? _repo.GetAllIncludingArchived()
+                : _repo.GetActive();
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var term = query.Search.Trim().ToLowerInvariant();
+                source = source.Where(e => e.Name.ToLowerInvariant().Contains(term));
+            }
+
+            source = query.Sort switch
+            {
+                EventSortOrder.OldestFirst => source.OrderBy(e => e.CreatedAt),
+                EventSortOrder.NameAZ      => source.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase),
+                EventSortOrder.NameZA      => source.OrderByDescending(e => e.Name, StringComparer.OrdinalIgnoreCase),
+                _                          => source.OrderByDescending(e => e.CreatedAt),
+            };
+
+            var all   = source.ToList();
+            var paged = all.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToList();
+            return (paged, all.Count);
+        }
+
         public Event? GetById(int id) => _repo.FindById(id);
 
         public (int Sessions, int Photos, int Prints, int AIGenerations) GetStats(int eventId) =>

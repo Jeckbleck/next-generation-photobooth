@@ -19,6 +19,9 @@ namespace Photobooth.Data.Repositories
         public List<Event> GetActive() =>
             _db.Events.OrderByDescending(e => e.CreatedAt).ToList();
 
+        public List<Event> GetAllIncludingArchived() =>
+            _db.Events.IgnoreQueryFilters().OrderByDescending(e => e.CreatedAt).ToList();
+
         public Event?   FindById(int id)        => _db.Events.Find(id);
         public Session? FindSessionById(int id) => _db.Sessions.Find(id);
 

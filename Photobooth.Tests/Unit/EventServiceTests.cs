@@ -454,4 +454,125 @@ public sealed class EventServiceTests : IDisposable
         Assert.Single(sessions);
         Assert.Single(sessions[0].Photos);
     }
+
+    // -------------------------------------------------------------------------
+    // GetRecent
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void GetRecent_ReturnsNewestFirstUpToCount()
+    {
+        _sut.Create("Alpha", false, true, null, null);
+        _sut.Create("Beta",  false, true, null, null);
+        _sut.Create("Gamma", false, true, null, null);
+
+        var recent = _sut.GetRecent(2);
+
+        Assert.Equal(2, recent.Count);
+        Assert.Equal("Gamma", recent[0].Name); // newest first
+    }
+
+    [Fact]
+    public void GetRecent_ExcludesArchivedEvents()
+    {
+        var ev = _sut.Create("Old", false, true, null, null);
+        _sut.Archive(ev.Id);
+        _sut.Create("New", false, true, null, null);
+
+        var recent = _sut.GetRecent(10);
+
+        Assert.Single(recent);
+        Assert.Equal("New", recent[0].Name);
+    }
+
+    // -------------------------------------------------------------------------
+    // QueryEvents
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void QueryEvents_ReturnsAllActiveWhenNoFilter()
+    {
+        _sut.Create("A", false, true, null, null);
+        _sut.Create("B", false, true, null, null);
+
+        var (events, total) = _sut.QueryEvents(new EventQuery());
+
+        Assert.Equal(2, total);
+        Assert.Equal(2, events.Count);
+    }
+
+    [Fact]
+    public void QueryEvents_FiltersBySearchCaseInsensitive()
+    {
+        _sut.Create("Summer Bash", false, true, null, null);
+        _sut.Create("Winter Gala", false, true, null, null);
+
+        var (events, total) = _sut.QueryEvents(new EventQuery { Search = "summer" });
+
+        Assert.Equal(1, total);
+        Assert.Equal("Summer Bash", events[0].Name);
+    }
+
+    [Fact]
+    public void QueryEvents_ExcludesArchivedByDefault()
+    {
+        var archived = _sut.Create("Old", false, true, null, null);
+        _sut.Archive(archived.Id);
+        _sut.Create("Active", false, true, null, null);
+
+        var (events, total) = _sut.QueryEvents(new EventQuery { IncludeArchived = false });
+
+        Assert.Equal(1, total);
+        Assert.Equal("Active", events[0].Name);
+    }
+
+    [Fact]
+    public void QueryEvents_IncludesArchivedWhenFlagTrue()
+    {
+        var archived = _sut.Create("Old", false, true, null, null);
+        _sut.Archive(archived.Id);
+        _sut.Create("Active", false, true, null, null);
+
+        var (events, total) = _sut.QueryEvents(new EventQuery { IncludeArchived = true });
+
+        Assert.Equal(2, total);
+    }
+
+    [Fact]
+    public void QueryEvents_SortsByNameAZ()
+    {
+        _sut.Create("Zebra", false, true, null, null);
+        _sut.Create("Apple", false, true, null, null);
+
+        var (events, _) = _sut.QueryEvents(new EventQuery { Sort = EventSortOrder.NameAZ });
+
+        Assert.Equal("Apple", events[0].Name);
+        Assert.Equal("Zebra", events[1].Name);
+    }
+
+    [Fact]
+    public void QueryEvents_PaginatesCorrectly()
+    {
+        for (int i = 1; i <= 5; i++)
+            _sut.Create($"Event {i}", false, true, null, null);
+
+        var (page1, total) = _sut.QueryEvents(new EventQuery { Page = 1, PageSize = 3 });
+        var (page2, _)     = _sut.QueryEvents(new EventQuery { Page = 2, PageSize = 3 });
+
+        Assert.Equal(5, total);
+        Assert.Equal(3, page1.Count);
+        Assert.Equal(2, page2.Count);
+    }
+
+    [Fact]
+    public void QueryEvents_TotalCountIsBeforePagination()
+    {
+        for (int i = 1; i <= 10; i++)
+            _sut.Create($"Event {i}", false, true, null, null);
+
+        var (events, total) = _sut.QueryEvents(new EventQuery { Page = 1, PageSize = 4 });
+
+        Assert.Equal(10, total);
+        Assert.Equal(4, events.Count);
+    }
 }
