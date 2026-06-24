@@ -88,6 +88,7 @@ public partial class EventBrowserWindow : Window
     // SelectionChanged on ComboBox requires SelectionChangedEventArgs — separate from FilterChanged.
     private void SortChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!IsLoaded) return;
         _currentPage = 1;
         LoadPage();
     }
