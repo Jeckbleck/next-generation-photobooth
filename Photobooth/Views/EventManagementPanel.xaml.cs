@@ -53,8 +53,8 @@ public partial class EventManagementPanel : UserControl
         try
         {
             EventsComboBox.Items.Clear();
-            EventsComboBox.Items.Add(new ComboBoxItem { Content = "— New event —", Tag = null });
-            foreach (var ev in _events.GetActive())
+            EventsComboBox.Items.Add(new ComboBoxItem { Content = "— none —", Tag = null });
+            foreach (var ev in _events.GetRecent(6))
                 EventsComboBox.Items.Add(new ComboBoxItem { Content = ev.Name, Tag = ev.Id });
             EventsComboBox.SelectedIndex = 0;
         }
@@ -202,6 +202,26 @@ public partial class EventManagementPanel : UserControl
         SetSelectedEvent(null);
         ClearEventFields();
         ActiveEventChanged.Invoke(this, null);
+    }
+
+    private void NewEvent_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new NewEventDialog(_events) { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true)
+        {
+            LoadEvents();
+            SelectEventById(dialog.CreatedEventId);
+        }
+    }
+
+    private void BrowseEvents_Click(object sender, RoutedEventArgs e)
+    {
+        var browser = new EventBrowserWindow(_events) { Owner = Window.GetWindow(this) };
+        if (browser.ShowDialog() == true)
+        {
+            LoadEvents();
+            SelectEventById(browser.SelectedEventId);
+        }
     }
 
     private void ArchiveEvent_Click(object sender, RoutedEventArgs e)

@@ -9,9 +9,58 @@
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
         <TextBlock Text="Select event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <ComboBox x:Name="EventsComboBox"
-                  Padding="8,6" Margin="0,0,0,10"
-                  SelectionChanged="EventsComboBox_SelectionChanged"/>
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="EventsComboBox"
+                      Padding="8,6"
+                      SelectionChanged="EventsComboBox_SelectionChanged"/>
+            <Button x:Name="NewEventButton" Grid.Column="1"
+                    Width="26" Height="26" Padding="0" Cursor="Hand"
+                    ToolTip="New event" Margin="8,0,0,0"
+                    Click="NewEvent_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#141F2E" CornerRadius="4"
+                                BorderBrush="#334" BorderThickness="1" Width="26" Height="26">
+                            <TextBlock Text="+" Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="16" FontWeight="Light"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button x:Name="BrowseEventsButton" Grid.Column="2"
+                    Width="26" Height="26" Padding="0" Cursor="Hand"
+                    ToolTip="Browse all events" Margin="6,0,0,0"
+                    Click="BrowseEvents_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#141F2E" CornerRadius="4"
+                                BorderBrush="#334" BorderThickness="1" Width="26" Height="26">
+                            <TextBlock Text="&#x229E;" Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
 
         <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <TextBox x:Name="EventNameBox"
