@@ -84,8 +84,11 @@ namespace Photobooth.Views
                 _ = PrintAsync();
             else
             {
-                PrintButton.Visibility = Visibility.Visible;
-                PrintStatusText.Text   = "Press Print when you're ready.";
+                if (_settings.ExperimentalFeatures)
+                    PrintButton.Visibility = Visibility.Visible;
+                else
+                    PrintButtonPlain.Visibility = Visibility.Visible;
+                PrintStatusText.Text = "Press Print when you're ready.";
             }
         }
 
@@ -244,7 +247,8 @@ namespace Photobooth.Views
 
         private void PrintButton_Click(object sender, RoutedEventArgs e)
         {
-            PrintButton.IsEnabled = false;
+            PrintButton.IsEnabled      = false;
+            PrintButtonPlain.IsEnabled = false;
             _ = PrintAsync();
         }
 

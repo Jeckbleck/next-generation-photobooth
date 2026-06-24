@@ -31,10 +31,11 @@ public partial class DisplayPanel : UserControl
     public void Activate()
     {
         _loading = true;
-        CountdownSlider.Value   = _settings.CountdownSeconds;
-        PreviewHoldSlider.Value = _settings.PreviewHoldSeconds;
-        RetakeHoldSlider.Value  = _settings.RetakeHoldSeconds;
-        MaxRetakesSlider.Value  = _settings.MaxRetakesPerSlot;
+        CountdownSlider.Value                 = _settings.CountdownSeconds;
+        PreviewHoldSlider.Value               = _settings.PreviewHoldSeconds;
+        RetakeHoldSlider.Value                = _settings.RetakeHoldSeconds;
+        MaxRetakesSlider.Value                = _settings.MaxRetakesPerSlot;
+        ExperimentalFeaturesToggle.IsChecked  = _settings.ExperimentalFeatures;
         UpdateMaxRetakesLabel();
         _loading = false;
     }
@@ -64,6 +65,12 @@ public partial class DisplayPanel : UserControl
         if (_loading) return;
         UpdateMaxRetakesLabel();
         _settings.SetMaxRetakesPerSlot((int)MaxRetakesSlider.Value);
+    }
+
+    private void ExperimentalFeaturesToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _settings.SetExperimentalFeatures(ExperimentalFeaturesToggle.IsChecked == true);
     }
 
     private void UpdateMaxRetakesLabel()

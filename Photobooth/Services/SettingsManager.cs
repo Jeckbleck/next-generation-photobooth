@@ -105,6 +105,15 @@ namespace Photobooth.Services
             Save();
         }
 
+        public bool ExperimentalFeatures => _settings.ExperimentalFeatures;
+
+        public void SetExperimentalFeatures(bool value)
+        {
+            _settings.ExperimentalFeatures = value;
+            Save();
+            Log.Debug("Experimental features → {Value}", value);
+        }
+
         public bool   AIEnhancementEnabled => _settings.AIEnhancementEnabled;
         public string AIServerUrl          => _settings.AIServerUrl;
         public string AIApiKey             => _settings.AIApiKey;
@@ -202,6 +211,7 @@ namespace Photobooth.Services
         public int     PreviewHoldSeconds    { get; set; } = 5;
         public int     RetakeHoldSeconds     { get; set; } = 3;
         public int     MaxRetakesPerSlot     { get; set; } = 3;
+        public bool    ExperimentalFeatures   { get; set; } = false;
         public bool    AIEnhancementEnabled  { get; set; } = false;
         public string  AIServerUrl           { get; set; } = "http://localhost:8000";
         public string  AIApiKey              { get; set; } = "";
