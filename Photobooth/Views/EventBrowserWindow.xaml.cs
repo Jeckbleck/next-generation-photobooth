@@ -9,7 +9,7 @@ namespace Photobooth.Views;
 public partial class EventBrowserWindow : Window
 {
     private readonly IEventService    _events;
-    private          DispatcherTimer? _debounce;
+    private readonly DispatcherTimer  _debounce;
     private          int              _currentPage = 1;
     private          int              _totalPages  = 1;
     private const    int              PageSize     = 9;
@@ -20,6 +20,8 @@ public partial class EventBrowserWindow : Window
     {
         _events = events;
         InitializeComponent();
+        _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        _debounce.Tick += (_, _) => { _debounce.Stop(); _currentPage = 1; LoadPage(); };
         Loaded += (_, _) => LoadPage();
     }
 
@@ -79,14 +81,7 @@ public partial class EventBrowserWindow : Window
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        _debounce?.Stop();
-        _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-        _debounce.Tick += (_, _) =>
-        {
-            _debounce.Stop();
-            _currentPage = 1;
-            LoadPage();
-        };
+        _debounce.Stop();
         _debounce.Start();
     }
 

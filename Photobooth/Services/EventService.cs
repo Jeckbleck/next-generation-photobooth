@@ -36,8 +36,8 @@ namespace Photobooth.Services
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                var term = query.Search.Trim().ToLowerInvariant();
-                source = source.Where(e => e.Name.ToLowerInvariant().Contains(term));
+                var term = query.Search.Trim();
+                source = source.Where(e => e.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
             }
 
             source = query.Sort switch
