@@ -2,173 +2,255 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="All Events"
-        Width="900" Height="650"
-        MinWidth="700" MinHeight="500"
+        Width="960" Height="650"
+        MinWidth="720" MinHeight="500"
         WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
         Background="{DynamicResource BackgroundBrush}">
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="52"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top bar -->
-        <Grid Grid.Row="0" Margin="24,20,24,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="180"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBox x:Name="SearchBox"
-                     Background="{DynamicResource NavBrush}"
-                     Foreground="White" BorderBrush="#334"
-                     Padding="10,7" FontSize="13"
-                     Margin="0,0,12,0"
-                     TextChanged="SearchBox_TextChanged"/>
-
-            <ComboBox x:Name="SortComboBox" Grid.Column="1"
-                      Padding="8,6" FontSize="13"
-                      Margin="0,0,12,0"
-                      SelectionChanged="SortChanged">
-                <ComboBoxItem Content="Newest first" IsSelected="True"/>
-                <ComboBoxItem Content="Oldest first"/>
-                <ComboBoxItem Content="Name A-Z"/>
-                <ComboBoxItem Content="Name Z-A"/>
-            </ComboBox>
-
-            <ToggleButton x:Name="ShowArchivedToggle" Grid.Column="2"
-                          Style="{StaticResource ToggleSwitch}"
-                          VerticalAlignment="Center"
-                          Checked="FilterChanged"
-                          Unchecked="FilterChanged"/>
-        </Grid>
-
-        <!-- Card grid -->
-        <Grid Grid.Row="1" Margin="24,0,24,0">
-
-            <TextBlock x:Name="EmptyLabel"
-                       Text="No events match your search."
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="15"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Visibility="Collapsed"/>
-
-            <ItemsControl x:Name="CardGrid">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="3"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Cursor="Hand" Padding="0" BorderThickness="0"
-                                Background="Transparent"
-                                Margin="8"
-                                Click="EventCard_Click">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="CardBorder"
-                                            Background="{DynamicResource NavBrush}"
-                                            CornerRadius="8"
-                                            BorderBrush="#1E2F4A" BorderThickness="1"
-                                            Opacity="{Binding CardOpacity}">
-                                        <StackPanel>
-
-                                            <!-- Thumbnail / placeholder -->
-                                            <Grid Height="100" ClipToBounds="True">
-                                                <Border Background="{DynamicResource BackgroundBrush}"
-                                                        CornerRadius="8,8,0,0">
-                                                    <StackPanel VerticalAlignment="Center"
-                                                                HorizontalAlignment="Center">
-                                                        <Rectangle Height="20" Width="54"
-                                                                   Fill="#1E2F4A" RadiusX="2" RadiusY="2"
-                                                                   Margin="0,0,0,5"/>
-                                                        <Rectangle Height="20" Width="54"
-                                                                   Fill="#1E2F4A" RadiusX="2" RadiusY="2"
-                                                                   Margin="0,0,0,5"/>
-                                                        <Rectangle Height="20" Width="54"
-                                                                   Fill="#1E2F4A" RadiusX="2" RadiusY="2"/>
-                                                    </StackPanel>
-                                                </Border>
-                                                <!-- Covers placeholder once Thumbnail is set -->
-                                                <Image Source="{Binding Thumbnail}"
-                                                       Stretch="UniformToFill"
-                                                       RenderOptions.BitmapScalingMode="HighQuality"/>
-                                            </Grid>
-
-                                            <!-- Card info -->
-                                            <StackPanel Margin="12,10,12,12">
-                                                <TextBlock Text="{Binding Name}"
-                                                           Foreground="{StaticResource TextPrimaryBrush}"
-                                                           FontSize="13" FontWeight="Bold"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Margin="0,0,0,3"/>
-                                                <TextBlock Text="{Binding DateLabel}"
-                                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                                           FontSize="11"
-                                                           Margin="0,0,0,5"/>
-                                                <Border x:Name="ArchivedBadge"
-                                                        Background="#7A4A00"
-                                                        CornerRadius="4"
-                                                        Padding="6,2"
-                                                        HorizontalAlignment="Left"
-                                                        Visibility="Collapsed">
-                                                    <TextBlock Text="Archived"
-                                                               Foreground="#E9A020"
-                                                               FontSize="10" FontWeight="Bold"/>
-                                                </Border>
-                                            </StackPanel>
-
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="CardBorder" Property="BorderBrush"
-                                                    Value="{DynamicResource AccentBrush}"/>
-                                        </Trigger>
-                                        <DataTrigger Binding="{Binding IsArchived}" Value="True">
-                                            <Setter TargetName="ArchivedBadge" Property="Visibility"
-                                                    Value="Visible"/>
-                                        </DataTrigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Grid>
-
-        <!-- Bottom bar -->
-        <Grid Grid.Row="2" Margin="24,12,24,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock x:Name="TotalLabel"
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="13" VerticalAlignment="Center"/>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button x:Name="PrevButton" Content="Prev"
-                        Style="{StaticResource GhostButton}"
-                        Padding="14,6" FontSize="13"
-                        Margin="0,0,10,0"
-                        Click="Prev_Click"/>
-                <TextBlock x:Name="PageLabel"
+        <!-- ===== Header bar ===== -->
+        <Border Grid.Row="0" Background="{DynamicResource NavBrush}"
+                BorderBrush="#1E2F4A" BorderThickness="0,0,0,1">
+            <Grid Margin="20,0">
+                <TextBlock Text="All Events"
                            Foreground="{StaticResource TextPrimaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"
-                           Margin="0,0,10,0"/>
-                <Button x:Name="NextButton" Content="Next"
-                        Style="{StaticResource GhostButton}"
-                        Padding="14,6" FontSize="13"
-                        Click="Next_Click"/>
-            </StackPanel>
-        </Grid>
+                           FontSize="15" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Width="32" Height="32"
+                        Click="CloseWindow_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="CloseBorder" Background="Transparent" CornerRadius="4">
+                                <TextBlock Text="✕" Foreground="#777799"
+                                           FontSize="14" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CloseBorder" Property="Background" Value="#1A2B44"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
 
+        <!-- ===== Body (sidebar + cards) ===== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="210"/>
+                <ColumnDefinition Width="1"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <Border Grid.Column="0" Background="{DynamicResource NavBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="16,20,16,20">
+
+                        <!-- Search -->
+                        <TextBlock Text="SEARCH"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontSize="10" FontWeight="Bold"
+                                   Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,20">
+                            <TextBox x:Name="SearchBox"
+                                     Background="{DynamicResource BackgroundBrush}"
+                                     Foreground="White" BorderBrush="#334"
+                                     Padding="10,7,32,7" FontSize="13"
+                                     TextChanged="SearchBox_TextChanged"/>
+                            <TextBlock Text="Find your event"
+                                       IsHitTestVisible="False"
+                                       Foreground="#556677"
+                                       FontSize="13"
+                                       Padding="11,7,32,7"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="&#xE721;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Foreground="#556677"
+                                       FontSize="14"
+                                       IsHitTestVisible="False"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Margin="0,0,9,0"/>
+                        </Grid>
+
+                        <!-- Sort -->
+                        <TextBlock Text="SORT BY"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontSize="10" FontWeight="Bold"
+                                   Margin="0,0,0,8"/>
+                        <ComboBox x:Name="SortComboBox"
+                                  Padding="8,6" FontSize="13"
+                                  Margin="0,0,0,20"
+                                  SelectionChanged="SortChanged">
+                            <ComboBoxItem Content="Newest first" IsSelected="True"/>
+                            <ComboBoxItem Content="Oldest first"/>
+                            <ComboBoxItem Content="Name A–Z"/>
+                            <ComboBoxItem Content="Name Z–A"/>
+                        </ComboBox>
+
+                        <!-- Filters -->
+                        <TextBlock Text="FILTER"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontSize="10" FontWeight="Bold"
+                                   Margin="0,0,0,12"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Archived only"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontSize="13" VerticalAlignment="Center"/>
+                            <ToggleButton x:Name="ShowArchivedToggle" Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          Checked="FilterChanged"
+                                          Unchecked="FilterChanged"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Has photostrip"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       FontSize="13" VerticalAlignment="Center"/>
+                            <ToggleButton x:Name="HasPhotostripToggle" Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          Checked="FilterChanged"
+                                          Unchecked="FilterChanged"/>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Sidebar separator -->
+            <Rectangle Grid.Column="1" Fill="#1E2F4A"/>
+
+            <!-- Card area -->
+            <Grid Grid.Column="2" Margin="8,8,8,8">
+
+                <TextBlock x:Name="EmptyLabel"
+                           Text="No events match your search."
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="15"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+
+                <ScrollViewer x:Name="CardScroller"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              ScrollChanged="CardScroller_ScrollChanged">
+                    <ItemsControl x:Name="CardGrid">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel HorizontalAlignment="Center"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Cursor="Hand" Padding="0" BorderThickness="0"
+                                        Background="Transparent"
+                                        Width="200" Margin="5"
+                                        Click="EventCard_Click">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="CardBorder"
+                                                    Background="{DynamicResource NavBrush}"
+                                                    CornerRadius="8"
+                                                    BorderBrush="#1E2F4A" BorderThickness="1"
+                                                    Opacity="{Binding CardOpacity}">
+                                                <StackPanel>
+
+                                                    <Grid Height="220" ClipToBounds="True">
+                                                        <Border Background="{DynamicResource BackgroundBrush}"
+                                                                CornerRadius="8,8,0,0"
+                                                                Visibility="{Binding PlaceholderVisibility}">
+                                                            <StackPanel VerticalAlignment="Center"
+                                                                        HorizontalAlignment="Center">
+                                                                <Rectangle Height="20" Width="54"
+                                                                           Fill="#1E2F4A" RadiusX="2" RadiusY="2"
+                                                                           Margin="0,0,0,5"/>
+                                                                <Rectangle Height="20" Width="54"
+                                                                           Fill="#1E2F4A" RadiusX="2" RadiusY="2"
+                                                                           Margin="0,0,0,5"/>
+                                                                <Rectangle Height="20" Width="54"
+                                                                           Fill="#1E2F4A" RadiusX="2" RadiusY="2"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <Image Source="{Binding Thumbnail}"
+                                                               Stretch="Uniform"
+                                                               Margin="10"
+                                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                    </Grid>
+
+                                                    <StackPanel Margin="12,8,12,10">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   FontSize="13" FontWeight="Bold"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Margin="0,0,0,2"/>
+                                                        <TextBlock Text="{Binding DateLabel}"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   FontSize="11"
+                                                                   Margin="0,0,0,4"/>
+                                                        <Border x:Name="ArchivedBadge"
+                                                                Background="#7A4A00"
+                                                                CornerRadius="4"
+                                                                Padding="6,2"
+                                                                HorizontalAlignment="Left"
+                                                                Visibility="Collapsed">
+                                                            <TextBlock Text="Archived"
+                                                                       Foreground="#E9A020"
+                                                                       FontSize="10" FontWeight="Bold"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                </StackPanel>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush"
+                                                            Value="{DynamicResource AccentBrush}"/>
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsArchived}" Value="True">
+                                                    <Setter TargetName="ArchivedBadge" Property="Visibility"
+                                                            Value="Visible"/>
+                                                </DataTrigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+        </Grid>
     </Grid>
 </Window>

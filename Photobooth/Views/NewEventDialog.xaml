@@ -4,40 +4,79 @@
         Title="New Event"
         Width="420" SizeToContent="Height"
         ResizeMode="NoResize"
+        WindowStyle="None"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BackgroundBrush}"
         KeyDown="Window_KeyDown">
-    <StackPanel Margin="28,24,28,24">
 
-        <TextBlock Text="Event name"
-                   Foreground="{StaticResource TextSecondaryBrush}"
-                   FontSize="12" Margin="0,0,0,4"/>
-        <TextBox x:Name="NameBox"
-                 Background="{DynamicResource NavBrush}"
-                 Foreground="White" BorderBrush="#334"
-                 Padding="10,7" FontSize="13"
-                 MaxLength="200"
-                 Margin="0,0,0,6"/>
-        <TextBlock x:Name="ErrorLabel"
-                   Text="Name is required."
-                   Foreground="#E05555"
-                   FontSize="12"
-                   Visibility="Collapsed"
-                   Margin="0,0,0,12"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,8,0,0">
-            <Button Content="Cancel"
-                    Style="{StaticResource GhostButton}"
-                    Padding="18,7" FontSize="13"
-                    Margin="0,0,8,0"
-                    Click="Cancel_Click"/>
-            <Button Content="Create"
-                    Style="{StaticResource KioskButton}"
-                    Padding="18,7" FontSize="13"
-                    Click="Create_Click"/>
+        <!-- Header bar -->
+        <Border Grid.Row="0" Background="{DynamicResource NavBrush}"
+                BorderBrush="#1E2F4A" BorderThickness="0,0,0,1">
+            <Grid Margin="20,0">
+                <TextBlock Text="New Event"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           FontSize="15" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Width="32" Height="32"
+                        Click="Cancel_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="CloseBorder" Background="Transparent" CornerRadius="4">
+                                <TextBlock Text="✕" Foreground="#777799"
+                                           FontSize="14" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CloseBorder" Property="Background" Value="#1A2B44"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1" Margin="28,24,28,24">
+
+            <TextBlock Text="Event name"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12" Margin="0,0,0,4"/>
+            <TextBox x:Name="NameBox"
+                     Background="{DynamicResource NavBrush}"
+                     Foreground="White" BorderBrush="#334"
+                     Padding="10,7" FontSize="13"
+                     MaxLength="200"
+                     Margin="0,0,0,6"/>
+            <TextBlock x:Name="ErrorLabel"
+                       Text="Name is required."
+                       Foreground="#E05555"
+                       FontSize="12"
+                       Visibility="Collapsed"
+                       Margin="0,0,0,12"/>
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,8,0,0">
+                <Button Content="Cancel"
+                        Style="{StaticResource GhostButton}"
+                        Padding="18,7" FontSize="13"
+                        Margin="0,0,8,0"
+                        Click="Cancel_Click"/>
+                <Button Content="Create"
+                        Style="{StaticResource KioskButton}"
+                        Padding="18,7" FontSize="13"
+                        Click="Create_Click"/>
+            </StackPanel>
+
         </StackPanel>
-
-    </StackPanel>
+    </Grid>
 </Window>

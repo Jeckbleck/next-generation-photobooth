@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -8,11 +9,14 @@ namespace Photobooth.Views;
 
 public partial class EventBrowserWindow : Window
 {
-    private readonly IEventService    _events;
-    private readonly DispatcherTimer  _debounce;
-    private          int              _currentPage = 1;
-    private          int              _totalPages  = 1;
-    private const    int              PageSize     = 9;
+    private readonly IEventService   _events;
+    private readonly DispatcherTimer _debounce;
+    private const    int             BatchSize = 12;
+
+    private readonly ObservableCollection<EventCardItem> _items = new();
+    private int  _loadedCount;
+    private int  _totalCount = int.MaxValue;
+    private bool _loading;
 
     public int SelectedEventId { get; private set; }
 
@@ -20,48 +24,64 @@ public partial class EventBrowserWindow : Window
     {
         _events = events;
         InitializeComponent();
+        CardGrid.ItemsSource = _items;
         _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-        _debounce.Tick += (_, _) => { _debounce.Stop(); _currentPage = 1; LoadPage(); };
-        Loaded += (_, _) => LoadPage();
+        _debounce.Tick += (_, _) => { _debounce.Stop(); ResetAndLoad(); };
+        Loaded += (_, _) => ResetAndLoad();
     }
 
-    private EventQuery BuildQuery() => new()
+    private EventQuery BuildQuery(int page) => new()
     {
         Search          = SearchBox.Text.Trim(),
         Sort            = SortComboBox.SelectedIndex switch
-        {
-            1 => EventSortOrder.OldestFirst,
-            2 => EventSortOrder.NameAZ,
-            3 => EventSortOrder.NameZA,
-            _ => EventSortOrder.NewestFirst,
-        },
-        IncludeArchived = ShowArchivedToggle.IsChecked == true,
-        Page            = _currentPage,
-        PageSize        = PageSize,
+                          {
+                              1 => EventSortOrder.OldestFirst,
+                              2 => EventSortOrder.NameAZ,
+                              3 => EventSortOrder.NameZA,
+                              _ => EventSortOrder.NewestFirst,
+                          },
+        IncludeArchived = ShowArchivedToggle.IsChecked  == true,
+        HasPhotostrip   = HasPhotostripToggle.IsChecked == true,
+        Page            = page,
+        PageSize        = BatchSize,
     };
 
-    private void LoadPage()
+    private void ResetAndLoad()
     {
-        var (events, total) = _events.QueryEvents(BuildQuery());
-        _totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+        _loadedCount = 0;
+        _totalCount  = int.MaxValue;
+        _loading     = false;
+        _items.Clear();
+        EmptyLabel.Visibility = Visibility.Collapsed;
+        LoadMore();
+    }
 
-        var items = events.Select(e => new EventCardItem
+    private void LoadMore()
+    {
+        if (_loading || _loadedCount >= _totalCount) return;
+        _loading = true;
+
+        int nextPage = _loadedCount / BatchSize + 1;
+        var (events, total) = _events.QueryEvents(BuildQuery(nextPage));
+        _totalCount = total;
+
+        var newItems = events.Select(e => new EventCardItem
         {
             EventId    = e.Id,
             Name       = e.Name,
             DateLabel  = e.CreatedAt.ToLocalTime().ToString("MMM d, yyyy"),
             IsArchived = e.ArchivedAt.HasValue,
-            PhotoPath  = _events.GetRecentPhotos(e.Id, 1).FirstOrDefault()?.FilePath,
+            PhotoPath  = e.PhotostripTemplatePath,
         }).ToList();
 
-        CardGrid.ItemsSource  = items.Count > 0 ? items : null;
-        EmptyLabel.Visibility = items.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
-        TotalLabel.Text       = $"{total} event{(total == 1 ? "" : "s")}";
-        PageLabel.Text        = $"Page {_currentPage} of {_totalPages}";
-        PrevButton.IsEnabled  = _currentPage > 1;
-        NextButton.IsEnabled  = _currentPage < _totalPages;
+        foreach (var item in newItems)
+            _items.Add(item);
 
-        _ = LoadThumbnailsAsync(items);
+        _loadedCount += newItems.Count;
+        EmptyLabel.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        _loading = false;
+        _ = LoadThumbnailsAsync(newItems);
     }
 
     private async Task LoadThumbnailsAsync(List<EventCardItem> items)
@@ -71,12 +91,19 @@ public partial class EventBrowserWindow : Window
             var path = item.PhotoPath!;
             var bmp  = await Task.Run(() =>
             {
-                try   { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(path, 160); }
+                try   { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(path, 200); }
                 catch { return null; }
             });
             if (bmp is not null)
                 item.Thumbnail = bmp;
         }
+    }
+
+    private void CardScroller_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        var sv = (ScrollViewer)sender;
+        if (sv.ScrollableHeight > 0 && sv.VerticalOffset >= sv.ScrollableHeight - 300)
+            LoadMore();
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -85,29 +112,18 @@ public partial class EventBrowserWindow : Window
         _debounce.Start();
     }
 
-    // SelectionChanged on ComboBox requires SelectionChangedEventArgs — separate from FilterChanged.
     private void SortChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!IsLoaded) return;
-        _currentPage = 1;
-        LoadPage();
+        ResetAndLoad();
     }
 
     private void FilterChanged(object sender, RoutedEventArgs e)
     {
-        _currentPage = 1;
-        LoadPage();
+        ResetAndLoad();
     }
 
-    private void Prev_Click(object sender, RoutedEventArgs e)
-    {
-        if (_currentPage > 1) { _currentPage--; LoadPage(); }
-    }
-
-    private void Next_Click(object sender, RoutedEventArgs e)
-    {
-        if (_currentPage < _totalPages) { _currentPage++; LoadPage(); }
-    }
+    private void CloseWindow_Click(object sender, RoutedEventArgs e) => DialogResult = false;
 
     private void EventCard_Click(object sender, RoutedEventArgs e)
     {
@@ -129,6 +145,9 @@ public partial class EventBrowserWindow : Window
         public string? PhotoPath  { get; init; }
         public double  CardOpacity => IsArchived ? 0.5 : 1.0;
 
+        public Visibility PlaceholderVisibility =>
+            _thumbnail is null ? Visibility.Visible : Visibility.Collapsed;
+
         private System.Windows.Media.ImageSource? _thumbnail;
         public System.Windows.Media.ImageSource? Thumbnail
         {
@@ -137,6 +156,7 @@ public partial class EventBrowserWindow : Window
             {
                 _thumbnail = value;
                 PropertyChanged?.Invoke(this, new(nameof(Thumbnail)));
+                PropertyChanged?.Invoke(this, new(nameof(PlaceholderVisibility)));
             }
         }
     }

@@ -30,8 +30,10 @@ namespace Photobooth.Services
 
         public (List<Event> Events, int TotalCount) QueryEvents(EventQuery query)
         {
+            // IncludeArchived = true → show ONLY archived events (so the toggle effect is immediate)
+            // IncludeArchived = false → show active events only (default)
             IEnumerable<Event> source = query.IncludeArchived
-                ? _repo.GetAllIncludingArchived()
+                ? _repo.GetAllIncludingArchived().Where(e => e.ArchivedAt.HasValue)
                 : _repo.GetActive();
 
             if (!string.IsNullOrWhiteSpace(query.Search))
@@ -39,6 +41,9 @@ namespace Photobooth.Services
                 var term = query.Search.Trim();
                 source = source.Where(e => e.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
             }
+
+            if (query.HasPhotostrip)
+                source = source.Where(e => e.PhotostripTemplatePath != null);
 
             source = query.Sort switch
             {

@@ -62,32 +62,14 @@
             </Button>
         </Grid>
 
-        <TextBlock Text="Event name" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
-        <TextBox x:Name="EventNameBox"
-                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334" Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="ArchiveEventButton"
-                    Content="Archive event"
-                    Style="{StaticResource GhostButton}"
-                    HorizontalAlignment="Left"
-                    Padding="18,7" FontSize="13"
-                    IsEnabled="False"
-                    Click="ArchiveEvent_Click"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Content="Clear"
-                        Style="{StaticResource GhostButton}"
-                        Padding="18,7" FontSize="13" Margin="0,0,8,0"
-                        Click="ClearEvent_Click"/>
-                <Button Content="Save"
-                        Style="{StaticResource KioskButton}"
-                        Padding="18,7" FontSize="13"
-                        Click="SaveEvent_Click"/>
-            </StackPanel>
-        </Grid>
+        <Button x:Name="ArchiveEventButton"
+                Content="Archive event"
+                Style="{StaticResource GhostButton}"
+                HorizontalAlignment="Left"
+                Padding="18,7" FontSize="13"
+                IsEnabled="False"
+                Margin="0,0,0,8"
+                Click="ArchiveEvent_Click"/>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,20"/>
 
         <TextBlock Text="GREETING TEXT" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>

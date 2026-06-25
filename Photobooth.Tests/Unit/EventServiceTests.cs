@@ -527,7 +527,7 @@ public sealed class EventServiceTests : IDisposable
     }
 
     [Fact]
-    public void QueryEvents_IncludesArchivedWhenFlagTrue()
+    public void QueryEvents_ShowsOnlyArchivedWhenFlagTrue()
     {
         var archived = _sut.Create("Old", false, true, null, null);
         _sut.Archive(archived.Id);
@@ -535,7 +535,8 @@ public sealed class EventServiceTests : IDisposable
 
         var (events, total) = _sut.QueryEvents(new EventQuery { IncludeArchived = true });
 
-        Assert.Equal(2, total);
+        Assert.Equal(1, total);
+        Assert.Equal("Old", events[0].Name);
     }
 
     [Fact]

@@ -49,13 +49,27 @@ public partial class EventManagementPanel : UserControl
 
     private void LoadEvents()
     {
+        var savedId = _settings.ActiveEventId;
+
         _loadingEvents = true;
         try
         {
             EventsComboBox.Items.Clear();
             EventsComboBox.Items.Add(new ComboBoxItem { Content = "— none —", Tag = null });
-            foreach (var ev in _events.GetRecent(6))
+
+            var recent = _events.GetRecent(6);
+
+            // If the saved event isn't in the recent 6, fetch it and show it at the top.
+            if (savedId.HasValue && recent.All(e => e.Id != savedId.Value))
+            {
+                var active = _events.GetById(savedId.Value);
+                if (active is not null)
+                    recent.Insert(0, active);
+            }
+
+            foreach (var ev in recent)
                 EventsComboBox.Items.Add(new ComboBoxItem { Content = ev.Name, Tag = ev.Id });
+
             EventsComboBox.SelectedIndex = 0;
         }
         finally
@@ -63,7 +77,6 @@ public partial class EventManagementPanel : UserControl
             _loadingEvents = false;
         }
 
-        var savedId = _settings.ActiveEventId;
         if (savedId.HasValue)
             SelectEventById(savedId.Value);
         else
@@ -84,7 +97,7 @@ public partial class EventManagementPanel : UserControl
             var ev = _events.GetById(id);
             if (ev is not null)
             {
-                PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession,
+                PopulateEventFields(ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession,
                     ev.GreetingEyebrow, ev.GreetingTitle, ev.GreetingSubtitle);
                 ActiveEventChanged.Invoke(this, ev);
             }
@@ -104,11 +117,10 @@ public partial class EventManagementPanel : UserControl
         _settings.SetActiveEventId(id);
     }
 
-    private void PopulateEventFields(string name, bool paywallEnabled, bool saveImagesEnabled,
+    private void PopulateEventFields(bool paywallEnabled, bool saveImagesEnabled,
         int? printLimitPerEvent, int? printLimitPerSession,
         string? greetingEyebrow, string? greetingTitle, string? greetingSubtitle)
     {
-        EventNameBox.Text              = name;
         PaywallToggle.IsChecked        = paywallEnabled;
         SaveImagesToggle.IsChecked     = saveImagesEnabled;
         PrintLimitBox.Text             = printLimitPerEvent?.ToString()   ?? string.Empty;
@@ -122,7 +134,6 @@ public partial class EventManagementPanel : UserControl
 
     private void ClearEventFields()
     {
-        EventNameBox.Text               = string.Empty;
         PaywallToggle.IsChecked         = false;
         SaveImagesToggle.IsChecked      = true;
         PrintLimitBox.Text              = string.Empty;
@@ -135,54 +146,6 @@ public partial class EventManagementPanel : UserControl
         SessionPreviewList.ItemsSource  = null;
     }
 
-    private void SaveEvent_Click(object sender, RoutedEventArgs e)
-    {
-        var name = EventNameBox.Text.Trim();
-        if (string.IsNullOrEmpty(name)) return;
-
-        int? printLimitPerEvent   = int.TryParse(PrintLimitBox.Text.Trim(),   out int pe) && pe > 0 ? pe : null;
-        int? printLimitPerSession = int.TryParse(SessionLimitBox.Text.Trim(), out int ps) && ps > 0 ? ps : null;
-
-        int savedId;
-        if (_selectedEventId.HasValue)
-        {
-            _events.UpdateDetails(_selectedEventId.Value, name,
-                PaywallToggle.IsChecked == true,
-                SaveImagesToggle.IsChecked == true,
-                printLimitPerEvent,
-                printLimitPerSession);
-            savedId = _selectedEventId.Value;
-        }
-        else
-        {
-            if (!_settings.IsStorageConfigured)
-            {
-                StoragePathWarning.Visibility = Visibility.Visible;
-                MessageBox.Show(
-                    "Please select a storage folder before creating an event.\n\nUse the Browse button in the Storage section above.",
-                    "Storage path required",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            var ev = _events.Create(name,
-                PaywallToggle.IsChecked == true,
-                SaveImagesToggle.IsChecked == true,
-                printLimitPerEvent,
-                printLimitPerSession);
-            savedId = ev.Id;
-        }
-
-        _events.SetGreetingText(savedId,
-            GreetingEyebrowBox.Text,
-            GreetingTitleBox.Text,
-            GreetingSubtitleBox.Text);
-
-        LoadEvents();
-        SelectEventById(savedId);
-    }
-
     private void SaveGreeting_Click(object sender, RoutedEventArgs e)
     {
         if (!_selectedEventId.HasValue) return;
@@ -192,16 +155,6 @@ public partial class EventManagementPanel : UserControl
             GreetingSubtitleBox.Text);
         var ev = _events.GetById(_selectedEventId.Value);
         ActiveEventChanged.Invoke(this, ev);
-    }
-
-    private void ClearEvent_Click(object sender, RoutedEventArgs e)
-    {
-        _loadingEvents = true;
-        EventsComboBox.SelectedIndex = 0;
-        _loadingEvents = false;
-        SetSelectedEvent(null);
-        ClearEventFields();
-        ActiveEventChanged.Invoke(this, null);
     }
 
     private void NewEvent_Click(object sender, RoutedEventArgs e)
@@ -305,7 +258,7 @@ public partial class EventManagementPanel : UserControl
         }
 
         SetSelectedEvent(id);
-        PopulateEventFields(ev.Name, ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession,
+        PopulateEventFields(ev.PaywallEnabled, ev.SaveImagesEnabled, ev.PrintLimitPerEvent, ev.PrintLimitPerSession,
             ev.GreetingEyebrow, ev.GreetingTitle, ev.GreetingSubtitle);
         ActiveEventChanged.Invoke(this, ev);
         _ = RefreshSessionPreviewAsync(id);
