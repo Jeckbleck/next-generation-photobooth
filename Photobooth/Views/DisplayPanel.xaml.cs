@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using Photobooth.Data.Models;
 using Photobooth.Services;
 
 namespace Photobooth.Views;
@@ -9,15 +10,36 @@ public partial class DisplayPanel : UserControl
 {
     private readonly SettingsManager  _settings;
     private readonly AppearancePanel  _appearancePanel;
+    private readonly IEventService    _events;
     private bool _loading = true;
+    private int? _activeEventId;
 
-    public DisplayPanel(SettingsManager settings, AppearancePanel appearancePanel)
+    public DisplayPanel(SettingsManager settings, AppearancePanel appearancePanel, IEventService events)
     {
         _settings        = settings;
         _appearancePanel = appearancePanel;
+        _events          = events;
         InitializeComponent();
         AppearancePanelHost.Content = _appearancePanel;
         _loading = false;
+    }
+
+    public void SetActiveEvent(Event? ev)
+    {
+        _activeEventId = ev?.Id;
+        GreetingEyebrowBox.Text    = ev?.GreetingEyebrow  ?? string.Empty;
+        GreetingTitleBox.Text      = ev?.GreetingTitle    ?? string.Empty;
+        GreetingSubtitleBox.Text   = ev?.GreetingSubtitle ?? string.Empty;
+        SaveGreetingButton.IsEnabled = _activeEventId.HasValue;
+    }
+
+    private void SaveGreeting_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_activeEventId.HasValue) return;
+        _events.SetGreetingText(_activeEventId.Value,
+            GreetingEyebrowBox.Text,
+            GreetingTitleBox.Text,
+            GreetingSubtitleBox.Text);
     }
 
     // Forwarding event — GreetingPage subscribes here instead of _appearancePanel directly.

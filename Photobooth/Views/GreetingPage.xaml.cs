@@ -49,7 +49,7 @@ namespace Photobooth.Views
             EventPanelHost.Content = _eventPanel;
             _eventPanel.ActiveEventChanged += OnActiveEventChanged;
             _appearancePanel = new AppearancePanel(_events, _settings);
-            _displayPanel = new DisplayPanel(_settings, _appearancePanel);
+            _displayPanel = new DisplayPanel(_settings, _appearancePanel, _events);
             DisplayPanelHost.Content = _displayPanel;
             _displayPanel.BackgroundImageChanged += OnBackgroundImageChanged;
             _cameraPanel = new CameraSettingsPanel(_camera);
@@ -154,6 +154,7 @@ namespace Photobooth.Views
             UpdateCameraStatus();
             if (ev is not null) _statsPanel.Refresh(ev.Id);
             else                _statsPanel.Clear();
+            _displayPanel.SetActiveEvent(ev);
             ApplyGreetingText(ev);
         }
 
@@ -326,6 +327,10 @@ namespace Photobooth.Views
         private void OpenSettings()
         {
             _eventPanel.Refresh();
+            var activeEv = _settings.ActiveEventId.HasValue
+                ? _events.GetById(_settings.ActiveEventId.Value)
+                : null;
+            _displayPanel.SetActiveEvent(activeEv);
             SelectTab(0);
         }
 

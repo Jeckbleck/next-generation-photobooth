@@ -6,6 +6,35 @@
 
         <ContentControl x:Name="AppearancePanelHost"/>
 
+        <TextBlock Text="GREETING TEXT" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Text="Applies to the active event. Leave blank for the default." Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,10"/>
+        <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+        <TextBlock Text="Eyebrow line" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox x:Name="GreetingEyebrowBox"
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+
+        <TextBlock Text="Main title" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox x:Name="GreetingTitleBox"
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,8"/>
+
+        <TextBlock Text="Subtitle" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+        <TextBox x:Name="GreetingSubtitleBox"
+                 Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
+                 Padding="10,7" FontSize="13" Margin="0,0,0,10"
+                 TextWrapping="Wrap"/>
+
+        <Button x:Name="SaveGreetingButton"
+                Content="Save greeting text"
+                Style="{StaticResource KioskButton}"
+                HorizontalAlignment="Right"
+                Padding="18,7" FontSize="13"
+                IsEnabled="False"
+                Margin="0,0,0,20"
+                Click="SaveGreeting_Click"/>
+
         <TextBlock Text="COUNTDOWN" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
