@@ -47,7 +47,8 @@ namespace Photobooth.Views
             IEventService       events,
             AIEnhancementClient aiClient,
             IFileStorageService fileStorage,
-            int?                openSessionId = null)
+            int?                openSessionId = null,
+            bool                aiEnabled     = true)
         {
             _eventId       = eventId;
             _openSessionId = openSessionId;
@@ -55,7 +56,8 @@ namespace Photobooth.Views
             _aiClient      = aiClient;
             _fileStorage   = fileStorage;
             InitializeComponent();
-            Loaded        += OnLoaded;
+            EnhanceButton.Visibility = aiEnabled ? Visibility.Visible : Visibility.Collapsed;
+            Loaded += OnLoaded;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)

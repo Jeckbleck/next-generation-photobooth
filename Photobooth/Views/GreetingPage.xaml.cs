@@ -132,9 +132,10 @@ namespace Photobooth.Views
                 PaywallText.Visibility  = Visibility.Collapsed;
             }
 
-            CameraStatusText.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
-            RetryButton.Visibility      = connected ? Visibility.Collapsed : Visibility.Visible;
-            NoEventText.Visibility      = hasEvent  ? Visibility.Collapsed : Visibility.Visible;
+            CameraStatusText.Visibility    = connected ? Visibility.Collapsed : Visibility.Visible;
+            RetryButton.Visibility         = connected ? Visibility.Collapsed : Visibility.Visible;
+            NoEventText.Visibility         = hasEvent  ? Visibility.Collapsed : Visibility.Visible;
+            ViewSessionsButton.Visibility  = hasEvent  ? Visibility.Visible   : Visibility.Collapsed;
         }
 
         private void UpdateAIEnhancementButton()
@@ -239,6 +240,18 @@ namespace Photobooth.Views
 
             Log.Information("Session started by screen tap");
             _flow.Trigger(FlowTrigger.StartNormal);
+        }
+
+        private void ViewSessions_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_settings.ActiveEventId.HasValue) return;
+            var browser = new SessionBrowserWindow(
+                _settings.ActiveEventId.Value, _events, _aiClient, _fileStorage,
+                aiEnabled: _settings.AIEnhancementEnabled)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            browser.ShowDialog();
         }
 
         private void AIEnhancement_Click(object sender, RoutedEventArgs e)

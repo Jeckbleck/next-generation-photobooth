@@ -350,7 +350,8 @@ public partial class EventManagementPanel : UserControl
     private void OpenSessionBrowserAt(int? sessionId)
     {
         var browser = new SessionBrowserWindow(
-            _selectedEventId!.Value, _events, _aiClient, _fileStorage, sessionId)
+            _selectedEventId!.Value, _events, _aiClient, _fileStorage, sessionId,
+            aiEnabled: _settings.AIEnhancementEnabled)
         {
             Owner = Window.GetWindow(this)
         };
