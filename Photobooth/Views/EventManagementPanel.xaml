@@ -2,6 +2,39 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <UserControl.Resources>
+        <Style x:Key="StepperButton" TargetType="Button">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Light"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#141F2E" CornerRadius="4"
+                                BorderBrush="#334" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <StackPanel>
         <TextBlock Text="Event Management" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
@@ -131,29 +164,51 @@
         <TextBlock Text="Print limit per event" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,4"/>
         <Grid Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Button x:Name="PrintLimitMinus" Grid.Column="0"
+                    Style="{StaticResource StepperButton}" Content="−"
+                    Margin="0,0,4,0"
+                    Click="PrintLimitMinus_Click"/>
             <TextBox x:Name="PrintLimitBox"
+                     Grid.Column="1"
                      Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
-                     Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
+                     Padding="10,7" FontSize="13" VerticalContentAlignment="Center" TextAlignment="Center"
                      PreviewTextInput="PrintLimitBox_PreviewTextInput"
                      LostFocus="PrintLimitBox_LostFocus"/>
-            <TextBlock Grid.Column="1" Text="total prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            <Button x:Name="PrintLimitPlus" Grid.Column="2"
+                    Style="{StaticResource StepperButton}" Content="+"
+                    Margin="4,0,0,0"
+                    Click="PrintLimitPlus_Click"/>
+            <TextBlock Grid.Column="3" Text="total prints max" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
         </Grid>
 
         <TextBlock Text="Print limit per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
         <Grid Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Button x:Name="SessionLimitMinus" Grid.Column="0"
+                    Style="{StaticResource StepperButton}" Content="−"
+                    Margin="0,0,4,0"
+                    Click="SessionLimitMinus_Click"/>
             <TextBox x:Name="SessionLimitBox"
+                     Grid.Column="1"
                      Background="{DynamicResource NavBrush}" Foreground="White" BorderBrush="#334"
-                     Padding="10,7" FontSize="13" VerticalContentAlignment="Center"
+                     Padding="10,7" FontSize="13" VerticalContentAlignment="Center" TextAlignment="Center"
                      PreviewTextInput="SessionLimitBox_PreviewTextInput"
                      LostFocus="SessionLimitBox_LostFocus"/>
-            <TextBlock Grid.Column="1" Text="prints per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            <Button x:Name="SessionLimitPlus" Grid.Column="2"
+                    Style="{StaticResource StepperButton}" Content="+"
+                    Margin="4,0,0,0"
+                    Click="SessionLimitPlus_Click"/>
+            <TextBlock Grid.Column="3" Text="prints per session" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
         </Grid>
 
         <TextBlock Text="STORAGE" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>

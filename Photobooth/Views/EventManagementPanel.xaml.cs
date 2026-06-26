@@ -222,6 +222,34 @@ public partial class EventManagementPanel : UserControl
         PrintLimitBox.Text = limit?.ToString() ?? string.Empty;
     }
 
+    private void PrintLimitMinus_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        int current = int.TryParse(PrintLimitBox.Text.Trim(), out int v) ? v : 0;
+        if (current <= 0) return;
+        int next = Math.Max(0, current - EventPrintLimitStep(current));
+        int? limit = next > 0 ? next : (int?)null;
+        _events.SetEventPrintLimit(_selectedEventId.Value, limit);
+        PrintLimitBox.Text = limit?.ToString() ?? string.Empty;
+    }
+
+    private void PrintLimitPlus_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        int current = int.TryParse(PrintLimitBox.Text.Trim(), out int v) ? v : 0;
+        int next = current + EventPrintLimitStep(current);
+        _events.SetEventPrintLimit(_selectedEventId.Value, next);
+        PrintLimitBox.Text = next.ToString();
+    }
+
+    // Step size scales with current value so reaching 300 doesn't require 300 taps.
+    private static int EventPrintLimitStep(int current) => current switch
+    {
+        < 10  => 1,
+        < 100 => 10,
+        _     => 25,
+    };
+
     private void SessionLimitBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         e.Handled = !e.Text.All(char.IsDigit);
@@ -233,6 +261,26 @@ public partial class EventManagementPanel : UserControl
         int? limit = int.TryParse(SessionLimitBox.Text.Trim(), out int parsed) && parsed > 0 ? parsed : null;
         _events.SetSessionPrintLimit(_selectedEventId.Value, limit);
         SessionLimitBox.Text = limit?.ToString() ?? string.Empty;
+    }
+
+    private void SessionLimitMinus_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        int current = int.TryParse(SessionLimitBox.Text.Trim(), out int v) ? v : 0;
+        if (current <= 0) return;
+        int next = current - 1;
+        int? limit = next > 0 ? next : (int?)null;
+        _events.SetSessionPrintLimit(_selectedEventId.Value, limit);
+        SessionLimitBox.Text = limit?.ToString() ?? string.Empty;
+    }
+
+    private void SessionLimitPlus_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedEventId.HasValue) return;
+        int current = int.TryParse(SessionLimitBox.Text.Trim(), out int v) ? v : 0;
+        int next = current + 1;
+        _events.SetSessionPrintLimit(_selectedEventId.Value, next);
+        SessionLimitBox.Text = next.ToString();
     }
 
     private void SelectEventById(int id)

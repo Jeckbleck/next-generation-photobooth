@@ -283,9 +283,6 @@ namespace Photobooth.Views
                     PinError.Visibility = Visibility.Collapsed;
                     UpdatePinDots();
                     break;
-                case "confirm":
-                    TryUnlock(showError: true);
-                    break;
                 default:
                     if (_pinEntry.Length < 6 && tag is not null)
                     {
