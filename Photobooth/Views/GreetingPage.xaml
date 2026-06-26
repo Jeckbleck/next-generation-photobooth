@@ -128,31 +128,18 @@
                        Visibility="Collapsed"/>
         </StackPanel>
 
-        <!-- Browse sessions button — bottom-left corner -->
+        <!-- Browse sessions button — top-left corner -->
         <Button x:Name="ViewSessionsButton"
-                VerticalAlignment="Bottom" HorizontalAlignment="Left"
-                Margin="24,0,0,24"
+                Width="48" Height="48"
+                Margin="24,24,0,0"
+                VerticalAlignment="Top" HorizontalAlignment="Left"
                 Background="Transparent" BorderThickness="0"
-                Cursor="Hand" Padding="0"
+                Cursor="Hand"
+                ToolTip="Browse sessions"
                 Visibility="Collapsed"
                 Click="ViewSessions_Click">
-            <Button.Template>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" Background="#141F2E" CornerRadius="8"
-                            BorderBrush="#1E2F4A" BorderThickness="1"
-                            Padding="16,11">
-                        <TextBlock Text="Browse sessions"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   FontSize="13" FontWeight="SemiBold"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Button.Template>
+            <Path Data="M2,2H10V10H2Z M14,2H22V10H14Z M2,14H10V22H2Z M14,14H22V22H14Z"
+                  Fill="#555577" Stretch="Uniform" Width="22" Height="22"/>
         </Button>
 
         <!-- Gear / settings button — top-right corner -->
