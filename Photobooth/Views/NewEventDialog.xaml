@@ -6,7 +6,7 @@
         ResizeMode="NoResize"
         WindowStyle="None"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource BackgroundBrush}"
+        Background="{DynamicResource SurfaceBrush}"
         KeyDown="Window_KeyDown">
 
     <Grid>

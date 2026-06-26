@@ -7,7 +7,7 @@
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Background="{DynamicResource BackgroundBrush}">
+        Background="{DynamicResource SurfaceBrush}">
 
     <Grid>
         <Grid.RowDefinitions>
