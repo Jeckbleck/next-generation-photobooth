@@ -254,8 +254,9 @@
             <Rectangle Fill="#B0000000"/>
 
             <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="12" Width="1100" Height="640"
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                    CornerRadius="12"
+                    Margin="32"
+                    MaxWidth="1600" MaxHeight="920">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="185"/>
