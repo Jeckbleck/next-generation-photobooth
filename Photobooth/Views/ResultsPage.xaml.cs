@@ -88,7 +88,6 @@ namespace Photobooth.Views
                     PrintButton.Visibility = Visibility.Visible;
                 else
                     PrintButtonPlain.Visibility = Visibility.Visible;
-                PrintStatusText.Text = "Press Print when you're ready.";
             }
         }
 
@@ -195,7 +194,6 @@ namespace Photobooth.Views
         private async Task PrintAsync()
         {
             ShowPrintOverlay(heading: "Printing your strip…", detail: "This will only take a moment.", done: false);
-            PrintStatusText.Text = "Printing your strip…";
 
             PrintResult result;
             if (_strip is not null)
@@ -206,7 +204,6 @@ namespace Photobooth.Views
                 result = await PrintHelper.PrintSessionAsync(_sessionId, eventId, _paths);
             }
 
-            PrintStatusText.Text = result.Message;
             ShowPrintOverlay(heading: result.Message, detail: string.Empty, done: true);
 
             await Task.Delay(3000);
@@ -226,13 +223,13 @@ namespace Photobooth.Views
 
         private void StartCountdown()
         {
-            UpdateCountdownText();
+            UpdateCountdownBar();
             _timer = new Timer(_ =>
             {
                 _secondsLeft--;
                 Dispatcher.Invoke(() =>
                 {
-                    UpdateCountdownText();
+                    UpdateCountdownBar();
                     if (_secondsLeft <= 0)
                     {
                         _timer?.Dispose();
@@ -242,11 +239,12 @@ namespace Photobooth.Views
             }, null, 1000, 1000);
         }
 
-        private void UpdateCountdownText()
+        private void UpdateCountdownBar()
         {
-            ReturnCountdown.Text = _secondsLeft > 0
-                ? $"Returning to start in {_secondsLeft}…"
-                : "See you next time!";
+            double total    = _settings.PreviewHoldSeconds;
+            double fraction = total > 0 ? _secondsLeft / total : 0;
+            CountdownFilledCol.Width = new System.Windows.GridLength(fraction, System.Windows.GridUnitType.Star);
+            CountdownEmptyCol.Width  = new System.Windows.GridLength(1.0 - fraction, System.Windows.GridUnitType.Star);
         }
 
         private void ReturnToGreeting()
@@ -261,7 +259,6 @@ namespace Photobooth.Views
         {
             PrintButton.IsEnabled      = false;
             PrintButtonPlain.IsEnabled = false;
-            PrintStatusText.Text       = string.Empty;
             _ = PrintAsync();
         }
 

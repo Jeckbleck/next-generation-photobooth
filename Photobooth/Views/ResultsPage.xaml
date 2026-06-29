@@ -8,6 +8,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="10"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -30,14 +31,10 @@
                 <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
 
-            <!-- LEFT: countdown + home button -->
+            <!-- LEFT: home button -->
             <StackPanel Grid.Column="0"
                         VerticalAlignment="Center"
                         Margin="0,0,32,0">
-                <TextBlock x:Name="ReturnCountdown"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="16" TextWrapping="Wrap"
-                           Margin="0,0,0,20"/>
                 <Button Content="START AGAIN"
                         Style="{StaticResource KioskButton}"
                         Click="StartAgain_Click"/>
@@ -104,11 +101,6 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock x:Name="PrintStatusText"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="14" TextWrapping="Wrap"
-                           Margin="0,0,0,20"/>
-
                 <local:PrinterButton x:Name="PrintButton"
                                      HorizontalAlignment="Left"
                                      Visibility="Collapsed"
@@ -124,8 +116,18 @@
 
         </Grid>
 
+        <!-- Countdown progress bar — drains left-to-right as time runs out -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="CountdownFilledCol" Width="*"/>
+                <ColumnDefinition x:Name="CountdownEmptyCol" Width="0"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Background="{DynamicResource AccentBrush}"/>
+            <Border Grid.Column="1" Background="{DynamicResource BackgroundBrush}"/>
+        </Grid>
+
         <!-- Print progress overlay — full-page, shown during and just after printing -->
-        <Grid x:Name="PrintOverlay" Grid.RowSpan="2" Visibility="Collapsed" Panel.ZIndex="10">
+        <Grid x:Name="PrintOverlay" Grid.RowSpan="3" Visibility="Collapsed" Panel.ZIndex="10">
             <Rectangle Fill="#BB0D1424"/>
             <Border HorizontalAlignment="Center" VerticalAlignment="Center"
                     Background="{DynamicResource NavBrush}"
