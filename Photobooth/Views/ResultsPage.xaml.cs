@@ -194,13 +194,12 @@ namespace Photobooth.Views
 
         private async Task PrintAsync()
         {
+            ShowPrintOverlay(heading: "Printing your strip…", detail: "This will only take a moment.", done: false);
             PrintStatusText.Text = "Printing your strip…";
 
             PrintResult result;
             if (_strip is not null)
-            {
                 result = await PrintHelper.PrintSessionAsync(_sessionId, _strip);
-            }
             else
             {
                 var eventId = _settings.ActiveEventId ?? 0;
@@ -208,6 +207,19 @@ namespace Photobooth.Views
             }
 
             PrintStatusText.Text = result.Message;
+            ShowPrintOverlay(heading: result.Message, detail: string.Empty, done: true);
+
+            await Task.Delay(3000);
+            PrintOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void ShowPrintOverlay(string heading, string detail, bool done)
+        {
+            PrintOverlay.Visibility  = Visibility.Visible;
+            PrintSpinner.Visibility  = done ? Visibility.Collapsed : Visibility.Visible;
+            PrintDoneIcon.Visibility = done ? Visibility.Visible   : Visibility.Collapsed;
+            PrintOverlayHeading.Text = heading;
+            PrintOverlayDetail.Text  = detail;
         }
 
         // --- Countdown -----------------------------------------------------------
@@ -249,6 +261,7 @@ namespace Photobooth.Views
         {
             PrintButton.IsEnabled      = false;
             PrintButtonPlain.IsEnabled = false;
+            PrintStatusText.Text       = string.Empty;
             _ = PrintAsync();
         }
 

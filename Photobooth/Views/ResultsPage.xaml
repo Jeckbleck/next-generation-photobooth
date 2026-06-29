@@ -123,5 +123,45 @@
             </StackPanel>
 
         </Grid>
+
+        <!-- Print progress overlay — full-page, shown during and just after printing -->
+        <Grid x:Name="PrintOverlay" Grid.RowSpan="2" Visibility="Collapsed" Panel.ZIndex="10">
+            <Rectangle Fill="#BB0D1424"/>
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource NavBrush}"
+                    CornerRadius="16"
+                    BorderBrush="#1E2F4A" BorderThickness="1"
+                    Padding="52,44" MaxWidth="420">
+                <StackPanel HorizontalAlignment="Center">
+
+                    <local:LoadingSpinner x:Name="PrintSpinner"
+                                          Width="64" Height="64"
+                                          HorizontalAlignment="Center"
+                                          Margin="0,0,0,24"/>
+
+                    <TextBlock x:Name="PrintDoneIcon"
+                               Text="✓" FontSize="72"
+                               Foreground="{DynamicResource AccentBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,-6,0,14"
+                               Visibility="Collapsed"/>
+
+                    <TextBlock x:Name="PrintOverlayHeading"
+                               Text="Printing your strip…"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="22" FontWeight="SemiBold"
+                               TextAlignment="Center"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock x:Name="PrintOverlayDetail"
+                               Text="This will only take a moment."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="14" TextAlignment="Center"
+                               TextWrapping="Wrap"/>
+
+                </StackPanel>
+            </Border>
+        </Grid>
+
     </Grid>
 </Page>
