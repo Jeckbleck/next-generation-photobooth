@@ -25,8 +25,14 @@ public static class TemplateSegmenter
             PixelFormat.Format32bppArgb);
         int stride = Math.Abs(bd.Stride);
         byte[] pixels = new byte[stride * H];
-        Marshal.Copy(bd.Scan0, pixels, 0, pixels.Length);
-        template.UnlockBits(bd);
+        try
+        {
+            Marshal.Copy(bd.Scan0, pixels, 0, pixels.Length);
+        }
+        finally
+        {
+            template.UnlockBits(bd);
+        }
 
         byte tR = sampledColor.R, tG = sampledColor.G, tB = sampledColor.B;
         bool[] visited = new bool[W * H];

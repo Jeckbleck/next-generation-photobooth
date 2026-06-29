@@ -13,7 +13,10 @@ public class TemplateSegmenterTests
         using var g = Graphics.FromImage(bmp);
         g.Clear(bg);
         foreach (var (rect, color) in fills)
-            g.FillRectangle(new SolidBrush(color), rect);
+        {
+            using var brush = new SolidBrush(color);
+            g.FillRectangle(brush, rect);
+        }
         return bmp;
     }
 
