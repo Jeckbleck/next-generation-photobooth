@@ -353,6 +353,13 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <!-- Touch panning — applies to every ScrollViewer in the app.
+                 VerticalFirst: primary vertical swipe; falls back to horizontal
+                 when the content can only scroll horizontally (e.g. preview card strip). -->
+            <Style TargetType="ScrollViewer">
+                <Setter Property="PanningMode" Value="VerticalFirst"/>
+            </Style>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

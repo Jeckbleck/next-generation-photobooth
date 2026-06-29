@@ -150,6 +150,7 @@
                       Grid.Column="1"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
+                      PanningMode="None"
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch"
                       Background="#080D14"
