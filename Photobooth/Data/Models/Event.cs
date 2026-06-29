@@ -32,6 +32,9 @@ namespace Photobooth.Data.Models
         [MaxLength(20)]
         public string?  NavColor               { get; set; }
 
+        [MaxLength(20)]
+        public string?  TextColor              { get; set; }
+
         public string?  BackgroundImagePath    { get; set; }
         public string?  PhotostripTemplatePath { get; set; }
 

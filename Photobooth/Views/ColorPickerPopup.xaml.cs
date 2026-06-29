@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -8,6 +9,7 @@ public partial class ColorPickerPopup : Window
 {
     private double _h, _s, _v;
     private bool   _draggingSb, _draggingHue;
+    private bool   _suppressHexUpdate;
     private Color? _result;
 
     public ColorPickerPopup(Color initial)
@@ -100,7 +102,29 @@ public partial class ColorPickerPopup : Window
         System.Windows.Controls.Canvas.SetLeft(SbThumb, _s * SbCanvas.ActualWidth  - 14);
         System.Windows.Controls.Canvas.SetTop( SbThumb, (1.0 - _v) * SbCanvas.ActualHeight - 14);
 
-        AfterPreview.Background = new SolidColorBrush(HsvToRgb(_h, _s, _v));
+        var color = HsvToRgb(_h, _s, _v);
+        AfterPreview.Background = new SolidColorBrush(color);
+
+        if (!_suppressHexUpdate)
+            HexInput.Text = $"{color.R:X2}{color.G:X2}{color.B:X2}";
+    }
+
+    // ── Hex input ──────────────────────────────────────────────────────────────
+
+    private void HexInput_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressHexUpdate) return;
+        var text = HexInput.Text.Trim();
+        if (text.Length != 6) return;
+        try
+        {
+            var color = (Color)ColorConverter.ConvertFromString("#" + text);
+            RgbToHsv(color, out _h, out _s, out _v);
+            _suppressHexUpdate = true;
+            UpdateAll();
+            _suppressHexUpdate = false;
+        }
+        catch { }
     }
 
     // ── Buttons ────────────────────────────────────────────────────────────────
