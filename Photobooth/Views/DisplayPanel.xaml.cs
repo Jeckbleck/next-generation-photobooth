@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Photobooth.Data.Models;
@@ -36,7 +38,36 @@ public partial class DisplayPanel : UserControl
         GreetingEyebrowBox.Text    = ev?.GreetingEyebrow  ?? string.Empty;
         GreetingTitleBox.Text      = ev?.GreetingTitle    ?? string.Empty;
         GreetingSubtitleBox.Text   = ev?.GreetingSubtitle ?? string.Empty;
+
+        if (!string.IsNullOrEmpty(ev?.TextColor))
+        {
+            try
+            {
+                var c = (Color)ColorConverter.ConvertFromString(ev.TextColor);
+                GreetingTextColorSwatch.Background = new SolidColorBrush(c);
+            }
+            catch { GreetingTextColorSwatch.Background = new SolidColorBrush(Colors.White); }
+        }
+        else
+        {
+            GreetingTextColorSwatch.Background = new SolidColorBrush(Colors.White);
+        }
+
         _loading = false;
+    }
+
+    private void GreetingTextColorSwatch_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (!_activeEventId.HasValue) return;
+        var current = (GreetingTextColorSwatch.Background as SolidColorBrush)?.Color ?? Colors.White;
+        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+        var picked  = popup.ShowPickedColor();
+        if (picked is null) return;
+
+        GreetingTextColorSwatch.Background = new SolidColorBrush(picked.Value);
+        var hex = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
+        _events.SetTextColor(_activeEventId.Value, hex);
+        GreetingTextSaved?.Invoke(this, EventArgs.Empty);
     }
 
     private void GreetingBox_TextChanged(object sender, TextChangedEventArgs e)

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Photobooth.Camera;
 using Photobooth.Services;
@@ -169,6 +170,20 @@ namespace Photobooth.Views
             EyebrowText.Text  = ev?.GreetingEyebrow  ?? "THE NEXT GENERATION";
             TitleText.Text    = ev?.GreetingTitle    ?? "PHOTOBOOTH";
             SubtitleText.Text = ev?.GreetingSubtitle ?? "Tap anywhere to start your session";
+
+            if (!string.IsNullOrEmpty(ev?.TextColor))
+            {
+                var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ev.TextColor));
+                EyebrowText.Foreground  = brush;
+                TitleText.Foreground    = brush;
+                SubtitleText.Foreground = brush;
+            }
+            else
+            {
+                EyebrowText.SetResourceReference(ForegroundProperty, "TextSecondaryBrush");
+                TitleText.SetResourceReference(ForegroundProperty, "TextPrimaryBrush");
+                SubtitleText.SetResourceReference(ForegroundProperty, "TextSecondaryBrush");
+            }
         }
 
         private void OnBackgroundImageChanged(object? sender, BitmapImage? bmp)

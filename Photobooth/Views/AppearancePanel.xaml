@@ -40,16 +40,15 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Accent -->
             <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                <Button Width="48" Height="48" Cursor="Hand"
+                <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickAccentColor_Click" ToolTip="Accent color">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Width="48" Height="48" CornerRadius="9"
+                            <Border Width="56" Height="56" CornerRadius="10"
                                     Background="{DynamicResource AccentBrush}"
                                     BorderBrush="#555" BorderThickness="1.5"/>
                         </ControlTemplate>
@@ -62,28 +61,28 @@
 
             <!-- Background -->
             <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                <Button Width="48" Height="48" Cursor="Hand"
+                <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickBgColor_Click" ToolTip="App background">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Width="48" Height="48" CornerRadius="9"
+                            <Border Width="56" Height="56" CornerRadius="10"
                                     Background="{DynamicResource BackgroundBrush}"
                                     BorderBrush="#555" BorderThickness="1.5"/>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <TextBlock Text="Background" FontSize="10"
+                <TextBlock Text="Background" FontSize="11"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>
 
             <!-- Surface -->
             <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                <Button Width="48" Height="48" Cursor="Hand"
+                <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickSurfaceColor_Click" ToolTip="Surface / panels">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Width="48" Height="48" CornerRadius="9"
+                            <Border Width="56" Height="56" CornerRadius="10"
                                     Background="{DynamicResource SurfaceBrush}"
                                     BorderBrush="#555" BorderThickness="1.5"/>
                         </ControlTemplate>
@@ -96,34 +95,17 @@
 
             <!-- Navigation -->
             <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                <Button Width="48" Height="48" Cursor="Hand"
+                <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickNavColor_Click" ToolTip="Navigation / input wells">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border Width="48" Height="48" CornerRadius="9"
+                            <Border Width="56" Height="56" CornerRadius="10"
                                     Background="{DynamicResource NavBrush}"
                                     BorderBrush="#555" BorderThickness="1.5"/>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <TextBlock Text="Navigation" FontSize="10"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
-            </StackPanel>
-
-            <!-- Text -->
-            <StackPanel Grid.Column="4" HorizontalAlignment="Center">
-                <Button Width="48" Height="48" Cursor="Hand"
-                        Click="PickTextColor_Click" ToolTip="Primary text color">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Width="48" Height="48" CornerRadius="9"
-                                    Background="{DynamicResource TextPrimaryBrush}"
-                                    BorderBrush="#555" BorderThickness="1.5"/>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <TextBlock Text="Text" FontSize="11"
+                <TextBlock Text="Navigation" FontSize="11"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>

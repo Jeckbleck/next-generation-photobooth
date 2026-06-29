@@ -19,7 +19,6 @@ public partial class AppearancePanel : UserControl
     private const string DefaultBackground = "#1A1A2E";
     private const string DefaultSurface    = "#16213E";
     private const string DefaultNav        = "#0D1424";
-    private const string DefaultText       = "#FFFFFF";
 
     public int? SelectedEventId { get; set; }
 
@@ -42,11 +41,10 @@ public partial class AppearancePanel : UserControl
 
         SelectedEventId = id;
 
-        if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",      ev.AccentColor);
+        if (!string.IsNullOrEmpty(ev.AccentColor))     ApplyBrushColor("AccentBrush",     ev.AccentColor);
         if (!string.IsNullOrEmpty(ev.BackgroundColor)) ApplyBrushColor("BackgroundBrush", ev.BackgroundColor);
         if (!string.IsNullOrEmpty(ev.SurfaceColor))    ApplyBrushColor("SurfaceBrush",    ev.SurfaceColor);
         if (!string.IsNullOrEmpty(ev.NavColor))        ApplyBrushColor("NavBrush",        ev.NavColor);
-        if (!string.IsNullOrEmpty(ev.TextColor))       ApplyBrushColor("TextPrimaryBrush", ev.TextColor);
 
         if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
         {
@@ -71,12 +69,10 @@ public partial class AppearancePanel : UserControl
         var surf   = ev.SurfaceColor    ?? DefaultSurface;
         var nav    = ev.NavColor        ?? DefaultNav;
 
-        var text = ev.TextColor ?? DefaultText;
-        ApplyBrushColor("AccentBrush",      accent);
-        ApplyBrushColor("BackgroundBrush",  bg);
-        ApplyBrushColor("SurfaceBrush",     surf);
-        ApplyBrushColor("NavBrush",         nav);
-        ApplyBrushColor("TextPrimaryBrush", text);
+        ApplyBrushColor("AccentBrush",     accent);
+        ApplyBrushColor("BackgroundBrush", bg);
+        ApplyBrushColor("SurfaceBrush",    surf);
+        ApplyBrushColor("NavBrush",        nav);
 
         if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
         {
@@ -116,17 +112,12 @@ public partial class AppearancePanel : UserControl
         OpenColorPicker("NavBrush",
             hex => { if (SelectedEventId.HasValue) _events.SetNavColor(SelectedEventId.Value, hex); });
 
-    private void PickTextColor_Click(object sender, RoutedEventArgs e) =>
-        OpenColorPicker("TextPrimaryBrush",
-            hex => { if (SelectedEventId.HasValue) _events.SetTextColor(SelectedEventId.Value, hex); });
-
     private void RevertAppearance_Click(object sender, RoutedEventArgs e)
     {
-        ApplyBrushColor("AccentBrush",      DefaultAccent);
-        ApplyBrushColor("BackgroundBrush",  DefaultBackground);
-        ApplyBrushColor("SurfaceBrush",     DefaultSurface);
-        ApplyBrushColor("NavBrush",         DefaultNav);
-        ApplyBrushColor("TextPrimaryBrush", DefaultText);
+        ApplyBrushColor("AccentBrush",     DefaultAccent);
+        ApplyBrushColor("BackgroundBrush", DefaultBackground);
+        ApplyBrushColor("SurfaceBrush",    DefaultSurface);
+        ApplyBrushColor("NavBrush",        DefaultNav);
 
         ClearBackground();
 
@@ -136,7 +127,6 @@ public partial class AppearancePanel : UserControl
             _events.SetBackgroundColor(SelectedEventId.Value, null);
             _events.SetSurfaceColor(SelectedEventId.Value, null);
             _events.SetNavColor(SelectedEventId.Value, null);
-            _events.SetTextColor(SelectedEventId.Value, null);
             _events.SetBackgroundImagePath(SelectedEventId.Value, null);
         }
 
