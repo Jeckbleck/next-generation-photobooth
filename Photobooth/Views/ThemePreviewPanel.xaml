@@ -64,49 +64,51 @@
             <StackPanel Grid.Column="2">
                 <Border Height="160" CornerRadius="6" ClipToBounds="True"
                         BorderBrush="#2A3A5A" BorderThickness="1">
-                    <Grid Background="{DynamicResource BackgroundBrush}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="26"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="42"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- Top HUD bar: #80000000 overlay (hardcoded, not theme) -->
-                        <Border VerticalAlignment="Top" Height="26"
-                                Background="#80000000">
-                            <Grid Margin="8,0">
-                                <!-- ✕ button mock -->
-                                <Border Width="10" Height="10"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Center"
-                                        Background="White" Opacity="0.6"
-                                        CornerRadius="5"/>
-                                <!-- Status text mock -->
-                                <Border Height="4" Width="36" CornerRadius="2"
-                                        Background="White" Opacity="0.5"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"/>
-                                <!-- Progress dots: hardcoded #334 in real page -->
+                        <!-- Top bar: BackgroundBrush + semi-transparent overlay + status text -->
+                        <Grid Grid.Row="0">
+                            <Border Background="{DynamicResource BackgroundBrush}"/>
+                            <Border Background="#66000000">
+                                <Border Height="4" Width="38" CornerRadius="2"
+                                        Background="White" Opacity="0.55"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- EVF area: BackgroundBrush + left/right AccentBrush semi-circles -->
+                        <Grid Grid.Row="1" Background="{DynamicResource BackgroundBrush}">
+                            <!-- Cancel: left semi-circle -->
+                            <Border Width="14" Height="46" CornerRadius="0,23,23,0"
+                                    Background="{DynamicResource AccentBrush}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <!-- Retake: right semi-circle (dimmed = starts disabled) -->
+                            <Border Width="14" Height="46" CornerRadius="23,0,0,23"
+                                    Background="{DynamicResource AccentBrush}" Opacity="0.28"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Bottom bar: BackgroundBrush + semi-transparent overlay + 3 thumbnail slots -->
+                        <Grid Grid.Row="2">
+                            <Border Background="{DynamicResource BackgroundBrush}"/>
+                            <Border Background="#66000000">
                                 <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Right"
+                                            HorizontalAlignment="Center"
                                             VerticalAlignment="Center">
-                                    <Ellipse Width="5" Height="5" Fill="#334" Margin="2,0"/>
-                                    <Ellipse Width="5" Height="5" Fill="#334" Margin="2,0"/>
-                                    <Ellipse Width="5" Height="5" Fill="#334"/>
+                                    <Border Width="24" Height="32" CornerRadius="3"
+                                            Background="#1A2B44" Margin="0,0,5,0"/>
+                                    <Border Width="24" Height="32" CornerRadius="3"
+                                            Background="#1A2B44" Margin="0,0,5,0"/>
+                                    <Border Width="24" Height="32" CornerRadius="3"
+                                            Background="#1A2B44"/>
                                 </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- Bottom bar: #80000000 overlay with thumbnail slots -->
-                        <Border VerticalAlignment="Bottom" Height="56"
-                                Background="#80000000">
-                            <!-- 3 thumbnail slots centred — #1A2B44 hardcoded in real page -->
-                            <StackPanel Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center">
-                                <Border Width="26" Height="40" CornerRadius="3"
-                                        Background="#1A2B44" Margin="0,0,5,0"/>
-                                <Border Width="26" Height="40" CornerRadius="3"
-                                        Background="#1A2B44" Margin="0,0,5,0"/>
-                                <Border Width="26" Height="40" CornerRadius="3"
-                                        Background="#1A2B44"/>
-                            </StackPanel>
-                        </Border>
+                            </Border>
+                        </Grid>
                     </Grid>
                 </Border>
                 <TextBlock Text="Shoot" FontSize="10"
