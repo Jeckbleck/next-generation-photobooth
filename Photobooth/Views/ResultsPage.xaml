@@ -118,12 +118,14 @@
 
         <!-- Countdown progress bar — drains left-to-right as time runs out -->
         <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="CountdownFilledCol" Width="*"/>
-                <ColumnDefinition x:Name="CountdownEmptyCol" Width="0"/>
-            </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Background="{DynamicResource AccentBrush}"/>
-            <Border Grid.Column="1" Background="{DynamicResource BackgroundBrush}"/>
+            <Border Background="{DynamicResource BackgroundBrush}"/>
+            <Border x:Name="CountdownBar"
+                    Background="{DynamicResource AccentBrush}"
+                    RenderTransformOrigin="0,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="CountdownBarScale" ScaleX="1"/>
+                </Border.RenderTransform>
+            </Border>
         </Grid>
 
         <!-- Print progress overlay — full-page, shown during and just after printing -->

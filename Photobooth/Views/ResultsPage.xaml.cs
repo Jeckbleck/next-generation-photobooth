@@ -4,7 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Media;
 using Photobooth.Print;
 using Photobooth.Services;
 using Serilog;
@@ -223,13 +225,17 @@ namespace Photobooth.Views
 
         private void StartCountdown()
         {
-            UpdateCountdownBar();
+            var anim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromSeconds(_secondsLeft))
+            {
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            CountdownBarScale.BeginAnimation(ScaleTransform.ScaleXProperty, anim);
+
             _timer = new Timer(_ =>
             {
                 _secondsLeft--;
                 Dispatcher.Invoke(() =>
                 {
-                    UpdateCountdownBar();
                     if (_secondsLeft <= 0)
                     {
                         _timer?.Dispose();
@@ -237,14 +243,6 @@ namespace Photobooth.Views
                     }
                 });
             }, null, 1000, 1000);
-        }
-
-        private void UpdateCountdownBar()
-        {
-            double total    = _settings.PreviewHoldSeconds;
-            double fraction = total > 0 ? _secondsLeft / total : 0;
-            CountdownFilledCol.Width = new System.Windows.GridLength(fraction, System.Windows.GridUnitType.Star);
-            CountdownEmptyCol.Width  = new System.Windows.GridLength(1.0 - fraction, System.Windows.GridUnitType.Star);
         }
 
         private void ReturnToGreeting()
