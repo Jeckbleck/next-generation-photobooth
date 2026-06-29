@@ -52,8 +52,9 @@ namespace Photobooth.Views
             _appearancePanel = new AppearancePanel(_events, _settings);
             _displayPanel = new DisplayPanel(_settings, _appearancePanel, _events);
             DisplayPanelHost.Content = _displayPanel;
-            _displayPanel.BackgroundImageChanged += OnBackgroundImageChanged;
-            _displayPanel.GreetingTextSaved      += OnGreetingTextSaved;
+            _displayPanel.BackgroundImageChanged    += OnBackgroundImageChanged;
+            _displayPanel.GreetingTextSaved         += OnGreetingTextSaved;
+            _displayPanel.GreetingTextColorChanged  += OnGreetingTextColorChanged;
             _cameraPanel = new CameraSettingsPanel(_camera);
             CameraSettingsPanelHost.Content = _cameraPanel;
             _aiPanel = new AIConfigPanel(_aiClient, _settings);
@@ -102,8 +103,9 @@ namespace Photobooth.Views
         {
             _camera.CameraDisconnected -= OnCameraDisconnected;
             _eventPanel.ActiveEventChanged -= OnActiveEventChanged;
-            _displayPanel.BackgroundImageChanged -= OnBackgroundImageChanged;
-            _displayPanel.GreetingTextSaved      -= OnGreetingTextSaved;
+            _displayPanel.BackgroundImageChanged   -= OnBackgroundImageChanged;
+            _displayPanel.GreetingTextSaved        -= OnGreetingTextSaved;
+            _displayPanel.GreetingTextColorChanged -= OnGreetingTextColorChanged;
             _aiPanel.AIEnhancementEnabledChanged -= OnAIEnhancementEnabledChanged;
             if (Window.GetWindow(this) is Window w)
                 w.PreviewKeyDown -= OnWindowKeyDown;
@@ -200,6 +202,9 @@ namespace Photobooth.Views
             => UpdateAIEnhancementButton();
 
         private void OnGreetingTextSaved(object? sender, EventArgs e)
+            => ApplyGreetingText();
+
+        private void OnGreetingTextColorChanged(object? sender, EventArgs e)
             => ApplyGreetingText();
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)

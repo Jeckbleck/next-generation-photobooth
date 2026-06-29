@@ -41,9 +41,13 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-            <!-- Accent -->
-            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+            <!-- Row 0: theme colors -->
+            <StackPanel Grid.Column="0" Grid.Row="0" HorizontalAlignment="Center">
                 <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickAccentColor_Click" ToolTip="Accent color">
                     <Button.Template>
@@ -59,8 +63,7 @@
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>
 
-            <!-- Background -->
-            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+            <StackPanel Grid.Column="1" Grid.Row="0" HorizontalAlignment="Center">
                 <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickBgColor_Click" ToolTip="App background">
                     <Button.Template>
@@ -76,8 +79,7 @@
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>
 
-            <!-- Surface -->
-            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+            <StackPanel Grid.Column="2" Grid.Row="0" HorizontalAlignment="Center">
                 <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickSurfaceColor_Click" ToolTip="Surface / panels">
                     <Button.Template>
@@ -93,8 +95,7 @@
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>
 
-            <!-- Navigation -->
-            <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+            <StackPanel Grid.Column="3" Grid.Row="0" HorizontalAlignment="Center">
                 <Button Width="56" Height="56" Cursor="Hand"
                         Click="PickNavColor_Click" ToolTip="Navigation / input wells">
                     <Button.Template>
@@ -106,6 +107,29 @@
                     </Button.Template>
                 </Button>
                 <TextBlock Text="Navigation" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
+            </StackPanel>
+
+            <!-- Row 1: greeting text colors -->
+            <StackPanel Grid.Column="0" Grid.Row="1" HorizontalAlignment="Center" Margin="0,16,0,0">
+                <Border x:Name="TitleColorSwatch"
+                        Width="56" Height="56" CornerRadius="10"
+                        Background="White" BorderBrush="#555" BorderThickness="1.5"
+                        Cursor="Hand" ToolTip="Greeting title color"
+                        MouseLeftButtonUp="PickTitleColor_Click"/>
+                <TextBlock Text="Title" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,7,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center" Margin="0,16,0,0">
+                <Border x:Name="SecondaryColorSwatch"
+                        Width="56" Height="56" CornerRadius="10"
+                        Background="White" BorderBrush="#555" BorderThickness="1.5"
+                        Cursor="Hand" ToolTip="Eyebrow &amp; subtitle color"
+                        MouseLeftButtonUp="PickSecondaryColor_Click"/>
+                <TextBlock Text="Eyebrow / Sub" FontSize="11"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            HorizontalAlignment="Center" Margin="0,7,0,0"/>
             </StackPanel>

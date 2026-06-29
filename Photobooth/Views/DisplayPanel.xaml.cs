@@ -1,7 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Photobooth.Data.Models;
@@ -38,51 +36,7 @@ public partial class DisplayPanel : UserControl
         GreetingEyebrowBox.Text    = ev?.GreetingEyebrow  ?? string.Empty;
         GreetingTitleBox.Text      = ev?.GreetingTitle    ?? string.Empty;
         GreetingSubtitleBox.Text   = ev?.GreetingSubtitle ?? string.Empty;
-
-        UpdateSwatch(GreetingTextColorSwatch,          ev?.TextColor);
-        UpdateSwatch(GreetingSecondaryColorSwatch, ev?.TextSecondaryColor);
-
         _loading = false;
-    }
-
-    private static void UpdateSwatch(System.Windows.Controls.Border swatch, string? hex)
-    {
-        if (!string.IsNullOrEmpty(hex))
-        {
-            try
-            {
-                swatch.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
-                return;
-            }
-            catch { }
-        }
-        swatch.Background = new SolidColorBrush(Colors.White);
-    }
-
-    private void GreetingTextColorSwatch_Click(object sender, MouseButtonEventArgs e)
-    {
-        if (!_activeEventId.HasValue) return;
-        var current = (GreetingTextColorSwatch.Background as SolidColorBrush)?.Color ?? Colors.White;
-        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
-        var picked  = popup.ShowPickedColor();
-        if (picked is null) return;
-
-        GreetingTextColorSwatch.Background = new SolidColorBrush(picked.Value);
-        _events.SetTextColor(_activeEventId.Value, $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
-        GreetingTextSaved?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void GreetingSecondaryColorSwatch_Click(object sender, MouseButtonEventArgs e)
-    {
-        if (!_activeEventId.HasValue) return;
-        var current = (GreetingSecondaryColorSwatch.Background as SolidColorBrush)?.Color ?? Colors.White;
-        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
-        var picked  = popup.ShowPickedColor();
-        if (picked is null) return;
-
-        GreetingSecondaryColorSwatch.Background = new SolidColorBrush(picked.Value);
-        _events.SetTextSecondaryColor(_activeEventId.Value, $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
-        GreetingTextSaved?.Invoke(this, EventArgs.Empty);
     }
 
     private void GreetingBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -108,11 +62,17 @@ public partial class DisplayPanel : UserControl
         GreetingTextSaved?.Invoke(this, EventArgs.Empty);
     }
 
-    // Forwarding event — GreetingPage subscribes here instead of _appearancePanel directly.
+    // Forwarding events — GreetingPage subscribes here instead of _appearancePanel directly.
     public event EventHandler<BitmapImage?> BackgroundImageChanged
     {
         add    => _appearancePanel.BackgroundImageChanged += value;
         remove => _appearancePanel.BackgroundImageChanged -= value;
+    }
+
+    public event EventHandler? GreetingTextColorChanged
+    {
+        add    => _appearancePanel.GreetingTextColorChanged += value;
+        remove => _appearancePanel.GreetingTextColorChanged -= value;
     }
 
     // Called by GreetingPage.SelectTab when Display tab becomes visible.

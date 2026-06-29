@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -23,6 +24,7 @@ public partial class AppearancePanel : UserControl
     public int? SelectedEventId { get; set; }
 
     public event EventHandler<BitmapImage?> BackgroundImageChanged = delegate { };
+    public event EventHandler?              GreetingTextColorChanged;
 
     public AppearancePanel(IEventService events, SettingsManager settings)
     {
@@ -45,6 +47,9 @@ public partial class AppearancePanel : UserControl
         if (!string.IsNullOrEmpty(ev.BackgroundColor)) ApplyBrushColor("BackgroundBrush", ev.BackgroundColor);
         if (!string.IsNullOrEmpty(ev.SurfaceColor))    ApplyBrushColor("SurfaceBrush",    ev.SurfaceColor);
         if (!string.IsNullOrEmpty(ev.NavColor))        ApplyBrushColor("NavBrush",        ev.NavColor);
+
+        UpdateTextSwatch(TitleColorSwatch,     ev.TextColor);
+        UpdateTextSwatch(SecondaryColorSwatch, ev.TextSecondaryColor);
 
         if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
         {
@@ -73,6 +78,9 @@ public partial class AppearancePanel : UserControl
         ApplyBrushColor("BackgroundBrush", bg);
         ApplyBrushColor("SurfaceBrush",    surf);
         ApplyBrushColor("NavBrush",        nav);
+
+        UpdateTextSwatch(TitleColorSwatch,     ev.TextColor);
+        UpdateTextSwatch(SecondaryColorSwatch, ev.TextSecondaryColor);
 
         if (!string.IsNullOrEmpty(ev.BackgroundImagePath) && File.Exists(ev.BackgroundImagePath))
         {
@@ -112,12 +120,49 @@ public partial class AppearancePanel : UserControl
         OpenColorPicker("NavBrush",
             hex => { if (SelectedEventId.HasValue) _events.SetNavColor(SelectedEventId.Value, hex); });
 
+    private void PickTitleColor_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (!SelectedEventId.HasValue) return;
+        var current = (TitleColorSwatch.Background as SolidColorBrush)?.Color ?? Colors.White;
+        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+        var picked  = popup.ShowPickedColor();
+        if (picked is null) return;
+
+        TitleColorSwatch.Background = new SolidColorBrush(picked.Value);
+        _events.SetTextColor(SelectedEventId.Value, $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+        GreetingTextColorChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void PickSecondaryColor_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (!SelectedEventId.HasValue) return;
+        var current = (SecondaryColorSwatch.Background as SolidColorBrush)?.Color ?? Colors.White;
+        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+        var picked  = popup.ShowPickedColor();
+        if (picked is null) return;
+
+        SecondaryColorSwatch.Background = new SolidColorBrush(picked.Value);
+        _events.SetTextSecondaryColor(SelectedEventId.Value, $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+        GreetingTextColorChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static void UpdateTextSwatch(Border swatch, string? hex)
+    {
+        swatch.Background = !string.IsNullOrEmpty(hex)
+            ? new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex))
+            : new SolidColorBrush(Colors.White);
+    }
+
     private void RevertAppearance_Click(object sender, RoutedEventArgs e)
     {
         ApplyBrushColor("AccentBrush",     DefaultAccent);
         ApplyBrushColor("BackgroundBrush", DefaultBackground);
         ApplyBrushColor("SurfaceBrush",    DefaultSurface);
         ApplyBrushColor("NavBrush",        DefaultNav);
+
+        UpdateTextSwatch(TitleColorSwatch,     null);
+        UpdateTextSwatch(SecondaryColorSwatch, null);
+        GreetingTextColorChanged?.Invoke(this, EventArgs.Empty);
 
         ClearBackground();
 
@@ -127,6 +172,8 @@ public partial class AppearancePanel : UserControl
             _events.SetBackgroundColor(SelectedEventId.Value, null);
             _events.SetSurfaceColor(SelectedEventId.Value, null);
             _events.SetNavColor(SelectedEventId.Value, null);
+            _events.SetTextColor(SelectedEventId.Value, null);
+            _events.SetTextSecondaryColor(SelectedEventId.Value, null);
             _events.SetBackgroundImagePath(SelectedEventId.Value, null);
         }
 
