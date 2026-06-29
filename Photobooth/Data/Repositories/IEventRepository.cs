@@ -67,6 +67,9 @@ namespace Photobooth.Data.Repositories
         /// <summary>Sets the primary text colour override for the event. Null clears the override.</summary>
         void SetTextColor(int eventId, string? color);
 
+        /// <summary>Sets the secondary text colour (eyebrow + subtitle) override for the event. Null clears the override.</summary>
+        void SetTextSecondaryColor(int eventId, string? color);
+
         /// <summary>Sets the background image path for the event. Null removes it.</summary>
         void SetBackgroundImagePath(int eventId, string? path);
 

@@ -106,6 +106,12 @@ namespace Photobooth.Data.Repositories
             if (ev is not null) ev.TextColor = color;
         }
 
+        public void SetTextSecondaryColor(int eventId, string? color)
+        {
+            var ev = _db.Events.Find(eventId);
+            if (ev is not null) ev.TextSecondaryColor = color;
+        }
+
         public void SetBackgroundImagePath(int eventId, string? path)
         {
             var ev = _db.Events.Find(eventId);

@@ -172,16 +172,19 @@ namespace Photobooth.Views
             SubtitleText.Text = ev?.GreetingSubtitle ?? "Tap anywhere to start your session";
 
             if (!string.IsNullOrEmpty(ev?.TextColor))
+                TitleText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ev.TextColor));
+            else
+                TitleText.SetResourceReference(ForegroundProperty, "TextPrimaryBrush");
+
+            if (!string.IsNullOrEmpty(ev?.TextSecondaryColor))
             {
-                var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ev.TextColor));
+                var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ev.TextSecondaryColor));
                 EyebrowText.Foreground  = brush;
-                TitleText.Foreground    = brush;
                 SubtitleText.Foreground = brush;
             }
             else
             {
                 EyebrowText.SetResourceReference(ForegroundProperty, "TextSecondaryBrush");
-                TitleText.SetResourceReference(ForegroundProperty, "TextPrimaryBrush");
                 SubtitleText.SetResourceReference(ForegroundProperty, "TextSecondaryBrush");
             }
         }

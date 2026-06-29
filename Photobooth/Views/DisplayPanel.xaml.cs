@@ -39,21 +39,24 @@ public partial class DisplayPanel : UserControl
         GreetingTitleBox.Text      = ev?.GreetingTitle    ?? string.Empty;
         GreetingSubtitleBox.Text   = ev?.GreetingSubtitle ?? string.Empty;
 
-        if (!string.IsNullOrEmpty(ev?.TextColor))
+        UpdateSwatch(GreetingTextColorSwatch,          ev?.TextColor);
+        UpdateSwatch(GreetingSecondaryColorSwatch, ev?.TextSecondaryColor);
+
+        _loading = false;
+    }
+
+    private static void UpdateSwatch(System.Windows.Controls.Border swatch, string? hex)
+    {
+        if (!string.IsNullOrEmpty(hex))
         {
             try
             {
-                var c = (Color)ColorConverter.ConvertFromString(ev.TextColor);
-                GreetingTextColorSwatch.Background = new SolidColorBrush(c);
+                swatch.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+                return;
             }
-            catch { GreetingTextColorSwatch.Background = new SolidColorBrush(Colors.White); }
+            catch { }
         }
-        else
-        {
-            GreetingTextColorSwatch.Background = new SolidColorBrush(Colors.White);
-        }
-
-        _loading = false;
+        swatch.Background = new SolidColorBrush(Colors.White);
     }
 
     private void GreetingTextColorSwatch_Click(object sender, MouseButtonEventArgs e)
@@ -65,8 +68,20 @@ public partial class DisplayPanel : UserControl
         if (picked is null) return;
 
         GreetingTextColorSwatch.Background = new SolidColorBrush(picked.Value);
-        var hex = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
-        _events.SetTextColor(_activeEventId.Value, hex);
+        _events.SetTextColor(_activeEventId.Value, $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+        GreetingTextSaved?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void GreetingSecondaryColorSwatch_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (!_activeEventId.HasValue) return;
+        var current = (GreetingSecondaryColorSwatch.Background as SolidColorBrush)?.Color ?? Colors.White;
+        var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+        var picked  = popup.ShowPickedColor();
+        if (picked is null) return;
+
+        GreetingSecondaryColorSwatch.Background = new SolidColorBrush(picked.Value);
+        _events.SetTextSecondaryColor(_activeEventId.Value, $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
         GreetingTextSaved?.Invoke(this, EventArgs.Empty);
     }
 

@@ -204,6 +204,14 @@ namespace Photobooth.Services
             Log.Debug("Event {Id} text color → {Value}", id, color ?? "default");
         }
 
+        public void SetTextSecondaryColor(int id, string? color)
+        {
+            Require(id);
+            _repo.SetTextSecondaryColor(id, color);
+            _repo.SaveChanges();
+            Log.Debug("Event {Id} text secondary color → {Value}", id, color ?? "default");
+        }
+
         public void SetBackgroundImagePath(int id, string? path)
         {
             Require(id);
