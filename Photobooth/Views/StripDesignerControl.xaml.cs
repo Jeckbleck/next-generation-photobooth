@@ -724,8 +724,14 @@ namespace Photobooth.Views
             var bd = bmp.LockBits(new System.Drawing.Rectangle(0, 0, w, h),
                                    System.Drawing.Imaging.ImageLockMode.WriteOnly,
                                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            Marshal.Copy(pixels, 0, bd.Scan0, pixels.Length);
-            bmp.UnlockBits(bd);
+            try
+            {
+                Marshal.Copy(pixels, 0, bd.Scan0, pixels.Length);
+            }
+            finally
+            {
+                bmp.UnlockBits(bd);
+            }
             return bmp;
         }
 
