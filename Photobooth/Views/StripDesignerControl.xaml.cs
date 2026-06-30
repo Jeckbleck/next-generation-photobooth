@@ -54,6 +54,7 @@ namespace Photobooth.Views
         private bool   _panning;
         private Point  _panStart;
         private double _panHOrig, _panVOrig;
+        private BitmapSource? _templateBitmapSource;
 
         public StripDesignerControl()
         {
@@ -580,7 +581,8 @@ namespace Photobooth.Views
             bmp.CacheOption = BitmapCacheOption.OnLoad;
             bmp.EndInit();
             bmp.Freeze();
-            TemplateImage.Source = bmp;
+            TemplateImage.Source  = bmp;
+            _templateBitmapSource = bmp;
             RefreshToolbarState();
         }
 
@@ -594,7 +596,8 @@ namespace Photobooth.Views
                 foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             }
             _slots.Clear();
-            TemplateImage.Source = null;
+            TemplateImage.Source  = null;
+            _templateBitmapSource = null;
             RefreshToolbarState();
         }
 
