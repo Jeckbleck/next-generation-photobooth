@@ -614,6 +614,7 @@ namespace Photobooth.Views
 
         private void RefreshToolbarState()
         {
+            if (EyedropperButton is null) return;   // fires during InitializeComponent
             bool hasTemplate = TemplateImage.Source is not null;
             AddSlotButton.IsEnabled = hasTemplate && _slots.Count < MaxSlots;
             SaveButton.IsEnabled    = hasTemplate || _slots.Count > 0;
@@ -770,6 +771,7 @@ namespace Photobooth.Views
 
         private void SlotModeTab_Changed(object sender, RoutedEventArgs e)
         {
+            if (AutoDetectPanel is null) return;   // fires during InitializeComponent before panels exist
             _autoDetectMode = AutoDetectTab.IsChecked == true;
             AutoDetectPanel.Visibility = _autoDetectMode ? Visibility.Visible : Visibility.Collapsed;
             ManualPanel.Visibility     = _autoDetectMode ? Visibility.Collapsed : Visibility.Visible;
