@@ -25,6 +25,33 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Tab-style RadioButton: underline border when checked -->
+        <Style x:Key="TabToggle" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="0,0,0,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root" BorderThickness="0,0,0,2"
+                                BorderBrush="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush"
+                                        Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource TextPrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -76,13 +103,72 @@
                        Margin="0,18,0,6"/>
             <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,10"/>
 
-            <Button x:Name="AddSlotButton"
-                    Content="+ Add Slot"
-                    Style="{StaticResource GhostButton}"
-                    Padding="10,7" FontSize="12"
-                    HorizontalAlignment="Stretch"
-                    IsEnabled="False"
-                    Click="AddSlot_Click"/>
+            <!-- Mode tab switcher -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <RadioButton x:Name="AutoDetectTab"
+                             Content="Auto-detect"
+                             GroupName="SlotMode"
+                             Style="{StaticResource TabToggle}"
+                             IsChecked="True"
+                             Margin="0,0,16,0"
+                             Checked="SlotModeTab_Changed"/>
+                <RadioButton x:Name="ManualTab"
+                             Content="Manual"
+                             GroupName="SlotMode"
+                             Style="{StaticResource TabToggle}"
+                             Checked="SlotModeTab_Changed"/>
+            </StackPanel>
+
+            <!-- Auto-detect panel -->
+            <StackPanel x:Name="AutoDetectPanel" Visibility="Visible">
+                <Button x:Name="EyedropperButton"
+                        Content="Pick Color"
+                        Style="{StaticResource GhostButton}"
+                        Padding="10,7" FontSize="12"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,0,0,6"
+                        IsEnabled="False"
+                        Click="Eyedropper_Click"/>
+                <Border x:Name="ColorSwatch"
+                        Height="24" CornerRadius="3"
+                        Background="Transparent"
+                        BorderBrush="#334" BorderThickness="1"
+                        Margin="0,0,0,8"
+                        Visibility="Collapsed"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="Tolerance"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBlock x:Name="ToleranceLabel"
+                               Text="15"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Slider x:Name="ToleranceSlider"
+                        Minimum="0" Maximum="50" Value="15"
+                        IsEnabled="False"
+                        Margin="0,0,0,8"
+                        ValueChanged="ToleranceSlider_ValueChanged"/>
+                <Button x:Name="DetectButton"
+                        Content="Detect Slots"
+                        Style="{StaticResource GhostButton}"
+                        Padding="10,7" FontSize="12"
+                        HorizontalAlignment="Stretch"
+                        IsEnabled="False"
+                        Click="Detect_Click"/>
+            </StackPanel>
+
+            <!-- Manual panel -->
+            <StackPanel x:Name="ManualPanel" Visibility="Collapsed">
+                <Button x:Name="AddSlotButton"
+                        Content="+ Add Slot"
+                        Style="{StaticResource GhostButton}"
+                        Padding="10,7" FontSize="12"
+                        HorizontalAlignment="Stretch"
+                        IsEnabled="False"
+                        Click="AddSlot_Click"/>
+            </StackPanel>
 
             <!-- VIEW section -->
             <TextBlock Text="VIEW"
@@ -171,7 +257,8 @@
                             Width="150" Height="450"
                             ClipToBounds="True"
                             Background="Transparent"
-                            MouseWheel="DesignerCanvas_MouseWheel">
+                            MouseWheel="DesignerCanvas_MouseWheel"
+                            PreviewMouseLeftButtonDown="DesignerCanvas_PreviewMouseDown">
                         <Canvas.LayoutTransform>
                             <ScaleTransform x:Name="ZoomTransform" ScaleX="1" ScaleY="1"/>
                         </Canvas.LayoutTransform>

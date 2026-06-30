@@ -13,6 +13,8 @@ using Microsoft.Win32;
 using Photobooth.Data.Models;
 using Photobooth.Services;
 using Serilog;
+using Photobooth.Print;
+using System.Runtime.InteropServices;
 using Line      = System.Windows.Shapes.Line;
 using Rectangle = System.Windows.Shapes.Rectangle;
 
@@ -55,6 +57,10 @@ namespace Photobooth.Views
         private Point  _panStart;
         private double _panHOrig, _panVOrig;
         private BitmapSource? _templateBitmapSource;
+        private bool _autoDetectMode = true;
+        private bool _eyedropperActive;
+        private bool _hasColor;
+        private Color _sampledColor;
 
         public StripDesignerControl()
         {
@@ -598,6 +604,11 @@ namespace Photobooth.Views
             _slots.Clear();
             TemplateImage.Source  = null;
             _templateBitmapSource = null;
+            _hasColor = false;
+            _eyedropperActive = false;
+            ColorSwatch.Background = System.Windows.Media.Brushes.Transparent;
+            ColorSwatch.Visibility = Visibility.Collapsed;
+            DesignerCanvas.Cursor  = Cursors.Arrow;
             RefreshToolbarState();
         }
 
@@ -607,6 +618,9 @@ namespace Photobooth.Views
             AddSlotButton.IsEnabled = hasTemplate && _slots.Count < MaxSlots;
             SaveButton.IsEnabled    = hasTemplate || _slots.Count > 0;
             ClearButton.IsEnabled   = hasTemplate || _slots.Count > 0;
+            EyedropperButton.IsEnabled = hasTemplate && _autoDetectMode;
+            ToleranceSlider.IsEnabled  = hasTemplate && _autoDetectMode && _hasColor;
+            DetectButton.IsEnabled     = hasTemplate && _autoDetectMode && _hasColor;
         }
 
         private void UpdateStatus()
@@ -623,7 +637,9 @@ namespace Photobooth.Views
             }
             if (_slots.Count == 0)
             {
-                StatusText.Text = "Click '+ Add Slot' to mark where each photo will appear.";
+                StatusText.Text = _autoDetectMode
+                    ? "Pick a color with the eyedropper, then click Detect Slots."
+                    : "Click '+ Add Slot' to place photo slots manually.";
                 return;
             }
             StatusText.Text = _slots.Count < MaxSlots
@@ -641,6 +657,118 @@ namespace Photobooth.Views
             }
             catch { /* fall through */ }
             return Color.FromRgb(0xE9, 0x45, 0x60);
+        }
+
+        // --- Eyedropper -----------------------------------------------------------
+
+        private void Eyedropper_Click(object sender, RoutedEventArgs e)
+        {
+            _eyedropperActive = true;
+            DesignerCanvas.Cursor = Cursors.Cross;
+        }
+
+        private void DeactivateEyedropper()
+        {
+            _eyedropperActive = false;
+            DesignerCanvas.Cursor = Cursors.Arrow;
+        }
+
+        private void DesignerCanvas_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!_eyedropperActive) return;
+            e.Handled = true;
+            DeactivateEyedropper();
+
+            var pos = e.GetPosition(DesignerCanvas);
+            _sampledColor = SamplePixel(pos);
+            _hasColor = true;
+
+            ColorSwatch.Background  = new SolidColorBrush(_sampledColor);
+            ColorSwatch.Visibility  = Visibility.Visible;
+            RefreshToolbarState();
+        }
+
+        private Color SamplePixel(Point canvasPos)
+        {
+            if (_templateBitmapSource == null) return Colors.Transparent;
+
+            // Map canvas coords (150×450) to BitmapSource pixel coords
+            double scaleX = _templateBitmapSource.PixelWidth  / DesignerCanvas.ActualWidth;
+            double scaleY = _templateBitmapSource.PixelHeight / DesignerCanvas.ActualHeight;
+            int px = (int)(canvasPos.X * scaleX);
+            int py = (int)(canvasPos.Y * scaleY);
+            px = Math.Max(0, Math.Min(px, _templateBitmapSource.PixelWidth  - 1));
+            py = Math.Max(0, Math.Min(py, _templateBitmapSource.PixelHeight - 1));
+
+            // Read one pixel — FormatConvertedBitmap ensures Bgra32
+            var conv = new FormatConvertedBitmap(_templateBitmapSource,
+                                                  PixelFormats.Bgra32, null, 0);
+            byte[] pixel = new byte[4];
+            conv.CopyPixels(new Int32Rect(px, py, 1, 1), pixel, 4, 0);
+            // Bgra32: [B, G, R, A]
+            return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
+        }
+
+        // --- Detect Slots ---------------------------------------------------------
+
+        private static System.Drawing.Bitmap ToBitmap(BitmapSource source)
+        {
+            var conv = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+            int w = conv.PixelWidth, h = conv.PixelHeight;
+            int stride = w * 4;
+            byte[] pixels = new byte[stride * h];
+            conv.CopyPixels(pixels, stride, 0);
+
+            var bmp = new System.Drawing.Bitmap(w, h,
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            var bd = bmp.LockBits(new System.Drawing.Rectangle(0, 0, w, h),
+                                   System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                                   System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Marshal.Copy(pixels, 0, bd.Scan0, pixels.Length);
+            bmp.UnlockBits(bd);
+            return bmp;
+        }
+
+        private void ToleranceSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (ToleranceLabel != null)
+                ToleranceLabel.Text = ((int)ToleranceSlider.Value).ToString();
+        }
+
+        private void Detect_Click(object sender, RoutedEventArgs e)
+        {
+            if (_templateBitmapSource == null || !_hasColor) return;
+
+            // Remove existing slot visuals only — do NOT call ClearCanvas()
+            foreach (var slot in _slots.ToList())
+            {
+                DesignerCanvas.Children.Remove(slot.Body);
+                DesignerCanvas.Children.Remove(slot.RotateBtn);
+                DesignerCanvas.Children.Remove(slot.DeleteBtn);
+                foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
+            }
+            _slots.Clear();
+
+            int tolerance = (int)ToleranceSlider.Value;
+            using var bmp = ToBitmap(_templateBitmapSource);
+            var drawingColor = System.Drawing.Color.FromArgb(
+                _sampledColor.A, _sampledColor.R, _sampledColor.G, _sampledColor.B);
+            var defs = TemplateSegmenter.Detect(bmp, drawingColor, tolerance);
+
+            foreach (var def in defs)
+                CreateSlot(def);
+
+            RefreshToolbarState();
+            UpdateStatus();
+        }
+
+        private void SlotModeTab_Changed(object sender, RoutedEventArgs e)
+        {
+            _autoDetectMode = AutoDetectTab.IsChecked == true;
+            AutoDetectPanel.Visibility = _autoDetectMode ? Visibility.Visible : Visibility.Collapsed;
+            ManualPanel.Visibility     = _autoDetectMode ? Visibility.Collapsed : Visibility.Visible;
+            RefreshToolbarState();
+            UpdateStatus();
         }
     }
 
