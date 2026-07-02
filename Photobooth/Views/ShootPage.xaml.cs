@@ -221,7 +221,6 @@ namespace Photobooth.Views
                     _ = Task.Run(() => BitmapHelper.GenerateThumbnail(path));
 
                     // _shooting stays true: EVF pump stays paused so captured photo stays visible
-                    CaptureSpinner.Visibility = Visibility.Collapsed;
                     await HoldFlash();
                     await ShowCapturedPreview(path, ct);
 
@@ -403,7 +402,7 @@ namespace Photobooth.Views
             {
                 StatusText.Text = $"Photo {slot} of 3 — get ready!";
                 await RunCountdown(_settings.CountdownSeconds, ct);
-                if (ct.IsCancellationRequested) return null;
+                ct.ThrowIfCancellationRequested();
 
                 _shooting = true;
                 StatusText.Text = "Please wait…";
@@ -431,7 +430,10 @@ namespace Photobooth.Views
                     Log.Error("Hard camera error on photo {Slot} attempt {Attempt}: {Message}", slot, attempt, ex.Message);
 
                     if (attempt == maxAttempts)
+                    {
+                        Log.Error("Photo {Slot} failed all {Max} attempts — abandoning session", slot, maxAttempts);
                         return null;
+                    }
 
                     await RecoverCameraAsync(ct);
                 }
