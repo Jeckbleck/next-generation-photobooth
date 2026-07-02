@@ -184,29 +184,10 @@ namespace Photobooth.Views
                 {
                     retakeRequested = false;
 
-                    StatusText.Text = $"Photo {i} of 3 — get ready!";
-                    await RunCountdown(_settings.CountdownSeconds, ct);
-                    if (ct.IsCancellationRequested) return;
-
-                    _shooting = true;
-                    StatusText.Text = "Please wait…";
-                    CaptureSpinner.Visibility = Visibility.Visible;
-
-                    string path;
+                    string? path;
                     try
                     {
-                        Log.Information("Taking photo {N}/3 (attempt {Attempt})", i, retakeCount + 1);
-                        var rawPath = await _camera.TakePictureAsync(ct);
-
-                        var date = DateTime.Today.ToString("yyyyMMdd");
-                        var sid  = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
-                        var stem = Path.GetFileNameWithoutExtension(rawPath);
-                        var ext  = Path.GetExtension(rawPath);
-                        var dest = Path.Combine(_sessionDir, $"{stem}_{date}_s{sid}_p{i}{ext}");
-                        File.Move(rawPath, dest, overwrite: true);
-                        path = dest;
-
-                        _ = Task.Run(() => BitmapHelper.GenerateThumbnail(dest));
+                        path = await TakePhotoWithRetryAsync(i, maxAttempts: 3, ct);
                     }
                     catch (OperationCanceledException)
                     {
@@ -222,14 +203,22 @@ namespace Photobooth.Views
                         StatusText.Text = "Camera timed out — check the USB connection and try again.";
                         return;
                     }
-                    catch (InvalidOperationException ex)
+
+                    if (path is null)
                     {
-                        _shooting = false;
-                        CaptureSpinner.Visibility = Visibility.Collapsed;
-                        Log.Error("Hard camera error on photo {N}: {Message}", i, ex.Message);
-                        StatusText.Text = $"Camera error — {ex.Message}";
+                        foreach (var p in _capturedPaths)
+                            BitmapHelper.DeleteWithThumbnail(p);
+                        if (_sessionId.HasValue)
+                        {
+                            try { _events.AbandonSession(_sessionId.Value); _sessionId = null; }
+                            catch (Exception ex) { Log.Error(ex, "Failed to abandon session after exhausted retries"); }
+                        }
+                        StatusText.Text = "Camera unavailable — please ask for assistance.";
+                        _flow.Trigger(FlowTrigger.SessionAborted);
                         return;
                     }
+
+                    _ = Task.Run(() => BitmapHelper.GenerateThumbnail(path));
 
                     // _shooting stays true: EVF pump stays paused so captured photo stays visible
                     CaptureSpinner.Visibility = Visibility.Collapsed;
@@ -397,6 +386,58 @@ namespace Photobooth.Views
             Log.Error("Camera error on shoot page: {Message}", msg);
             if (!_shooting)
                 Dispatcher.Invoke(() => StatusText.Text = $"Error: {msg}");
+        }
+
+        private async Task RecoverCameraAsync(CancellationToken ct)
+        {
+            _evfPump?.Stop();
+            StatusText.Text = "Camera is getting ready — one moment…";
+            try { await Task.Delay(3000, ct); }
+            catch (OperationCanceledException) { return; }
+            _evfPump?.Start();
+        }
+
+        private async Task<string?> TakePhotoWithRetryAsync(int slot, int maxAttempts, CancellationToken ct)
+        {
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                StatusText.Text = $"Photo {slot} of 3 — get ready!";
+                await RunCountdown(_settings.CountdownSeconds, ct);
+                if (ct.IsCancellationRequested) return null;
+
+                _shooting = true;
+                StatusText.Text = "Please wait…";
+                CaptureSpinner.Visibility = Visibility.Visible;
+
+                try
+                {
+                    Log.Information("Taking photo {N}/3 (attempt {Attempt})", slot, attempt);
+                    var rawPath = await _camera.TakePictureAsync(ct);
+
+                    var date = DateTime.Today.ToString("yyyyMMdd");
+                    var sid  = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
+                    var stem = Path.GetFileNameWithoutExtension(rawPath);
+                    var ext  = Path.GetExtension(rawPath);
+                    var dest = Path.Combine(_sessionDir, $"{stem}_{date}_s{sid}_p{slot}{ext}");
+                    File.Move(rawPath, dest, overwrite: true);
+
+                    CaptureSpinner.Visibility = Visibility.Collapsed;
+                    return dest; // _shooting stays true — caller owns the preview hold
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _shooting = false;
+                    CaptureSpinner.Visibility = Visibility.Collapsed;
+                    Log.Error("Hard camera error on photo {Slot} attempt {Attempt}: {Message}", slot, attempt, ex.Message);
+
+                    if (attempt == maxAttempts)
+                        return null;
+
+                    await RecoverCameraAsync(ct);
+                }
+            }
+
+            return null;
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
