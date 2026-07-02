@@ -213,7 +213,7 @@ namespace Photobooth.Views
                             try { _events.AbandonSession(_sessionId.Value); _sessionId = null; }
                             catch (Exception ex) { Log.Error(ex, "Failed to abandon session after exhausted retries"); }
                         }
-                        StatusText.Text = "Camera unavailable — please ask for assistance.";
+                        StatusText.Text = "Preview unavailable — please tap Back and try again.";
                         _flow.Trigger(FlowTrigger.SessionAborted);
                         return;
                     }
@@ -390,7 +390,13 @@ namespace Photobooth.Views
         private async Task RecoverCameraAsync(CancellationToken ct)
         {
             StatusText.Text = "Camera is getting ready — one moment…";
-            try { await Task.Delay(3000, ct); }
+            // Wait for the camera to clear any in-progress capture state before
+            // re-enabling EVF. StartLiveView is queued through the command processor,
+            // so it runs after any in-flight download completes.
+            try { await Task.Delay(1000, ct); }
+            catch (OperationCanceledException) { return; }
+            _camera.StartLiveView();
+            try { await Task.Delay(2000, ct); }
             catch (OperationCanceledException) { return; }
         }
 
