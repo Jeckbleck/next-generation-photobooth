@@ -389,9 +389,7 @@ namespace Photobooth.Views
 
         private async Task RecoverCameraAsync(CancellationToken ct)
         {
-            _evfPump?.Stop();
             StatusText.Text = "Camera is getting ready — one moment…";
-            _evfPump?.Start();
             try { await Task.Delay(3000, ct); }
             catch (OperationCanceledException) { return; }
         }
