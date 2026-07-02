@@ -391,9 +391,9 @@ namespace Photobooth.Views
         {
             _evfPump?.Stop();
             StatusText.Text = "Camera is getting ready — one moment…";
+            _evfPump?.Start();
             try { await Task.Delay(3000, ct); }
             catch (OperationCanceledException) { return; }
-            _evfPump?.Start();
         }
 
         private async Task<string?> TakePhotoWithRetryAsync(int slot, int maxAttempts, CancellationToken ct)
