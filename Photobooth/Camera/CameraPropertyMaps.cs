@@ -178,10 +178,19 @@ namespace Photobooth.Camera
             [0x00648210] = "RAW + JPEG Small Fine",
         };
 
+        internal static readonly Dictionary<uint, string> MeteringMode = new()
+        {
+            [0x00000001] = "Spot",
+            [0x00000003] = "Evaluative",
+            [0x00000004] = "Partial",
+            [0x00000005] = "Center-weighted",
+        };
+
         internal static string LookupIso(uint v) => Iso.TryGetValue(v, out var s) ? s : $"ISO {v}";
         internal static string LookupTv(uint v) => Tv.TryGetValue(v, out var s) ? s : $"Tv 0x{v:X}";
         internal static string LookupAv(uint v) => Av.TryGetValue(v, out var s) ? s : $"Av 0x{v:X}";
         internal static string LookupWb(uint v) => WhiteBalance.TryGetValue(v, out var s) ? s : $"WB {v}";
         internal static string LookupIq(uint v) => ImageQuality.TryGetValue(v, out var s) ? s : $"Quality 0x{v:X8}";
+        internal static string LookupMeteringMode(uint v) => MeteringMode.TryGetValue(v, out var s) ? s : $"Metering 0x{v:X}";
     }
 }

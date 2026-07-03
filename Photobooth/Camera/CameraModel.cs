@@ -140,12 +140,13 @@ namespace Photobooth.Camera
 
         public uint GetPropertyValue(uint propertyID) => propertyID switch
         {
-            EDSDKLib.EDSDK.PropID_ISOSpeed     => Iso,
-            EDSDKLib.EDSDK.PropID_Tv           => Tv,
-            EDSDKLib.EDSDK.PropID_Av           => Av,
-            EDSDKLib.EDSDK.PropID_WhiteBalance => WhiteBalance,
-            EDSDKLib.EDSDK.PropID_ImageQuality => ImageQuality,
-            _                                  => Unknown,
+            EDSDKLib.EDSDK.PropID_ISOSpeed      => Iso,
+            EDSDKLib.EDSDK.PropID_Tv            => Tv,
+            EDSDKLib.EDSDK.PropID_Av            => Av,
+            EDSDKLib.EDSDK.PropID_WhiteBalance  => WhiteBalance,
+            EDSDKLib.EDSDK.PropID_ImageQuality  => ImageQuality,
+            EDSDKLib.EDSDK.PropID_MeteringMode  => MeteringMode,
+            _                                   => Unknown,
         };
     }
 }

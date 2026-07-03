@@ -447,10 +447,19 @@ namespace Photobooth.Views
                 StatusText.Text = "Please wait…";
                 CaptureSpinner.Visibility = Visibility.Visible;
 
+                // Exit EVF so the camera drops to viewfinder mode: mirror down, phase-detect AF,
+                // and the chosen metering mode takes effect (EVF forces evaluative regardless of setting).
+                _camera.StopLiveView();
+                try { await Task.Delay(300, ct); }
+                catch (OperationCanceledException) { _camera.StartLiveView(); throw; }
+
                 try
                 {
                     Log.Information("Taking photo {N}/3 (attempt {Attempt})", slot, attempt);
                     var rawPath = await _camera.TakePictureAsync(ct);
+
+                    // EVF back on so preview resumes as soon as _shooting → false.
+                    _camera.StartLiveView();
 
                     var date = DateTime.Today.ToString("yyyyMMdd");
                     var sid  = _sessionId.HasValue ? _sessionId.Value.ToString() : "0";
@@ -461,6 +470,11 @@ namespace Photobooth.Views
 
                     CaptureSpinner.Visibility = Visibility.Collapsed;
                     return dest; // _shooting stays true — caller owns the preview hold
+                }
+                catch (OperationCanceledException)
+                {
+                    _camera.StartLiveView();
+                    throw;
                 }
                 catch (InvalidOperationException ex)
                 {
