@@ -34,6 +34,8 @@ namespace Photobooth.Camera
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
 
         internal TaskCompletionSource<string>? _pendingDownload;
+        private TaskCompletionSource<string>? _pendingWarmup;
+        private volatile bool _discardNextDownload;
 
         // --- Lifecycle -----------------------------------------------------------
 
@@ -146,6 +148,18 @@ namespace Photobooth.Camera
             _processor.PostCommand(new EndEvfCommand(ref _model));
         }
 
+        public void StartEvfAf()
+        {
+            if (_model == null || _processor == null) return;
+            _processor.PostCommand(new EvfAfCommand(ref _model, start: true));
+        }
+
+        public void StopEvfAf()
+        {
+            if (_model == null || _processor == null) return;
+            _processor.PostCommand(new EvfAfCommand(ref _model, start: false));
+        }
+
         public void RequestEvfFrame()
         {
             if (_model == null || _processor == null) return;
@@ -176,6 +190,31 @@ namespace Photobooth.Camera
             }))
             {
                 return await _pendingDownload.Task;
+            }
+        }
+
+        public async Task FireWarmupShotAsync(CancellationToken ct = default)
+        {
+            if (_model == null || _processor == null) return;
+
+            _pendingWarmup = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _discardNextDownload = true;
+            Log.Information("Firing non-AF warmup shot to restore EVF");
+            _processor.PostCommand(new WarmupShutterCommand(ref _model));
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            using var linked  = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+            try
+            {
+                using (linked.Token.Register(() => _pendingWarmup.TrySetCanceled()))
+                {
+                    string path = await _pendingWarmup.Task;
+                    try { File.Delete(path); } catch { }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _discardNextDownload = false;
             }
         }
 
@@ -241,7 +280,6 @@ namespace Photobooth.Camera
 
                 case CameraEvent.Type.ERROR:
                     Log.Error("Camera error 0x{Error:X8}", e.Arg);
-                    // Fail a pending capture immediately instead of waiting for the 30-second timeout
                     _pendingDownload?.TrySetException(
                         new InvalidOperationException($"EDSDK error 0x{e.Arg:X8}"));
                     Error?.Invoke(this, $"EDSDK error 0x{e.Arg:X8}");
@@ -251,8 +289,15 @@ namespace Photobooth.Camera
 
         internal void OnPhotoSaved(string path)
         {
-            Log.Information("Photo download complete: {Path}", path);
             if (_model != null) _model.IsCapturing = false;
+            if (_discardNextDownload)
+            {
+                _discardNextDownload = false;
+                Log.Information("Warmup shot downloaded — discarding");
+                _pendingWarmup?.TrySetResult(path);
+                return;
+            }
+            Log.Information("Photo download complete: {Path}", path);
             _pendingDownload?.TrySetResult(path);
         }
 

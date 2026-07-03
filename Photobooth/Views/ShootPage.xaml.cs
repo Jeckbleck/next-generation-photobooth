@@ -25,6 +25,8 @@ namespace Photobooth.Views
         private readonly List<string> _capturedPaths = new();
         private volatile bool _shooting;
         private bool _sequenceAborted;
+        private bool _sequenceRunning;
+        private bool _stallLogged;
         private CancellationTokenSource _sessionCts = new();
         private EvfPump? _evfPump;
         private bool _paywallActive;
@@ -126,16 +128,19 @@ namespace Photobooth.Views
                 frame =>
                 {
                     EvfImage.Source = frame;
+                    _stallLogged = false;
                     if (StatusText.Text == "Camera preview unavailable.")
                         StatusText.Text = string.Empty;
                 },
                 onStall: () =>
                 {
-                    if (!_shooting)
+                    if (_shooting || _sequenceRunning) return;
+                    if (!_stallLogged)
                     {
                         Log.Warning("EVF stall detected — no frame for >5 s");
-                        StatusText.Text = "Camera preview unavailable.";
+                        _stallLogged = true;
                     }
+                    StatusText.Text = "Camera preview unavailable.";
                 },
                 pauseGuard: () => _shooting,
                 watchdogMs: 50);
@@ -168,10 +173,13 @@ namespace Photobooth.Views
         {
             _capturedPaths.Clear();
             _sequenceAborted = false;
+            _sequenceRunning = true;
             ResetDots();
             var ct = _sessionCts.Token;
 
             Log.Information("Photo sequence started");
+            try
+            {
 
             for (int i = 1; i <= 3; i++)
             {
@@ -278,6 +286,11 @@ namespace Photobooth.Views
             Dispatcher.Invoke(() =>
                 _flow.Trigger(FlowTrigger.ShotsDone,
                     new FlowContext { PhotoPaths = _capturedPaths, SessionId = _sessionId ?? 0 }));
+            }
+            finally
+            {
+                _sequenceRunning = false;
+            }
         }
 
         // --- Countdown -----------------------------------------------------------
@@ -390,13 +403,35 @@ namespace Photobooth.Views
         private async Task RecoverCameraAsync(CancellationToken ct)
         {
             StatusText.Text = "Camera is getting ready — one moment…";
-            // Wait for the camera to clear any in-progress capture state before
-            // re-enabling EVF. StartLiveView is queued through the command processor,
-            // so it runs after any in-flight download completes.
-            try { await Task.Delay(1000, ct); }
-            catch (OperationCanceledException) { return; }
+            try { await Task.Delay(500, ct); } catch (OperationCanceledException) { return; }
+
+            // Fire a non-AF warmup shot to complete the capture cycle and free the camera.
+            await _camera.FireWarmupShotAsync(ct);
+            if (ct.IsCancellationRequested) return;
+
+            // Re-enable EVF, then wait for the first frame (up to 3 s) before retry countdown.
             _camera.StartLiveView();
-            try { await Task.Delay(2000, ct); }
+            var evfResumed = new TaskCompletionSource();
+            EventHandler<BitmapSource> onFrame = (_, _) => evfResumed.TrySetResult();
+            _camera.EvfFrameReady += onFrame;
+            try
+            {
+                await Task.WhenAny(evfResumed.Task, Task.Delay(3_000, ct));
+            }
+            finally
+            {
+                _camera.EvfFrameReady -= onFrame;
+            }
+            ct.ThrowIfCancellationRequested();
+
+            // Refocus in live view so the retry frame is sharp, then hold briefly before countdown.
+            StatusText.Text = "Focusing…";
+            _camera.StartEvfAf();
+            try { await Task.Delay(1_500, ct); }
+            catch (OperationCanceledException) { _camera.StopEvfAf(); return; }
+            _camera.StopEvfAf();
+            StatusText.Text = string.Empty;
+            try { await Task.Delay(500, ct); }
             catch (OperationCanceledException) { return; }
         }
 
