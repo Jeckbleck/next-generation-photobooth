@@ -29,9 +29,9 @@
         <!-- EVF fills the full row. Side buttons float over the edges.       -->
         <Grid Grid.Row="1">
 
-            <!-- Live view feed — fills edge-to-edge, hits pass through -->
+            <!-- Live view feed — full frame visible, letterboxed against background -->
             <Image x:Name="EvfImage"
-                   Stretch="UniformToFill"
+                   Stretch="Uniform"
                    IsHitTestVisible="False"/>
 
             <!-- Loading spinner while waiting for photo download -->
