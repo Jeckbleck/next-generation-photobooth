@@ -165,13 +165,21 @@ namespace Photobooth.Views
             if (_slots.Count >= MaxSlots) return;
             int nextIndex = Enumerable.Range(1, MaxSlots).First(i => _slots.All(s => s.Index != i));
 
+            // Spacing is sized against MaxSlots (not the current count) so the Nth default
+            // position never lands below the canvas — earlier this was hardcoded for 3 slots
+            // and slots 4+ landed off-canvas, clipped and unreachable, once MaxSlots became 6.
+            const double topMargin    = 0.05;
+            const double bottomMargin = 0.05;
+            double spacing = (1.0 - topMargin - bottomMargin) / MaxSlots;
+            double height  = spacing * 0.85;
+
             CreateSlot(new StripSlotDefinition
             {
                 Index  = nextIndex,
                 X      = 0.10,
-                Y      = 0.05 + (_slots.Count * 0.31),
+                Y      = topMargin + (_slots.Count * spacing),
                 Width  = 0.80,
-                Height = 0.26,
+                Height = height,
             });
             UpdateStatus();
         }
