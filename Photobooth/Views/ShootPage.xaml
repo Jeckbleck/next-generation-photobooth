@@ -107,36 +107,10 @@
         <Grid Grid.Row="2">
             <Border Background="{DynamicResource BackgroundBrush}"/>
             <Border Background="#66000000" Padding="16,12">
-                <StackPanel Orientation="Horizontal"
+                <StackPanel x:Name="ThumbnailBar"
+                            Orientation="Horizontal"
                             HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <Border Width="162" Height="108" CornerRadius="6" ClipToBounds="True"
-                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
-                            Margin="0,0,10,0">
-                        <Grid>
-                            <TextBlock Text="1" Foreground="#334" FontSize="28" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Thumb1" Stretch="UniformToFill"/>
-                        </Grid>
-                    </Border>
-                    <Border Width="162" Height="108" CornerRadius="6" ClipToBounds="True"
-                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1"
-                            Margin="0,0,10,0">
-                        <Grid>
-                            <TextBlock Text="2" Foreground="#334" FontSize="28" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Thumb2" Stretch="UniformToFill"/>
-                        </Grid>
-                    </Border>
-                    <Border Width="162" Height="108" CornerRadius="6" ClipToBounds="True"
-                            Background="#1A2B44" BorderBrush="#334" BorderThickness="1">
-                        <Grid>
-                            <TextBlock Text="3" Foreground="#334" FontSize="28" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Image x:Name="Thumb3" Stretch="UniformToFill"/>
-                        </Grid>
-                    </Border>
-                </StackPanel>
+                            VerticalAlignment="Center"/>
             </Border>
         </Grid>
 

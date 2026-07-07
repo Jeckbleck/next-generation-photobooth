@@ -9,6 +9,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using Photobooth.Camera;
 using Photobooth.Helpers;
+using Photobooth.Print;
 using Photobooth.Services;
 using Serilog;
 
@@ -34,6 +35,8 @@ namespace Photobooth.Views
 
         private int? _sessionId;
         private string _sessionDir = string.Empty;
+        private int _shotCount = 3;
+        private readonly List<Image> _thumbnails = new();
 
         public ShootPage(
             CameraService       camera,
@@ -61,6 +64,7 @@ namespace Photobooth.Views
             {
                 Log.Warning("ShootPage opened with no active event — session will not be tracked");
                 _paywallActive = false;
+                BuildThumbnailBar(_shotCount);
                 _sessionDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                     "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
@@ -74,6 +78,7 @@ namespace Photobooth.Views
             {
                 Log.Warning("Active event {Id} not found — session will not be tracked", eventId.Value);
                 _paywallActive = false;
+                BuildThumbnailBar(_shotCount);
                 _sessionDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
                     "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
@@ -83,6 +88,10 @@ namespace Photobooth.Views
             }
 
             _paywallActive = ev.PaywallEnabled;
+
+            var config = PrintHelper.LoadTemplateConfig(ev.Id, out _);
+            _shotCount = config is not null ? Math.Clamp(config.Slots.Count, 1, 6) : 3;
+            BuildThumbnailBar(_shotCount);
 
             try
             {
@@ -104,6 +113,43 @@ namespace Photobooth.Views
                     "Photobooth", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
                 Directory.CreateDirectory(_sessionDir);
                 _camera.SessionDirectory = _sessionDir;
+            }
+        }
+
+        private void BuildThumbnailBar(int count)
+        {
+            ThumbnailBar.Children.Clear();
+            _thumbnails.Clear();
+
+            for (int i = 1; i <= count; i++)
+            {
+                var image = new Image { Stretch = Stretch.UniformToFill };
+                var border = new Border
+                {
+                    Width           = 162,
+                    Height          = 108,
+                    CornerRadius    = new CornerRadius(6),
+                    ClipToBounds    = true,
+                    Background      = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1A2B44")),
+                    BorderBrush     = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334")),
+                    BorderThickness = new Thickness(1),
+                    Margin          = new Thickness(0, 0, i < count ? 10 : 0, 0),
+                };
+                var grid = new Grid();
+                grid.Children.Add(new TextBlock
+                {
+                    Text                = i.ToString(),
+                    Foreground          = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334")),
+                    FontSize            = 28,
+                    FontWeight          = FontWeights.Bold,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment   = VerticalAlignment.Center,
+                });
+                grid.Children.Add(image);
+                border.Child = grid;
+
+                ThumbnailBar.Children.Add(border);
+                _thumbnails.Add(image);
             }
         }
 
@@ -181,7 +227,7 @@ namespace Photobooth.Views
             try
             {
 
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= _shotCount; i++)
             {
                 if (ct.IsCancellationRequested) return;
 
@@ -271,7 +317,6 @@ namespace Photobooth.Views
                             catch (Exception dbEx) { Log.Error(dbEx, "Failed to record photo {N} in DB", i); }
                         }
 
-                        LightUpDot(i);
                         _ = SetThumbnailAsync(i, path);
                     }
 
@@ -354,20 +399,16 @@ namespace Photobooth.Views
 
         private void ResetDots()
         {
-            Thumb1.Source = null;
-            Thumb2.Source = null;
-            Thumb3.Source = null;
+            foreach (var img in _thumbnails) img.Source = null;
         }
-
-        private void LightUpDot(int n) { }
 
         private async Task SetThumbnailAsync(int n, string path)
         {
+            if (n < 1 || n > _thumbnails.Count) return;
             try
             {
                 var src = await Task.Run(() => BitmapHelper.LoadThumbnail(path, fallbackDecodeWidth: 200));
-                var img = n switch { 1 => Thumb1, 2 => Thumb2, _ => Thumb3 };
-                img.Source = src;
+                _thumbnails[n - 1].Source = src;
             }
             catch (Exception ex)
             {
@@ -439,7 +480,7 @@ namespace Photobooth.Views
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                StatusText.Text = $"Photo {slot} of 3 — get ready!";
+                StatusText.Text = $"Photo {slot} of {_shotCount} — get ready!";
                 await RunCountdown(_settings.CountdownSeconds, ct);
                 ct.ThrowIfCancellationRequested();
 
@@ -455,7 +496,7 @@ namespace Photobooth.Views
 
                 try
                 {
-                    Log.Information("Taking photo {N}/3 (attempt {Attempt})", slot, attempt);
+                    Log.Information("Taking photo {N}/{Total} (attempt {Attempt})", slot, _shotCount, attempt);
                     var rawPath = await _camera.TakePictureAsync(ct);
 
                     // EVF back on so preview resumes as soon as _shooting → false.
