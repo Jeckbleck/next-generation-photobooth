@@ -52,6 +52,22 @@ namespace Photobooth.Views
         private Point        _resizeOrigin;
         private Rect         _resizeStartRect;
 
+        private readonly List<TextElementControl> _textElements = new();
+
+        // Text drag state
+        private TextElementControl? _draggingText;
+        private Point                _dragOffsetText;
+
+        // Text resize state
+        private TextElementControl? _resizingText;
+        private int                  _resizeHandleTextIdx;
+        private Point                _resizeOriginText;
+        private Rect                 _resizeStartRectText;
+
+        // Print-space width the composer uses for a single strip (PhotostripComposer.StripW) —
+        // mirrored here only to scale the designer's font-size preview proportionally.
+        private const double PrintStripWidth = 620;
+
         // Pan state
         private bool   _panning;
         private Point  _panStart;
@@ -101,6 +117,9 @@ namespace Photobooth.Views
 
                 foreach (var def in config.Slots.OrderBy(s => s.Index))
                     CreateSlot(def);
+
+                foreach (var def in config.TextElements)
+                    CreateTextElement(def);
 
                 if (!string.IsNullOrEmpty(config.BackgroundColor))
                     ApplyBackgroundColor(config.BackgroundColor);
@@ -174,6 +193,16 @@ namespace Photobooth.Views
                         Rotation = s.Rotation,
                     }).OrderBy(s => s.Index).ToList(),
                     BackgroundColor = _backgroundColor,
+                    TextElements = _textElements.Select(t => new TextElementDefinition
+                    {
+                        Content  = t.Content,
+                        X        = t.Left     / CanvasW,
+                        Y        = t.Top      / CanvasH,
+                        Width    = t.Width    / CanvasW,
+                        Height   = t.Height   / CanvasH,
+                        Color    = t.Color,
+                        FontSize = t.FontSize,
+                    }).ToList(),
                 };
 
                 File.WriteAllText(JsonPath(),
@@ -482,49 +511,14 @@ namespace Photobooth.Views
             var pos = e.GetPosition(DesignerCanvas);
             double dx = pos.X - _resizeOrigin.X;
             double dy = pos.Y - _resizeOrigin.Y;
-            var r = _resizeStartRect;
 
-            double l = r.Left, t = r.Top, ri = r.Right, b = r.Bottom;
+            var rect = ComputeResizedRect(
+                _resizeStartRect, handle, dx, dy, MinSlotSize, CanvasW, CanvasH, GuideStep, _guidelinesVisible);
 
-            switch (_resizeHandle)
-            {
-                case 0: l  = Math.Min(r.Left   + dx, r.Right  - MinSlotSize); t  = Math.Min(r.Top    + dy, r.Bottom - MinSlotSize); break;
-                case 1: ri = Math.Max(r.Right  + dx, r.Left   + MinSlotSize); t  = Math.Min(r.Top    + dy, r.Bottom - MinSlotSize); break;
-                case 2: l  = Math.Min(r.Left   + dx, r.Right  - MinSlotSize); b  = Math.Max(r.Bottom + dy, r.Top    + MinSlotSize); break;
-                case 3: ri = Math.Max(r.Right  + dx, r.Left   + MinSlotSize); b  = Math.Max(r.Bottom + dy, r.Top    + MinSlotSize); break;
-            }
-
-            // Snap the moving edge to nearest guide when guidelines are on
-            if (_guidelinesVisible)
-            {
-                switch (_resizeHandle)
-                {
-                    case 0:
-                        l = Math.Round(l  / GuideStep) * GuideStep;
-                        t = Math.Round(t  / GuideStep) * GuideStep;
-                        break;
-                    case 1:
-                        ri = Math.Round(ri / GuideStep) * GuideStep;
-                        t  = Math.Round(t  / GuideStep) * GuideStep;
-                        break;
-                    case 2:
-                        l = Math.Round(l  / GuideStep) * GuideStep;
-                        b = Math.Round(b  / GuideStep) * GuideStep;
-                        break;
-                    case 3:
-                        ri = Math.Round(ri / GuideStep) * GuideStep;
-                        b  = Math.Round(b  / GuideStep) * GuideStep;
-                        break;
-                }
-                // Re-enforce minimum size after snap
-                if (ri - l < MinSlotSize) { if (_resizeHandle is 0 or 2) l = ri - MinSlotSize; else ri = l + MinSlotSize; }
-                if (b  - t < MinSlotSize) { if (_resizeHandle is 0 or 1) t = b  - MinSlotSize; else b  = t + MinSlotSize; }
-            }
-
-            slot.Left   = Math.Max(0, l);
-            slot.Top    = Math.Max(0, t);
-            slot.Width  = Math.Min(CanvasW, ri) - slot.Left;
-            slot.Height = Math.Min(CanvasH, b)  - slot.Top;
+            slot.Left   = rect.Left;
+            slot.Top    = rect.Top;
+            slot.Width  = rect.Width;
+            slot.Height = rect.Height;
             LayoutSlot(slot);
         }
 
@@ -532,6 +526,353 @@ namespace Photobooth.Views
         {
             _resizing = null;
             slot.Handles[handle].ReleaseMouseCapture();
+        }
+
+        // --- Text element creation ------------------------------------------------
+
+        private void AddText_Click(object sender, RoutedEventArgs e)
+        {
+            CreateTextElement(new TextElementDefinition
+            {
+                Content  = "Text",
+                X        = 0.10,
+                Y        = 0.40,
+                Width    = 0.80,
+                Height   = 0.12,
+                Color    = "#FFFFFF",
+                FontSize = 24,
+            });
+            UpdateStatus();
+        }
+
+        private void CreateTextElement(TextElementDefinition def)
+        {
+            var element = new TextElementControl
+            {
+                Content  = def.Content,
+                Color    = def.Color,
+                FontSize = def.FontSize,
+                Left     = def.X      * CanvasW,
+                Top      = def.Y      * CanvasH,
+                Width    = def.Width  * CanvasW,
+                Height   = def.Height * CanvasH,
+            };
+
+            BuildTextVisuals(element);
+            _textElements.Add(element);
+            RefreshToolbarState();
+        }
+
+        private void BuildTextVisuals(TextElementControl element)
+        {
+            var label = new TextBlock
+            {
+                Text                = element.Content,
+                FontSize            = Math.Max(1, element.FontSize * CanvasW / PrintStripWidth),
+                FontWeight          = FontWeights.Bold,
+                Foreground          = new SolidColorBrush((Color)ColorConverter.ConvertFromString(element.Color)),
+                TextAlignment       = TextAlignment.Center,
+                TextWrapping        = TextWrapping.Wrap,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment   = VerticalAlignment.Center,
+            };
+            element.Label = label;
+
+            var body = new Border
+            {
+                Background      = new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)),
+                BorderBrush     = Brushes.White,
+                BorderThickness = new Thickness(2),
+                CornerRadius    = new CornerRadius(2),
+                Cursor          = Cursors.SizeAll,
+                Child           = label,
+            };
+            body.MouseLeftButtonDown += (_, e) =>
+            {
+                if (e.ClickCount == 2) { BeginEditText(element); e.Handled = true; return; }
+                TextBody_Down(element, e);
+                e.Handled = true;
+            };
+            body.MouseMove         += (_, e) => TextBody_Move(element, e);
+            body.MouseLeftButtonUp += (_, e) => { TextBody_Up(element); e.Handled = true; };
+            Panel.SetZIndex(body, 2);
+            DesignerCanvas.Children.Add(body);
+            element.Body = body;
+
+            var shrink = new Button
+            {
+                Content = "A−", Width = 26, Height = 22, FontSize = 11,
+                Foreground = Brushes.White,
+                Background = new SolidColorBrush(Color.FromArgb(200, 40, 80, 200)),
+                BorderThickness = new Thickness(0), Cursor = Cursors.Arrow, Padding = new Thickness(0),
+                ToolTip = "Decrease font size",
+            };
+            shrink.Click += (_, _) => ChangeTextFontSize(element, -2);
+            Panel.SetZIndex(shrink, 4);
+            DesignerCanvas.Children.Add(shrink);
+            element.ShrinkBtn = shrink;
+
+            var grow = new Button
+            {
+                Content = "A+", Width = 26, Height = 22, FontSize = 11,
+                Foreground = Brushes.White,
+                Background = new SolidColorBrush(Color.FromArgb(200, 40, 80, 200)),
+                BorderThickness = new Thickness(0), Cursor = Cursors.Arrow, Padding = new Thickness(0),
+                ToolTip = "Increase font size",
+            };
+            grow.Click += (_, _) => ChangeTextFontSize(element, 2);
+            Panel.SetZIndex(grow, 4);
+            DesignerCanvas.Children.Add(grow);
+            element.GrowBtn = grow;
+
+            var colorBtn = new Button
+            {
+                Width = 22, Height = 22,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(element.Color)),
+                BorderBrush = Brushes.White, BorderThickness = new Thickness(1),
+                Cursor = Cursors.Arrow, Padding = new Thickness(0),
+                ToolTip = "Text color",
+            };
+            colorBtn.Click += (_, _) => PickTextColor(element);
+            Panel.SetZIndex(colorBtn, 4);
+            DesignerCanvas.Children.Add(colorBtn);
+            element.ColorBtn = colorBtn;
+
+            var del = new Button
+            {
+                Content = "×", Width = 22, Height = 22, FontSize = 15,
+                Foreground = Brushes.White,
+                Background = new SolidColorBrush(Color.FromArgb(200, 180, 40, 40)),
+                BorderThickness = new Thickness(0), Cursor = Cursors.Arrow, Padding = new Thickness(0),
+            };
+            del.Click += (_, _) => RemoveTextElement(element);
+            Panel.SetZIndex(del, 4);
+            DesignerCanvas.Children.Add(del);
+            element.DeleteBtn = del;
+
+            var resizeCursors = new[] { Cursors.SizeNWSE, Cursors.SizeNESW, Cursors.SizeNESW, Cursors.SizeNWSE };
+            element.Handles = new Rectangle[4];
+            for (int h = 0; h < 4; h++)
+            {
+                int hi = h;
+                var handle = new Rectangle
+                {
+                    Width = HandleSize, Height = HandleSize,
+                    Fill = Brushes.White,
+                    Stroke = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x44)),
+                    StrokeThickness = 1,
+                    Cursor = resizeCursors[h],
+                };
+                handle.MouseLeftButtonDown += (_, e) => { TextHandle_Down(element, hi, e); e.Handled = true; };
+                handle.MouseMove           += (_, e) => { TextHandle_Move(element, hi, e); e.Handled = true; };
+                handle.MouseLeftButtonUp   += (_, e) => { TextHandle_Up(element, hi);      e.Handled = true; };
+                Panel.SetZIndex(handle, 3);
+                DesignerCanvas.Children.Add(handle);
+                element.Handles[h] = handle;
+            }
+
+            LayoutTextElement(element);
+        }
+
+        private void LayoutTextElement(TextElementControl element)
+        {
+            Canvas.SetLeft(element.Body, element.Left);
+            Canvas.SetTop(element.Body,  element.Top);
+            element.Body.Width  = element.Width;
+            element.Body.Height = element.Height;
+
+            Canvas.SetLeft(element.ShrinkBtn, element.Left + 3);
+            Canvas.SetTop(element.ShrinkBtn,  element.Top  + 3);
+
+            Canvas.SetLeft(element.GrowBtn, element.Left + 3 + 28);
+            Canvas.SetTop(element.GrowBtn,  element.Top  + 3);
+
+            Canvas.SetLeft(element.ColorBtn, element.Left + element.Width - 48);
+            Canvas.SetTop(element.ColorBtn,  element.Top  + 3);
+
+            Canvas.SetLeft(element.DeleteBtn, element.Left + element.Width - 24);
+            Canvas.SetTop(element.DeleteBtn,  element.Top  + 3);
+
+            double hs = HandleSize / 2.0;
+            Canvas.SetLeft(element.Handles[0], element.Left - hs);
+            Canvas.SetTop(element.Handles[0],  element.Top  - hs);
+            Canvas.SetLeft(element.Handles[1], element.Left + element.Width  - hs);
+            Canvas.SetTop(element.Handles[1],  element.Top  - hs);
+            Canvas.SetLeft(element.Handles[2], element.Left - hs);
+            Canvas.SetTop(element.Handles[2],  element.Top  + element.Height - hs);
+            Canvas.SetLeft(element.Handles[3], element.Left + element.Width  - hs);
+            Canvas.SetTop(element.Handles[3],  element.Top  + element.Height - hs);
+        }
+
+        // --- Text drag ---------------------------------------------------------
+
+        private void TextBody_Down(TextElementControl element, MouseButtonEventArgs e)
+        {
+            _draggingText   = element;
+            var pos         = e.GetPosition(DesignerCanvas);
+            _dragOffsetText = new Point(pos.X - element.Left, pos.Y - element.Top);
+            element.Body.CaptureMouse();
+        }
+
+        private void TextBody_Move(TextElementControl element, MouseEventArgs e)
+        {
+            if (_draggingText != element || !element.Body.IsMouseCaptured) return;
+            var pos = e.GetPosition(DesignerCanvas);
+
+            double rawX = Math.Clamp(pos.X - _dragOffsetText.X, 0, CanvasW - element.Width);
+            double rawY = Math.Clamp(pos.Y - _dragOffsetText.Y, 0, CanvasH - element.Height);
+
+            if (_guidelinesVisible)
+            {
+                rawX = Math.Clamp(Math.Round(rawX / GuideStep) * GuideStep, 0, CanvasW - element.Width);
+                rawY = Math.Clamp(Math.Round(rawY / GuideStep) * GuideStep, 0, CanvasH - element.Height);
+            }
+
+            element.Left = rawX;
+            element.Top  = rawY;
+            LayoutTextElement(element);
+        }
+
+        private void TextBody_Up(TextElementControl element)
+        {
+            _draggingText = null;
+            element.Body.ReleaseMouseCapture();
+        }
+
+        // --- Text resize ---------------------------------------------------------
+
+        private void TextHandle_Down(TextElementControl element, int handle, MouseButtonEventArgs e)
+        {
+            _resizingText        = element;
+            _resizeHandleTextIdx = handle;
+            _resizeOriginText    = e.GetPosition(DesignerCanvas);
+            _resizeStartRectText = new Rect(element.Left, element.Top, element.Width, element.Height);
+            element.Handles[handle].CaptureMouse();
+        }
+
+        private void TextHandle_Move(TextElementControl element, int handle, MouseEventArgs e)
+        {
+            if (_resizingText != element || !element.Handles[handle].IsMouseCaptured) return;
+
+            var pos = e.GetPosition(DesignerCanvas);
+            double dx = pos.X - _resizeOriginText.X;
+            double dy = pos.Y - _resizeOriginText.Y;
+
+            var rect = ComputeResizedRect(
+                _resizeStartRectText, handle, dx, dy, MinSlotSize, CanvasW, CanvasH, GuideStep, _guidelinesVisible);
+
+            element.Left   = rect.Left;
+            element.Top    = rect.Top;
+            element.Width  = rect.Width;
+            element.Height = rect.Height;
+            LayoutTextElement(element);
+        }
+
+        private void TextHandle_Up(TextElementControl element, int handle)
+        {
+            _resizingText = null;
+            element.Handles[handle].ReleaseMouseCapture();
+        }
+
+        // --- Shared resize math (used by both slot and text-element handles) -----
+
+        private static Rect ComputeResizedRect(
+            Rect start, int handle, double dx, double dy,
+            double minSize, double canvasW, double canvasH, double guideStep, bool snapToGuides)
+        {
+            double l = start.Left, t = start.Top, ri = start.Right, b = start.Bottom;
+
+            switch (handle)
+            {
+                case 0: l  = Math.Min(start.Left  + dx, start.Right  - minSize); t = Math.Min(start.Top    + dy, start.Bottom - minSize); break;
+                case 1: ri = Math.Max(start.Right + dx, start.Left   + minSize); t = Math.Min(start.Top    + dy, start.Bottom - minSize); break;
+                case 2: l  = Math.Min(start.Left  + dx, start.Right  - minSize); b = Math.Max(start.Bottom + dy, start.Top    + minSize); break;
+                case 3: ri = Math.Max(start.Right + dx, start.Left   + minSize); b = Math.Max(start.Bottom + dy, start.Top    + minSize); break;
+            }
+
+            if (snapToGuides)
+            {
+                switch (handle)
+                {
+                    case 0: l  = Math.Round(l  / guideStep) * guideStep; t = Math.Round(t / guideStep) * guideStep; break;
+                    case 1: ri = Math.Round(ri / guideStep) * guideStep; t = Math.Round(t / guideStep) * guideStep; break;
+                    case 2: l  = Math.Round(l  / guideStep) * guideStep; b = Math.Round(b / guideStep) * guideStep; break;
+                    case 3: ri = Math.Round(ri / guideStep) * guideStep; b = Math.Round(b / guideStep) * guideStep; break;
+                }
+                if (ri - l < minSize) { if (handle is 0 or 2) l = ri - minSize; else ri = l + minSize; }
+                if (b  - t < minSize) { if (handle is 0 or 1) t = b  - minSize; else b  = t + minSize; }
+            }
+
+            double left   = Math.Max(0, l);
+            double top    = Math.Max(0, t);
+            double width  = Math.Min(canvasW, ri) - left;
+            double height = Math.Min(canvasH, b)  - top;
+            return new Rect(left, top, width, height);
+        }
+
+        // --- Text content / color / size / removal --------------------------------
+
+        private void BeginEditText(TextElementControl element)
+        {
+            var textBox = new TextBox
+            {
+                Text          = element.Content,
+                FontSize      = element.Label.FontSize,
+                FontWeight    = FontWeights.Bold,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping  = TextWrapping.Wrap,
+                AcceptsReturn = false,
+                Background    = Brushes.White,
+                Foreground    = Brushes.Black,
+            };
+
+            void Commit()
+            {
+                element.Content    = string.IsNullOrWhiteSpace(textBox.Text) ? "Text" : textBox.Text;
+                element.Label.Text = element.Content;
+                element.Body.Child = element.Label;
+            }
+
+            textBox.LostFocus += (_, _) => Commit();
+            textBox.KeyDown   += (_, e) =>
+            {
+                if (e.Key == Key.Enter) { Commit(); Keyboard.ClearFocus(); }
+            };
+
+            element.Body.Child = textBox;
+            textBox.Focus();
+            textBox.SelectAll();
+        }
+
+        private void ChangeTextFontSize(TextElementControl element, double delta)
+        {
+            element.FontSize       = Math.Clamp(element.FontSize + delta, 8, 96);
+            element.Label.FontSize = Math.Max(1, element.FontSize * CanvasW / PrintStripWidth);
+        }
+
+        private void PickTextColor(TextElementControl element)
+        {
+            var current = (Color)ColorConverter.ConvertFromString(element.Color);
+            var popup   = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+            var picked  = popup.ShowPickedColor();
+            if (picked is null) return;
+
+            element.Color                = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
+            element.Label.Foreground     = new SolidColorBrush(picked.Value);
+            element.ColorBtn.Background  = new SolidColorBrush(picked.Value);
+        }
+
+        private void RemoveTextElement(TextElementControl element)
+        {
+            DesignerCanvas.Children.Remove(element.Body);
+            DesignerCanvas.Children.Remove(element.ShrinkBtn);
+            DesignerCanvas.Children.Remove(element.GrowBtn);
+            DesignerCanvas.Children.Remove(element.ColorBtn);
+            DesignerCanvas.Children.Remove(element.DeleteBtn);
+            foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
+            _textElements.Remove(element);
+            RefreshToolbarState();
+            UpdateStatus();
         }
 
         // --- Zoom ----------------------------------------------------------------
@@ -637,6 +978,18 @@ namespace Photobooth.Views
                 foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             }
             _slots.Clear();
+
+            foreach (var element in _textElements.ToList())
+            {
+                DesignerCanvas.Children.Remove(element.Body);
+                DesignerCanvas.Children.Remove(element.ShrinkBtn);
+                DesignerCanvas.Children.Remove(element.GrowBtn);
+                DesignerCanvas.Children.Remove(element.ColorBtn);
+                DesignerCanvas.Children.Remove(element.DeleteBtn);
+                foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
+            }
+            _textElements.Clear();
+
             TemplateImage.Source  = null;
             _templateBitmapSource = null;
             _hasColor = false;
@@ -653,9 +1006,10 @@ namespace Photobooth.Views
             if (EyedropperButton is null) return;   // fires during InitializeComponent
             bool hasTemplate   = TemplateImage.Source is not null;
             bool eventSelected = _eventSlug is not null;
-            bool hasContent    = hasTemplate || _slots.Count > 0 || _backgroundColor is not null;
+            bool hasContent    = hasTemplate || _slots.Count > 0 || _backgroundColor is not null || _textElements.Count > 0;
 
             AddSlotButton.IsEnabled         = eventSelected && _slots.Count < MaxSlots;
+            AddTextButton.IsEnabled         = eventSelected;
             BackgroundColorButton.IsEnabled = eventSelected;
             SaveButton.IsEnabled            = hasContent;
             ClearButton.IsEnabled           = hasContent;
@@ -832,5 +1186,23 @@ namespace Photobooth.Views
         public double      Width     { get; set; }
         public double      Height    { get; set; }
         public int         Rotation  { get; set; }
+    }
+
+    internal class TextElementControl
+    {
+        public string      Content   { get; set; } = "Text";
+        public string      Color     { get; set; } = "#FFFFFF";
+        public double      FontSize  { get; set; } = 24;
+        public Border      Body      { get; set; } = null!;
+        public TextBlock   Label     { get; set; } = null!;
+        public Button      ShrinkBtn { get; set; } = null!;
+        public Button      GrowBtn   { get; set; } = null!;
+        public Button      ColorBtn  { get; set; } = null!;
+        public Button      DeleteBtn { get; set; } = null!;
+        public Rectangle[] Handles   { get; set; } = Array.Empty<Rectangle>();
+        public double      Left      { get; set; }
+        public double      Top       { get; set; }
+        public double      Width     { get; set; }
+        public double      Height    { get; set; }
     }
 }

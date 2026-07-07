@@ -207,6 +207,21 @@
                         Click="AddSlot_Click"/>
             </StackPanel>
 
+            <!-- TEXT section -->
+            <TextBlock Text="TEXT"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontSize="11" FontWeight="Bold"
+                       Margin="0,18,0,6"/>
+            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,10"/>
+
+            <Button x:Name="AddTextButton"
+                    Content="+ Add Text"
+                    Style="{StaticResource GhostButton}"
+                    Padding="10,7" FontSize="12"
+                    HorizontalAlignment="Stretch"
+                    IsEnabled="False"
+                    Click="AddText_Click"/>
+
             <!-- VIEW section -->
             <TextBlock Text="VIEW"
                        Foreground="{DynamicResource AccentBrush}"
