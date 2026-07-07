@@ -234,21 +234,14 @@
                                             </Border>
                                         </StackPanel>
                                     </Grid>
-                                    <ItemsControl ItemsSource="{Binding Thumbnails}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border CornerRadius="4" ClipToBounds="True" Margin="0,0,5,0">
-                                                    <Image Source="{Binding}" Width="70" Height="52"
-                                                           Stretch="UniformToFill"/>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <Border Width="220" Height="164"
+                                            HorizontalAlignment="Center"
+                                            CornerRadius="10" ClipToBounds="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="14" ShadowDepth="4" Opacity="0.5" Color="Black"/>
+                                        </Border.Effect>
+                                        <Image Source="{Binding HeroThumbnail}" Stretch="UniformToFill"/>
+                                    </Border>
                                 </StackPanel>
                             </Button>
                         </DataTemplate>
@@ -283,24 +276,9 @@
                 </Border>
             </Grid>
 
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="{DynamicResource NavBrush}" CornerRadius="8" ClipToBounds="True">
-                    <Image x:Name="DetailPhoto1" Stretch="Uniform"/>
-                </Border>
-                <Border Grid.Column="2" Background="{DynamicResource NavBrush}" CornerRadius="8" ClipToBounds="True">
-                    <Image x:Name="DetailPhoto2" Stretch="Uniform"/>
-                </Border>
-                <Border Grid.Column="4" Background="{DynamicResource NavBrush}" CornerRadius="8" ClipToBounds="True">
-                    <Image x:Name="DetailPhoto3" Stretch="Uniform"/>
-                </Border>
-            </Grid>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <UniformGrid x:Name="DetailPhotosPanel" Columns="3"/>
+            </ScrollViewer>
 
             <!-- AI-enhanced tray — hidden when no enhanced images exist -->
             <Border x:Name="EnhancedTray"

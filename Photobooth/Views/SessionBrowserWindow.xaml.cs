@@ -29,7 +29,7 @@ namespace Photobooth.Views
             public string PhotoLabel  { get; init; } = "";
             public int    PrintCount  { get; init; }
             public string PrintLabel  { get; init; } = "";
-            public List<System.Windows.Media.ImageSource> Thumbnails    { get; init; } = new();
+            public System.Windows.Media.ImageSource? HeroThumbnail  { get; init; }
             public List<string>                           PhotoPaths    { get; init; } = new();
             public List<VariantRowItem>                   VariantRows   { get; init; } = new();
         }
@@ -82,14 +82,13 @@ namespace Photobooth.Views
                         .Select(p => p.FilePath!)
                         .ToList();
 
-                    var thumbs = paths.Select(path =>
+                    // Card shows only the first photo, decoded larger since it's the only one shown.
+                    System.Windows.Media.ImageSource? hero = null;
+                    if (paths.Count > 0)
                     {
-                        try { return (System.Windows.Media.ImageSource?)BitmapHelper.LoadThumbnail(path, fallbackDecodeWidth: 150); }
-                        catch { return null; }
-                    })
-                    .Where(b => b != null)
-                    .Cast<System.Windows.Media.ImageSource>()
-                    .ToList();
+                        try { hero = BitmapHelper.LoadThumbnail(paths[0], fallbackDecodeWidth: 320); }
+                        catch { /* leave null */ }
+                    }
 
                     var styleIds = ordered
                         .SelectMany(p => p.EnhancedVariants)
@@ -134,7 +133,7 @@ namespace Photobooth.Views
                         PhotoLabel  = $"{n} photo{(n == 1 ? "" : "s")}",
                         PrintCount  = p,
                         PrintLabel  = p == 0 ? "Not printed" : $"{p} print{(p == 1 ? "" : "s")}",
-                        Thumbnails  = thumbs,
+                        HeroThumbnail  = hero,
                         PhotoPaths  = paths,
                         VariantRows = variantRows,
                     };
@@ -244,21 +243,37 @@ namespace Photobooth.Views
             EnhancedTray.BorderBrush       = (System.Windows.Media.Brush)FindResource("AccentBrush");
         }
 
+        private readonly List<Image> _detailPhotos = new();
+
+        private void BuildDetailPhotosPanel(int count)
+        {
+            DetailPhotosPanel.Children.Clear();
+            _detailPhotos.Clear();
+            DetailPhotosPanel.Columns = Math.Max(1, Math.Min(count, 3));
+
+            for (int i = 0; i < count; i++)
+            {
+                var image = new Image { Stretch = System.Windows.Media.Stretch.Uniform };
+                DetailPhotosPanel.Children.Add(new Border
+                {
+                    Background   = (System.Windows.Media.Brush)FindResource("NavBrush"),
+                    CornerRadius = new CornerRadius(8),
+                    ClipToBounds = true,
+                    Margin       = new Thickness(6),
+                    Child        = image,
+                });
+                _detailPhotos.Add(image);
+            }
+        }
+
         private void LoadDetailPhotos(List<string> paths)
         {
-            _ = Task.WhenAll(
-                LoadDetailPhotoAsync(DetailPhoto1, paths, 0),
-                LoadDetailPhotoAsync(DetailPhoto2, paths, 1),
-                LoadDetailPhotoAsync(DetailPhoto3, paths, 2));
+            BuildDetailPhotosPanel(paths.Count);
+            _ = Task.WhenAll(paths.Select((_, i) => LoadDetailPhotoAsync(_detailPhotos[i], paths, i)));
         }
 
         private async Task LoadDetailPhotoAsync(Image target, List<string> paths, int index)
         {
-            if (index >= paths.Count)
-            {
-                target.Source = null;
-                return;
-            }
             try
             {
                 var source = await Task.Run(() => BitmapHelper.LoadFromFile(paths[index], decodeWidth: 800));
