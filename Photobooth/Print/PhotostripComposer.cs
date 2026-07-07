@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using Photobooth.Data.Models;
 using Serilog;
 
@@ -104,77 +105,138 @@ namespace Photobooth.Print
         // --- Template-based composition ------------------------------------------
 
         public static Bitmap ComposeFromTemplate(
-            string templatePath,
+            string? templatePath,
             IReadOnlyList<StripSlotDefinition> slots,
-            IReadOnlyList<string> photoPaths)
+            IReadOnlyList<string> photoPaths,
+            string? backgroundColor = null,
+            IReadOnlyList<TextElementDefinition>? textElements = null)
         {
-            using var template = Image.FromFile(templatePath);
+            Image? template = templatePath is not null && File.Exists(templatePath)
+                ? Image.FromFile(templatePath)
+                : null;
 
-            // Step 1 — compose a single strip at the template's native resolution
-            using var single = new Bitmap(template.Width, template.Height, PixelFormat.Format32bppArgb);
-            single.SetResolution(template.HorizontalResolution, template.VerticalResolution);
-
-            using (var g = Graphics.FromImage(single))
+            try
             {
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.SmoothingMode     = SmoothingMode.HighQuality;
-                g.PixelOffsetMode   = PixelOffsetMode.HighQuality;
+                int singleW = template?.Width  ?? StripW;
+                int singleH = template?.Height ?? CanvasH;
 
-                // Photos behind so the template frame overlays them
-                foreach (var slot in slots)
+                // Step 1 — compose a single strip at the template's native resolution (or the default size)
+                using var single = new Bitmap(singleW, singleH, PixelFormat.Format32bppArgb);
+                single.SetResolution(
+                    template?.HorizontalResolution ?? 300,
+                    template?.VerticalResolution   ?? 300);
+
+                using (var g = Graphics.FromImage(single))
                 {
-                    int photoIndex = slot.Index - 1;
-                    if (photoIndex < 0 || photoIndex >= photoPaths.Count) continue;
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.SmoothingMode     = SmoothingMode.HighQuality;
+                    g.PixelOffsetMode   = PixelOffsetMode.HighQuality;
 
-                    var slotRect = new Rectangle(
-                        (int)(slot.X      * template.Width),
-                        (int)(slot.Y      * template.Height),
-                        (int)(slot.Width  * template.Width),
-                        (int)(slot.Height * template.Height));
-
-                    try
+                    if (!string.IsNullOrEmpty(backgroundColor))
                     {
-                        using var photo = Image.FromFile(photoPaths[photoIndex]);
-
-                        Bitmap? rotated = null;
-                        Image   drawPhoto = photo;
-                        if (slot.Rotation != 0)
+                        try
                         {
-                            rotated   = RotateBitmap((Bitmap)photo, slot.Rotation);
-                            drawPhoto = rotated;
+                            using var bgBrush = new SolidBrush(ColorTranslator.FromHtml(backgroundColor));
+                            g.FillRectangle(bgBrush, 0, 0, singleW, singleH);
                         }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex, "Invalid background color '{Color}' — skipping fill", backgroundColor);
+                        }
+                    }
+
+                    // Photos behind so the template frame overlays them
+                    foreach (var slot in slots)
+                    {
+                        int photoIndex = slot.Index - 1;
+                        if (photoIndex < 0 || photoIndex >= photoPaths.Count) continue;
+
+                        var slotRect = new Rectangle(
+                            (int)(slot.X      * singleW),
+                            (int)(slot.Y      * singleH),
+                            (int)(slot.Width  * singleW),
+                            (int)(slot.Height * singleH));
 
                         try
                         {
-                            g.SetClip(slotRect);
-                            g.DrawImage(drawPhoto, FillRect(drawPhoto.Width, drawPhoto.Height, slotRect));
-                            g.ResetClip();
+                            using var photo = Image.FromFile(photoPaths[photoIndex]);
+
+                            Bitmap? rotated = null;
+                            Image   drawPhoto = photo;
+                            if (slot.Rotation != 0)
+                            {
+                                rotated   = RotateBitmap((Bitmap)photo, slot.Rotation);
+                                drawPhoto = rotated;
+                            }
+
+                            try
+                            {
+                                g.SetClip(slotRect);
+                                g.DrawImage(drawPhoto, FillRect(drawPhoto.Width, drawPhoto.Height, slotRect));
+                                g.ResetClip();
+                            }
+                            finally
+                            {
+                                rotated?.Dispose();
+                            }
                         }
-                        finally
+                        catch (Exception ex)
                         {
-                            rotated?.Dispose();
+                            Log.Warning(ex, "Could not load photo {Index} for template composition", slot.Index);
                         }
                     }
-                    catch (Exception ex)
+
+                    // Template frame on top, if provided
+                    if (template is not null)
+                        g.DrawImage(template, 0, 0, singleW, singleH);
+
+                    // Text elements on top of everything
+                    if (textElements is not null)
                     {
-                        Log.Warning(ex, "Could not load photo {Index} for template composition", slot.Index);
+                        foreach (var text in textElements)
+                        {
+                            var textRect = new RectangleF(
+                                (float)(text.X      * singleW),
+                                (float)(text.Y      * singleH),
+                                (float)(text.Width  * singleW),
+                                (float)(text.Height * singleH));
+
+                            try
+                            {
+                                using var font      = new Font("Arial", (float)text.FontSize, FontStyle.Bold, GraphicsUnit.Point);
+                                using var textBrush = new SolidBrush(ColorTranslator.FromHtml(text.Color));
+                                var sf = new StringFormat
+                                {
+                                    Alignment     = StringAlignment.Center,
+                                    LineAlignment = StringAlignment.Center,
+                                };
+                                g.DrawString(text.Content, font, textBrush, textRect, sf);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Warning(ex, "Could not render text element '{Content}'", text.Content);
+                            }
+                        }
                     }
                 }
 
-                // Template frame on top
-                g.DrawImage(template, 0, 0, template.Width, template.Height);
+                // Step 2 — duplicate side by side so the DNP 2-inch cut produces two identical strips
+                var canvas = new Bitmap(singleW * 2, singleH, PixelFormat.Format32bppArgb);
+                canvas.SetResolution(
+                    template?.HorizontalResolution ?? 300,
+                    template?.VerticalResolution   ?? 300);
+
+                using var gc = Graphics.FromImage(canvas);
+                gc.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                gc.DrawImage(single, 0,       0);
+                gc.DrawImage(single, singleW, 0);
+
+                return canvas;
             }
-
-            // Step 2 — duplicate side by side so the DNP 2-inch cut produces two identical strips
-            var canvas = new Bitmap(template.Width * 2, template.Height, PixelFormat.Format32bppArgb);
-            canvas.SetResolution(template.HorizontalResolution, template.VerticalResolution);
-
-            using var gc = Graphics.FromImage(canvas);
-            gc.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            gc.DrawImage(single, 0,              0);
-            gc.DrawImage(single, template.Width, 0);
-
-            return canvas;
+            finally
+            {
+                template?.Dispose();
+            }
         }
 
         internal static Rectangle FillRect(int imgW, int imgH, Rectangle slot)

@@ -1,4 +1,9 @@
+using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using Photobooth.Data.Models;
 using Photobooth.Print;
 using Xunit;
 
@@ -95,5 +100,100 @@ public sealed class PhotostripComposerTests
         using var result = PhotostripComposer.RotateBitmap(bmp, 0);
         Assert.Equal(100, result.Width);
         Assert.Equal(50,  result.Height);
+    }
+
+    // --- ComposeFromTemplate ---
+
+    private static string CreateTempPhoto(Color fill)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.png");
+        using var bmp = new Bitmap(80, 80, PixelFormat.Format24bppRgb);
+        using (var g = Graphics.FromImage(bmp))
+            g.Clear(fill);
+        bmp.Save(path, ImageFormat.Png);
+        return path;
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(6)]
+    public void ComposeFromTemplate_NoFrameImage_ProducesDefaultSizedCanvasForAnySlotCount(int slotCount)
+    {
+        var photoPaths = Enumerable.Range(0, slotCount).Select(_ => CreateTempPhoto(Color.Blue)).ToList();
+        try
+        {
+            var slots = Enumerable.Range(1, slotCount).Select(i => new StripSlotDefinition
+            {
+                Index  = i,
+                X      = 0.1,
+                Y      = (i - 1) * (1.0 / slotCount),
+                Width  = 0.8,
+                Height = 1.0 / slotCount,
+            }).ToList();
+
+            using var result = PhotostripComposer.ComposeFromTemplate(null, slots, photoPaths);
+
+            Assert.Equal(1240, result.Width);   // StripW (620) * 2
+            Assert.Equal(1844, result.Height);  // CanvasH
+        }
+        finally
+        {
+            foreach (var p in photoPaths) File.Delete(p);
+        }
+    }
+
+    [Fact]
+    public void ComposeFromTemplate_BackgroundColor_FillsAreaOutsideSlots()
+    {
+        var slots = new List<StripSlotDefinition>
+        {
+            new() { Index = 1, X = 0.1, Y = 0.1, Width = 0.3, Height = 0.3 },
+        };
+        var photoPath = CreateTempPhoto(Color.Blue);
+        try
+        {
+            using var result = PhotostripComposer.ComposeFromTemplate(
+                null, slots, new[] { photoPath }, backgroundColor: "#00FF00");
+
+            var pixel = result.GetPixel(600, 1800); // bottom-right area, outside the slot box
+            Assert.Equal(Color.FromArgb(255, 0, 255, 0).ToArgb(), pixel.ToArgb());
+        }
+        finally
+        {
+            File.Delete(photoPath);
+        }
+    }
+
+    [Fact]
+    public void ComposeFromTemplate_TextElement_DrawsVisiblePixelsInItsBox()
+    {
+        var slots = new List<StripSlotDefinition>
+        {
+            new() { Index = 1, X = 0.1, Y = 0.1, Width = 0.3, Height = 0.3 },
+        };
+        var textElements = new List<TextElementDefinition>
+        {
+            new() { Content = "HELLO", X = 0.0, Y = 0.85, Width = 1.0, Height = 0.1, Color = "#FFFFFF", FontSize = 24 },
+        };
+        var photoPath = CreateTempPhoto(Color.Blue);
+        try
+        {
+            using var result = PhotostripComposer.ComposeFromTemplate(
+                null, slots, new[] { photoPath }, backgroundColor: "#000000", textElements: textElements);
+
+            int y0 = (int)(0.85 * 1844), y1 = (int)(0.95 * 1844);
+            bool foundNonBackground = false;
+            for (int x = 0; x < 620 && !foundNonBackground; x += 4)
+            for (int y = y0; y < y1 && !foundNonBackground; y += 4)
+                if (result.GetPixel(x, y).ToArgb() != Color.Black.ToArgb())
+                    foundNonBackground = true;
+
+            Assert.True(foundNonBackground, "Expected the text element to draw visible pixels in its box");
+        }
+        finally
+        {
+            File.Delete(photoPath);
+        }
     }
 }
