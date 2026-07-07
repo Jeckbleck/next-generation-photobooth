@@ -165,12 +165,12 @@ namespace Photobooth.Views
             if (_slots.Count >= MaxSlots) return;
             int nextIndex = Enumerable.Range(1, MaxSlots).First(i => _slots.All(s => s.Index != i));
 
-            // New slots default to a 3:4 (portrait photo) box, centered, all starting in the
-            // same spot so they stack on top of one another rather than auto-arranging down
-            // the canvas — the operator drags each apart afterward. The most recently added
-            // slot renders on top, so it's always the one immediately grabbable.
+            // New slots default to a 3:2 landscape box, centered, all starting in the same
+            // spot so they stack on top of one another rather than auto-arranging down the
+            // canvas — the operator drags each apart afterward. The most recently added slot
+            // renders on top, so it's always the one immediately grabbable.
             const double width = 0.80;
-            double height = width * (CanvasW / CanvasH) * (4.0 / 3.0);
+            double height = width * (CanvasW / CanvasH) * (2.0 / 3.0);
 
             CreateSlot(new StripSlotDefinition
             {

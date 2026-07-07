@@ -1,0 +1,61 @@
+  Determining projects to restore...
+D:\repota\next-generation-photobooth\Photobooth.Tests\Photobooth.Tests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [D:\repota\next-generation-photobooth\NextGenerationPhotobooth.sln]
+D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [D:\repota\next-generation-photobooth\NextGenerationPhotobooth.sln]
+  All projects are up-to-date for restore.
+D:\repota\next-generation-photobooth\Photobooth.Tests\Photobooth.Tests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1190,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1202,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1214,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1225,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1237,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1249,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1259,31): warning CS8601: Possible null reference assignment. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1286,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1297,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1350,40): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1190,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1202,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1214,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1225,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1237,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1249,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1259,31): warning CS8601: Possible null reference assignment. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1286,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1297,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1350,40): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+  Photobooth -> D:\repota\next-generation-photobooth\Photobooth\bin\Debug\net10.0-windows\Photobooth.dll
+  Photobooth.Tests -> D:\repota\next-generation-photobooth\Photobooth.Tests\bin\Debug\net10.0-windows\Photobooth.Tests.dll
+
+Build succeeded.
+
+D:\repota\next-generation-photobooth\Photobooth.Tests\Photobooth.Tests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [D:\repota\next-generation-photobooth\NextGenerationPhotobooth.sln]
+D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [D:\repota\next-generation-photobooth\NextGenerationPhotobooth.sln]
+D:\repota\next-generation-photobooth\Photobooth.Tests\Photobooth.Tests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1190,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1202,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1214,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1225,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1237,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1249,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1259,31): warning CS8601: Possible null reference assignment. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1286,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1297,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1350,40): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth_xtpuojcg_wpftmp.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1190,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1202,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1214,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1225,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1237,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1249,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1259,31): warning CS8601: Possible null reference assignment. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1286,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1297,31): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+D:\repota\next-generation-photobooth\Photobooth\Camera\EDSDKLib\EDSDK.cs(1350,40): warning CS8605: Unboxing a possibly null value. [D:\repota\next-generation-photobooth\Photobooth\Photobooth.csproj]
+    25 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:09.71
