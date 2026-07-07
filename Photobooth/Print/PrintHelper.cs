@@ -24,33 +24,35 @@ namespace Photobooth.Print
         // --- Template config -----------------------------------------------------
 
         /// <summary>
-        /// Reads the event's photostrip template path and slot definitions.
-        /// Returns (null, empty) if the event has no template or the files are missing.
+        /// Reads the event's saved strip template (slots, background color, text elements).
+        /// Returns null if the event has never saved a template.json (or it has zero slots) —
+        /// callers should fall back to the legacy default layout in that case.
         /// </summary>
-        public static (string? templatePath, List<StripSlotDefinition> slots) LoadTemplateConfig(int eventId)
+        public static StripTemplateConfig? LoadTemplateConfig(int eventId, out string? templateImagePath)
         {
+            templateImagePath = null;
+
             var events = App.Services.GetRequiredService<IEventService>();
             var ev = events.GetById(eventId);
-            if (ev is null) return (null, new());
+            if (ev is null) return null;
 
-            var templatePath = ev.PhotostripTemplatePath;
-            if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
-                return (null, new());
+            if (!string.IsNullOrEmpty(ev.PhotostripTemplatePath) && File.Exists(ev.PhotostripTemplatePath))
+                templateImagePath = ev.PhotostripTemplatePath;
 
             var fileStorage = App.Services.GetRequiredService<IFileStorageService>();
             var jsonPath = Path.Combine(fileStorage.GetStripTemplatePath(ev.Slug), "template.json");
-            if (!File.Exists(jsonPath)) return (null, new());
+            if (!File.Exists(jsonPath)) return null;
 
             try
             {
                 var config = JsonSerializer.Deserialize<StripTemplateConfig>(File.ReadAllText(jsonPath));
-                if (config is null || config.Slots.Count == 0) return (null, new());
-                return (templatePath, config.Slots);
+                if (config is null || config.Slots.Count == 0) return null;
+                return config;
             }
             catch (Exception ex)
             {
                 Log.Warning(ex, "Could not read strip template config for event {Id}", eventId);
-                return (null, new());
+                return null;
             }
         }
 
@@ -58,17 +60,18 @@ namespace Photobooth.Print
 
         /// <summary>
         /// Composes the strip bitmap on a background thread.
-        /// Uses the event's custom template when available; falls back to the default layout.
+        /// Uses the event's saved template when available; falls back to the default layout.
         /// The caller is responsible for disposing the returned <see cref="Bitmap"/>.
         /// </summary>
         public static Task<Bitmap> ComposeStripAsync(int eventId, IReadOnlyList<string> photoPaths)
         {
-            (string? templatePath, List<StripSlotDefinition> slots) = LoadTemplateConfig(eventId);
+            var config = LoadTemplateConfig(eventId, out var templateImagePath);
             var branding = App.Services.GetRequiredService<SettingsManager>().BrandingText;
 
             return Task.Run(() =>
-                templatePath is not null && slots.Count > 0
-                    ? PhotostripComposer.ComposeFromTemplate(templatePath, slots, photoPaths)
+                config is not null
+                    ? PhotostripComposer.ComposeFromTemplate(
+                        templateImagePath, config.Slots, photoPaths, config.BackgroundColor, config.TextElements)
                     : PhotostripComposer.Compose(photoPaths, branding));
         }
 
