@@ -24,7 +24,7 @@ namespace Photobooth.Views
     {
         private const double CanvasW     = 150;
         private const double CanvasH     = 450;
-        private const int    MaxSlots    = 3;
+        private const int    MaxSlots    = 6;
         private const double HandleSize  = 12;
         private const double MinSlotSize = 40;
         private const double ZoomStep    = 0.25;
@@ -615,10 +615,12 @@ namespace Photobooth.Views
         private void RefreshToolbarState()
         {
             if (EyedropperButton is null) return;   // fires during InitializeComponent
-            bool hasTemplate = TemplateImage.Source is not null;
-            AddSlotButton.IsEnabled = hasTemplate && _slots.Count < MaxSlots;
-            SaveButton.IsEnabled    = hasTemplate || _slots.Count > 0;
-            ClearButton.IsEnabled   = hasTemplate || _slots.Count > 0;
+            bool hasTemplate   = TemplateImage.Source is not null;
+            bool eventSelected = _eventSlug is not null;
+
+            AddSlotButton.IsEnabled     = eventSelected && _slots.Count < MaxSlots;
+            SaveButton.IsEnabled       = hasTemplate || _slots.Count > 0;
+            ClearButton.IsEnabled      = hasTemplate || _slots.Count > 0;
             EyedropperButton.IsEnabled = hasTemplate && _autoDetectMode;
             ToleranceSlider.IsEnabled  = hasTemplate && _autoDetectMode && _hasColor;
             DetectButton.IsEnabled     = hasTemplate && _autoDetectMode && _hasColor;
@@ -631,13 +633,13 @@ namespace Photobooth.Views
                 StatusText.Text = "Select an event to use the strip designer.";
                 return;
             }
-            if (TemplateImage.Source is null)
-            {
-                StatusText.Text = "Upload a template PNG to get started.";
-                return;
-            }
             if (_slots.Count == 0)
             {
+                if (_autoDetectMode && TemplateImage.Source is null)
+                {
+                    StatusText.Text = "Upload a template PNG to auto-detect slots, or switch to Manual to add slots without one.";
+                    return;
+                }
                 StatusText.Text = _autoDetectMode
                     ? "Pick a color with the eyedropper, then click Detect Slots."
                     : "Click '+ Add Slot' to place photo slots manually.";
@@ -645,7 +647,7 @@ namespace Photobooth.Views
             }
             StatusText.Text = _slots.Count < MaxSlots
                 ? $"{_slots.Count} of {MaxSlots} slots placed — add more or Save."
-                : "All 3 slots placed. ↻ to rotate. Drag to reposition, corners to resize.";
+                : $"All {MaxSlots} slots placed. ↻ to rotate. Drag to reposition, corners to resize.";
         }
 
         private string JsonPath() => Path.Combine(_templateDir!, "template.json");
