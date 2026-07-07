@@ -61,6 +61,7 @@ namespace Photobooth.Views
         private bool _eyedropperActive;
         private bool _hasColor;
         private Color _sampledColor;
+        private string? _backgroundColor;
 
         public StripDesignerControl()
         {
@@ -100,6 +101,9 @@ namespace Photobooth.Views
 
                 foreach (var def in config.Slots.OrderBy(s => s.Index))
                     CreateSlot(def);
+
+                if (!string.IsNullOrEmpty(config.BackgroundColor))
+                    ApplyBackgroundColor(config.BackgroundColor);
 
                 UpdateStatus();
             }
@@ -169,6 +173,7 @@ namespace Photobooth.Views
                         Height   = s.Height   / CanvasH,
                         Rotation = s.Rotation,
                     }).OrderBy(s => s.Index).ToList(),
+                    BackgroundColor = _backgroundColor,
                 };
 
                 File.WriteAllText(JsonPath(),
@@ -192,6 +197,36 @@ namespace Photobooth.Views
             if (_eventId.HasValue)
                 App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, null);
 
+            UpdateStatus();
+        }
+
+        private void BackgroundColor_Click(object sender, RoutedEventArgs e)
+        {
+            var current = _backgroundColor is not null
+                ? (Color)ColorConverter.ConvertFromString(_backgroundColor)
+                : Colors.White;
+            var popup  = new ColorPickerPopup(current) { Owner = Window.GetWindow(this) };
+            var picked = popup.ShowPickedColor();
+            if (picked is null) return;
+
+            ApplyBackgroundColor($"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+        }
+
+        private void ClearBackgroundColor_Click(object sender, RoutedEventArgs e) =>
+            ApplyBackgroundColor(null);
+
+        private void ApplyBackgroundColor(string? hex)
+        {
+            _backgroundColor = hex;
+            DesignerCanvas.Background = hex is not null
+                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex))
+                : Brushes.Transparent;
+
+            BackgroundColorSwatch.Background      = DesignerCanvas.Background;
+            BackgroundColorSwatch.Visibility      = hex is not null ? Visibility.Visible : Visibility.Collapsed;
+            ClearBackgroundColorButton.Visibility = hex is not null ? Visibility.Visible : Visibility.Collapsed;
+
+            RefreshToolbarState();
             UpdateStatus();
         }
 
@@ -609,6 +644,7 @@ namespace Photobooth.Views
             ColorSwatch.Background = System.Windows.Media.Brushes.Transparent;
             ColorSwatch.Visibility = Visibility.Collapsed;
             DesignerCanvas.Cursor  = Cursors.Arrow;
+            ApplyBackgroundColor(null);
             RefreshToolbarState();
         }
 
@@ -617,13 +653,15 @@ namespace Photobooth.Views
             if (EyedropperButton is null) return;   // fires during InitializeComponent
             bool hasTemplate   = TemplateImage.Source is not null;
             bool eventSelected = _eventSlug is not null;
+            bool hasContent    = hasTemplate || _slots.Count > 0 || _backgroundColor is not null;
 
-            AddSlotButton.IsEnabled     = eventSelected && _slots.Count < MaxSlots;
-            SaveButton.IsEnabled       = hasTemplate || _slots.Count > 0;
-            ClearButton.IsEnabled      = hasTemplate || _slots.Count > 0;
-            EyedropperButton.IsEnabled = hasTemplate && _autoDetectMode;
-            ToleranceSlider.IsEnabled  = hasTemplate && _autoDetectMode && _hasColor;
-            DetectButton.IsEnabled     = hasTemplate && _autoDetectMode && _hasColor;
+            AddSlotButton.IsEnabled         = eventSelected && _slots.Count < MaxSlots;
+            BackgroundColorButton.IsEnabled = eventSelected;
+            SaveButton.IsEnabled            = hasContent;
+            ClearButton.IsEnabled           = hasContent;
+            EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode;
+            ToleranceSlider.IsEnabled       = hasTemplate && _autoDetectMode && _hasColor;
+            DetectButton.IsEnabled          = hasTemplate && _autoDetectMode && _hasColor;
         }
 
         private void UpdateStatus()
