@@ -11,20 +11,21 @@ public static class TemplateSegmenter
         Bitmap template,
         Color  sampledColor,
         int    tolerance       = 15,
-        double minAreaFraction = 0.005)
+        double minAreaFraction = 0.005,
+        int    expandPixels    = 0)
     {
         int W = template.Width;
         int H = template.Height;
         int minPixels = Math.Max(1, (int)(W * H * minAreaFraction));
 
-        // Lock pixels into a flat byte array for fast access.
-        // Format32bppArgb in memory: [B, G, R, A] per pixel.
+        byte[] pixels;
+        int stride;
         var bd = template.LockBits(
             new Rectangle(0, 0, W, H),
             ImageLockMode.ReadOnly,
             PixelFormat.Format32bppArgb);
-        int stride = Math.Abs(bd.Stride);
-        byte[] pixels = new byte[stride * H];
+        stride = Math.Abs(bd.Stride);
+        pixels = new byte[stride * H];
         try
         {
             Marshal.Copy(bd.Scan0, pixels, 0, pixels.Length);
@@ -35,6 +36,8 @@ public static class TemplateSegmenter
         }
 
         byte tR = sampledColor.R, tG = sampledColor.G, tB = sampledColor.B;
+        var mask = BuildMask(pixels, stride, W, H, tR, tG, tB, tolerance);
+
         bool[] visited = new bool[W * H];
         var regions = new List<(int count, int minX, int minY, int maxX, int maxY)>();
 
@@ -45,12 +48,7 @@ public static class TemplateSegmenter
         for (int x = 0; x < W; x++)
         {
             int idx = y * W + x;
-            if (visited[idx]) continue;
-
-            int off = y * stride + x * 4;
-            // off+2=R, off+1=G, off+0=B (Format32bppArgb byte order)
-            if (!IsMatch(pixels[off + 2], pixels[off + 1], pixels[off], tR, tG, tB, tolerance))
-                continue;
+            if (visited[idx] || !mask[idx]) continue;
 
             var queue = new Queue<int>();
             queue.Enqueue(idx);
@@ -72,10 +70,7 @@ public static class TemplateSegmenter
                     int nx = cx + dx[d], ny = cy + dy[d];
                     if ((uint)nx >= (uint)W || (uint)ny >= (uint)H) continue;
                     int nIdx = ny * W + nx;
-                    if (visited[nIdx]) continue;
-                    int nOff = ny * stride + nx * 4;
-                    if (!IsMatch(pixels[nOff + 2], pixels[nOff + 1], pixels[nOff], tR, tG, tB, tolerance))
-                        continue;
+                    if (visited[nIdx] || !mask[nIdx]) continue;
                     visited[nIdx] = true;
                     queue.Enqueue(nIdx);
                 }
@@ -87,16 +82,126 @@ public static class TemplateSegmenter
 
         return regions
             .OrderBy(r => r.minY)
-            .Select((r, i) => new StripSlotDefinition
+            .Select((r, i) =>
             {
-                Index    = i + 1,
-                X        = (double)r.minX / W,
-                Y        = (double)r.minY / H,
-                Width    = (double)(r.maxX - r.minX + 1) / W,
-                Height   = (double)(r.maxY - r.minY + 1) / H,
-                Rotation = 0,
+                int ex0 = Math.Max(0,     r.minX - expandPixels);
+                int ey0 = Math.Max(0,     r.minY - expandPixels);
+                int ex1 = Math.Min(W - 1, r.maxX + expandPixels);
+                int ey1 = Math.Min(H - 1, r.maxY + expandPixels);
+                return new StripSlotDefinition
+                {
+                    Index    = i + 1,
+                    X        = (double)ex0 / W,
+                    Y        = (double)ey0 / H,
+                    Width    = (double)(ex1 - ex0 + 1) / W,
+                    Height   = (double)(ey1 - ey0 + 1) / H,
+                    Rotation = 0,
+                };
             })
             .ToList();
+    }
+
+    // Returns a copy of the template with every pixel matching sampledColor (within
+    // tolerance, then grown by dilatePixels) made fully transparent, so the photo
+    // underneath shows through where the operator marked a photo window with a flat
+    // placeholder color.
+    public static Bitmap PunchTransparency(Bitmap template, Color sampledColor, int tolerance, int dilatePixels = 0)
+    {
+        int W = template.Width;
+        int H = template.Height;
+
+        var result = new Bitmap(W, H, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(result))
+            g.DrawImage(template, 0, 0, W, H);
+
+        var bd = result.LockBits(
+            new Rectangle(0, 0, W, H),
+            ImageLockMode.ReadWrite,
+            PixelFormat.Format32bppArgb);
+        int stride = Math.Abs(bd.Stride);
+        byte[] pixels = new byte[stride * H];
+        try
+        {
+            Marshal.Copy(bd.Scan0, pixels, 0, pixels.Length);
+
+            byte tR = sampledColor.R, tG = sampledColor.G, tB = sampledColor.B;
+            var mask = BuildMask(pixels, stride, W, H, tR, tG, tB, tolerance);
+            if (dilatePixels > 0)
+                mask = Dilate(mask, W, H, dilatePixels);
+
+            for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+            {
+                if (mask[y * W + x])
+                    pixels[y * stride + x * 4 + 3] = 0;
+            }
+
+            Marshal.Copy(pixels, 0, bd.Scan0, pixels.Length);
+        }
+        finally
+        {
+            result.UnlockBits(bd);
+        }
+
+        return result;
+    }
+
+    // Builds a per-pixel bool mask of "is this pixel within tolerance of sampledColor".
+    // Shared by Detect (connected-component search) and PunchTransparency (alpha zeroing)
+    // so both operate on identical color-matching logic.
+    private static bool[] BuildMask(byte[] pixels, int stride, int W, int H,
+        byte tR, byte tG, byte tB, int tolerance)
+    {
+        var mask = new bool[W * H];
+        for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+        {
+            int off = y * stride + x * 4;
+            mask[y * W + x] = IsMatch(pixels[off + 2], pixels[off + 1], pixels[off], tR, tG, tB, tolerance);
+        }
+        return mask;
+    }
+
+    // Grows a bool mask outward by `radius` pixels in every direction (Chebyshev/square
+    // dilation) using two separable O(W*H) passes — horizontal nearest-true-neighbor scan,
+    // then the same scan applied vertically to the horizontal result — instead of an
+    // O(W*H*radius^2) naive per-pixel neighborhood check.
+    private static bool[] Dilate(bool[] mask, int W, int H, int radius)
+    {
+        var horiz = new bool[W * H];
+        for (int y = 0; y < H; y++)
+        {
+            int lastTrue = int.MinValue / 2;
+            for (int x = 0; x < W; x++)
+            {
+                if (mask[y * W + x]) lastTrue = x;
+                if (x - lastTrue <= radius) horiz[y * W + x] = true;
+            }
+            lastTrue = int.MaxValue / 2;
+            for (int x = W - 1; x >= 0; x--)
+            {
+                if (mask[y * W + x]) lastTrue = x;
+                if (lastTrue - x <= radius) horiz[y * W + x] = true;
+            }
+        }
+
+        var result = new bool[W * H];
+        for (int x = 0; x < W; x++)
+        {
+            int lastTrue = int.MinValue / 2;
+            for (int y = 0; y < H; y++)
+            {
+                if (horiz[y * W + x]) lastTrue = y;
+                if (y - lastTrue <= radius) result[y * W + x] = true;
+            }
+            lastTrue = int.MaxValue / 2;
+            for (int y = H - 1; y >= 0; y--)
+            {
+                if (horiz[y * W + x]) lastTrue = y;
+                if (lastTrue - y <= radius) result[y * W + x] = true;
+            }
+        }
+        return result;
     }
 
     private static bool IsMatch(byte r, byte g, byte b, byte tR, byte tG, byte tB, int tolerance)
