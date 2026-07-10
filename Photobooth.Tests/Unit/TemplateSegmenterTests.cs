@@ -110,17 +110,36 @@ public class TemplateSegmenterTests
     }
 
     [Fact]
-    public void Detect_ExpandPixels_ClampsAtImageEdges()
+    public void Detect_ExpandPixels_ClampsAtNearEdge()
     {
-        // 10x10 fill touching the top-left corner -> expanding by 20 must clamp at 0, not go negative
+        // 5x5 fill near (not at) the top-left corner: x:3-7, y:3-7 on a 50x50 canvas.
+        // expandPixels=10 would put minX-10=-7 if unclamped; the clamp must floor it at 0.
+        // (A stub that ignores expandPixels entirely would report X = 3/50 = 0.06, not 0.0 —
+        // this is what makes the assertion below actually prove the clamp fired.)
         using var bmp = MakeBitmap(50, 50, Color.White,
-            (new Rectangle(0, 0, 10, 10), Color.Green));
+            (new Rectangle(3, 3, 5, 5), Color.Green));
 
-        var expanded = TemplateSegmenter.Detect(bmp, Color.Green, tolerance: 0, expandPixels: 20);
+        var expanded = TemplateSegmenter.Detect(bmp, Color.Green, tolerance: 0, expandPixels: 10);
 
         Assert.Single(expanded);
         Assert.Equal(0.0, expanded[0].X, 3);
         Assert.Equal(0.0, expanded[0].Y, 3);
+    }
+
+    [Fact]
+    public void Detect_ExpandPixels_ClampsAtFarEdge()
+    {
+        // 10x10 fill touching the bottom-right corner: x:40-49, y:40-49 on a 50x50 canvas.
+        // expandPixels=20 would push maxX/maxY to 69 if unclamped, putting X+Width past 1.0;
+        // the clamp must cap the far edge at W-1/H-1 so the box never exceeds the canvas.
+        using var bmp = MakeBitmap(50, 50, Color.White,
+            (new Rectangle(40, 40, 10, 10), Color.Green));
+
+        var expanded = TemplateSegmenter.Detect(bmp, Color.Green, tolerance: 0, expandPixels: 20);
+
+        Assert.Single(expanded);
+        Assert.Equal(1.0, expanded[0].X + expanded[0].Width, 3);
+        Assert.Equal(1.0, expanded[0].Y + expanded[0].Height, 3);
     }
 
     [Fact]
