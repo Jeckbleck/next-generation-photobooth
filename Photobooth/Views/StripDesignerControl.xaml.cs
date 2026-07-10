@@ -1180,6 +1180,7 @@ namespace Photobooth.Views
             int tolerance    = (int)ToleranceSlider.Value;
             int edgeMargin   = (int)EdgeMarginSlider.Value;
             int photoOverlap = (int)PhotoOverlapSlider.Value;
+            edgeMargin       = Math.Min(edgeMargin, photoOverlap);
             using var bmp = ToBitmap(_templateBitmapSource);
             var drawingColor = System.Drawing.Color.FromArgb(
                 _sampledColor.A, _sampledColor.R, _sampledColor.G, _sampledColor.B);
@@ -1205,14 +1206,18 @@ namespace Photobooth.Views
                         App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, punchedPath);
 
                     Log.Information("Punched transparent photo windows into strip template for '{Slug}'", _eventSlug);
+                    _detectedOnce = true;
                 }
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "Failed to punch transparency into strip template for '{Slug}'", _eventSlug);
                 }
             }
+            else
+            {
+                _detectedOnce = true;
+            }
 
-            _detectedOnce = true;
             RefreshToolbarState();
             UpdateStatus();
         }

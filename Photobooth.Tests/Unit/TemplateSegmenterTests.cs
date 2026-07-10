@@ -170,4 +170,44 @@ public class TemplateSegmenterTests
 
         Assert.Equal(255, punched.GetPixel(10, 7).A);
     }
+
+    [Fact]
+    public void Detect_And_PunchTransparency_SlotFullyCoversPunchedHole_WhenOverlapAtLeastMargin()
+    {
+        // Mirrors the strip-designer defaults: Photo Overlap (expandPixels) >= Edge Margin
+        // (dilatePixels) so the photo slot always fully covers the punched-transparent hole,
+        // with no visible background halo between the photo and the surrounding frame.
+        const int W = 100, H = 100;
+        const int expandPixels = 6;
+        const int dilatePixels = 3;
+
+        using var bmp = MakeBitmap(W, H, Color.White,
+            (new Rectangle(30, 30, 40, 40), Color.Green));
+
+        var slots = TemplateSegmenter.Detect(bmp, Color.Green, tolerance: 0, expandPixels: expandPixels);
+        Assert.Single(slots);
+        int slotMinX = (int)Math.Round(slots[0].X * W);
+        int slotMinY = (int)Math.Round(slots[0].Y * H);
+        int slotMaxX = slotMinX + (int)Math.Round(slots[0].Width  * W) - 1;
+        int slotMaxY = slotMinY + (int)Math.Round(slots[0].Height * H) - 1;
+
+        using var punched = TemplateSegmenter.PunchTransparency(bmp, Color.Green, tolerance: 0, dilatePixels: dilatePixels);
+        int holeMinX = W, holeMinY = H, holeMaxX = -1, holeMaxY = -1;
+        for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+        {
+            if (punched.GetPixel(x, y).A == 0)
+            {
+                if (x < holeMinX) holeMinX = x;
+                if (x > holeMaxX) holeMaxX = x;
+                if (y < holeMinY) holeMinY = y;
+                if (y > holeMaxY) holeMaxY = y;
+            }
+        }
+
+        Assert.True(slotMinX <= holeMinX, $"slot left {slotMinX} must be <= hole left {holeMinX}");
+        Assert.True(slotMinY <= holeMinY, $"slot top {slotMinY} must be <= hole top {holeMinY}");
+        Assert.True(slotMaxX >= holeMaxX, $"slot right {slotMaxX} must be >= hole right {holeMaxX}");
+        Assert.True(slotMaxY >= holeMaxY, $"slot bottom {slotMaxY} must be >= hole bottom {holeMaxY}");
+    }
 }
