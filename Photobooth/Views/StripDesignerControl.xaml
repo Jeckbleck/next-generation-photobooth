@@ -187,6 +187,36 @@
                         IsEnabled="False"
                         Margin="0,0,0,8"
                         ValueChanged="ToleranceSlider_ValueChanged"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="Edge Margin"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBlock x:Name="EdgeMarginLabel"
+                               Text="3"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Slider x:Name="EdgeMarginSlider"
+                        Minimum="0" Maximum="10" Value="3"
+                        IsEnabled="False"
+                        Margin="0,0,0,8"
+                        ValueChanged="EdgeMarginSlider_ValueChanged"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="Photo Overlap"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBlock x:Name="PhotoOverlapLabel"
+                               Text="6"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Slider x:Name="PhotoOverlapSlider"
+                        Minimum="0" Maximum="15" Value="6"
+                        IsEnabled="False"
+                        Margin="0,0,0,8"
+                        ValueChanged="PhotoOverlapSlider_ValueChanged"/>
                 <Button x:Name="DetectButton"
                         Content="Detect Slots"
                         Style="{StaticResource GhostButton}"

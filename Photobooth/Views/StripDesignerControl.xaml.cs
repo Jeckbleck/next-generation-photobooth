@@ -76,6 +76,7 @@ namespace Photobooth.Views
         private bool _autoDetectMode = true;
         private bool _eyedropperActive;
         private bool _hasColor;
+        private bool _detectedOnce;
         private Color _sampledColor;
         private string? _backgroundColor;
 
@@ -146,6 +147,7 @@ namespace Photobooth.Views
             try
             {
                 LoadTemplateImage(dlg.FileName);
+                _detectedOnce = false;
 
                 if (_eventId.HasValue)
                     App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, dlg.FileName);
@@ -966,8 +968,9 @@ namespace Photobooth.Views
         {
             var bmp = new BitmapImage();
             bmp.BeginInit();
-            bmp.UriSource   = new Uri(path);
-            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            bmp.UriSource     = new Uri(path);
+            bmp.CacheOption   = BitmapCacheOption.OnLoad;
+            bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
             bmp.EndInit();
             bmp.Freeze();
             TemplateImage.Source  = bmp;
@@ -1000,6 +1003,7 @@ namespace Photobooth.Views
             TemplateImage.Source  = null;
             _templateBitmapSource = null;
             _hasColor = false;
+            _detectedOnce = false;
             _eyedropperActive = false;
             ColorSwatch.Background = System.Windows.Media.Brushes.Transparent;
             ColorSwatch.Visibility = Visibility.Collapsed;
@@ -1020,9 +1024,13 @@ namespace Photobooth.Views
             BackgroundColorButton.IsEnabled = eventSelected;
             SaveButton.IsEnabled            = hasContent;
             ClearButton.IsEnabled           = hasContent;
+            bool colorPicked   = hasTemplate && _autoDetectMode && _hasColor;
+
             EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode;
-            ToleranceSlider.IsEnabled       = hasTemplate && _autoDetectMode && _hasColor;
-            DetectButton.IsEnabled          = hasTemplate && _autoDetectMode && _hasColor;
+            ToleranceSlider.IsEnabled       = colorPicked;
+            EdgeMarginSlider.IsEnabled      = colorPicked;
+            PhotoOverlapSlider.IsEnabled    = colorPicked;
+            DetectButton.IsEnabled          = colorPicked && !_detectedOnce;
         }
 
         private void UpdateStatus()
@@ -1143,6 +1151,18 @@ namespace Photobooth.Views
                 ToleranceLabel.Text = ((int)ToleranceSlider.Value).ToString();
         }
 
+        private void EdgeMarginSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (EdgeMarginLabel != null)
+                EdgeMarginLabel.Text = ((int)EdgeMarginSlider.Value).ToString();
+        }
+
+        private void PhotoOverlapSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (PhotoOverlapLabel != null)
+                PhotoOverlapLabel.Text = ((int)PhotoOverlapSlider.Value).ToString();
+        }
+
         private void Detect_Click(object sender, RoutedEventArgs e)
         {
             if (_templateBitmapSource == null || !_hasColor) return;
@@ -1157,15 +1177,42 @@ namespace Photobooth.Views
             }
             _slots.Clear();
 
-            int tolerance = (int)ToleranceSlider.Value;
+            int tolerance    = (int)ToleranceSlider.Value;
+            int edgeMargin   = (int)EdgeMarginSlider.Value;
+            int photoOverlap = (int)PhotoOverlapSlider.Value;
             using var bmp = ToBitmap(_templateBitmapSource);
             var drawingColor = System.Drawing.Color.FromArgb(
                 _sampledColor.A, _sampledColor.R, _sampledColor.G, _sampledColor.B);
-            var defs = TemplateSegmenter.Detect(bmp, drawingColor, tolerance);
+            var defs = TemplateSegmenter.Detect(bmp, drawingColor, tolerance, expandPixels: photoOverlap);
 
             foreach (var def in defs)
                 CreateSlot(def);
 
+            // The detected color marks a photo window, but the uploaded frame is a flat,
+            // fully-opaque PNG — drawn on top of the photos at print time it would hide
+            // them completely. Punch the matched pixels to real transparency and save that
+            // as the frame actually used for preview and printing, instead of the raw upload.
+            if (_templateDir is not null)
+            {
+                try
+                {
+                    using var punched = TemplateSegmenter.PunchTransparency(bmp, drawingColor, tolerance, dilatePixels: edgeMargin);
+                    var punchedPath = Path.Combine(_templateDir, "frame-detected.png");
+                    punched.Save(punchedPath, System.Drawing.Imaging.ImageFormat.Png);
+
+                    LoadTemplateImage(punchedPath);
+                    if (_eventId.HasValue)
+                        App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, punchedPath);
+
+                    Log.Information("Punched transparent photo windows into strip template for '{Slug}'", _eventSlug);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to punch transparency into strip template for '{Slug}'", _eventSlug);
+                }
+            }
+
+            _detectedOnce = true;
             RefreshToolbarState();
             UpdateStatus();
         }
