@@ -129,17 +129,20 @@ public class TemplateSegmenterTests
     [Fact]
     public void Detect_ExpandPixels_ClampsAtFarEdge()
     {
-        // 10x10 fill touching the bottom-right corner: x:40-49, y:40-49 on a 50x50 canvas.
-        // expandPixels=20 would push maxX/maxY to 69 if unclamped, putting X+Width past 1.0;
-        // the clamp must cap the far edge at W-1/H-1 so the box never exceeds the canvas.
+        // 5x5 fill near (not touching) the bottom-right edge: x:35-39, y:35-39 on a 50x50 canvas.
+        // expandPixels=15 keeps the near side unclamped (35-15=20 >= 0), so this test isolates
+        // only the far-edge clamp: unclamped, maxX+15=54 would push Width to 0.7; the clamp
+        // must cap it at W-1=49, yielding Width=0.6 instead.
         using var bmp = MakeBitmap(50, 50, Color.White,
-            (new Rectangle(40, 40, 10, 10), Color.Green));
+            (new Rectangle(35, 35, 5, 5), Color.Green));
 
-        var expanded = TemplateSegmenter.Detect(bmp, Color.Green, tolerance: 0, expandPixels: 20);
+        var expanded = TemplateSegmenter.Detect(bmp, Color.Green, tolerance: 0, expandPixels: 15);
 
         Assert.Single(expanded);
-        Assert.Equal(1.0, expanded[0].X + expanded[0].Width, 3);
-        Assert.Equal(1.0, expanded[0].Y + expanded[0].Height, 3);
+        Assert.Equal(0.4, expanded[0].X,      3);
+        Assert.Equal(0.6, expanded[0].Width,  3);
+        Assert.Equal(0.4, expanded[0].Y,      3);
+        Assert.Equal(0.6, expanded[0].Height, 3);
     }
 
     [Fact]
