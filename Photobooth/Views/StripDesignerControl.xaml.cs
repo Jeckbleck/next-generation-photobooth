@@ -84,6 +84,10 @@ namespace Photobooth.Views
         private bool _autoDetectBusy;
         private Color _sampledColor;
         private string? _backgroundColor;
+        // Reset only in LoadForEvent (fresh session) and Clear_Click (hard reset).
+        // Do NOT add a reset inside ClearCanvas() itself — LoadForEvent and Clear_Click
+        // both call ClearCanvas(), and Clear_Click needs history wiped by its own explicit
+        // call, not silently by a shared helper another caller might use differently later.
         private readonly UndoRedoStack<StripTemplateConfig> _history = new();
 
         public StripDesignerControl()
@@ -271,6 +275,7 @@ namespace Photobooth.Views
 
         private void PersistCurrentState()
         {
+            RefreshToolbarState();
             if (_templateDir is null) return;
             try
             {
@@ -285,7 +290,11 @@ namespace Photobooth.Views
 
         private void Clear_Click(object sender, RoutedEventArgs e)
         {
-            _history.Push(CaptureConfig());
+            // Clear is a hard reset, not an undoable step — undoing a Clear would restore
+            // slots/text/background from template.json while the DB's template-path
+            // reference (also nulled here) stays cleared, leaving the two out of sync.
+            // Wiping history instead avoids that divergence entirely.
+            _history.Clear();
             ClearCanvas();
             UploadButton.IsEnabled = _eventSlug is not null;
 
