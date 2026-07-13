@@ -74,6 +74,9 @@ namespace Photobooth.Views
         private Point  _panStart;
         private double _panHOrig, _panVOrig;
         private BitmapSource? _templateBitmapSource;
+        // NEVER assign a punched/processed bitmap here. Detection correctness — and
+        // immunity to the old frame-erosion bug (repeated Detect degrading the frame) —
+        // depends on this always being the untouched upload, restored fresh from disk.
         private BitmapSource? _originalBitmapSource;
         private bool _autoDetectMode = true;
         private bool _eyedropperActive;
@@ -166,14 +169,17 @@ namespace Photobooth.Views
 
             try
             {
-                LoadTemplateImage(dlg.FileName);
-
                 if (_templateDir is not null)
                 {
+                    foreach (var stale in Directory.GetFiles(_templateDir, "template-original.*"))
+                        File.Delete(stale);
+
                     var originalPath = Path.Combine(_templateDir, "template-original" + Path.GetExtension(dlg.FileName));
                     File.Copy(dlg.FileName, originalPath, overwrite: true);
                     LoadOriginalTemplate(originalPath);
                 }
+
+                LoadTemplateImage(dlg.FileName);
 
                 if (_eventId.HasValue)
                     App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, dlg.FileName);
@@ -1155,7 +1161,7 @@ namespace Photobooth.Views
             return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
         }
 
-        // --- Detect Slots ---------------------------------------------------------
+        // --- Auto-detect -----------------------------------------------------------
 
         private static System.Drawing.Bitmap ToBitmap(BitmapSource source)
         {
