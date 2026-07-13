@@ -77,8 +77,13 @@ public class UndoRedoStackTests
     {
         var stack = new UndoRedoStack<string>();
         stack.Push("state-1");
-        stack.Undo("state-2");
+        stack.Push("state-2");
+        stack.Undo("state-3");
+        Assert.True(stack.CanUndo);   // "state-1" is still on the undo stack
+        Assert.True(stack.CanRedo);   // "state-3" is now on the redo stack
+
         stack.Clear();
+
         Assert.False(stack.CanUndo);
         Assert.False(stack.CanRedo);
     }
