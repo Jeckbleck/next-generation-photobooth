@@ -78,14 +78,27 @@
                     Margin="0,0,0,6"
                     Click="Upload_Click"/>
 
-            <Button x:Name="SaveButton"
-                    Content="Save"
-                    Style="{StaticResource GhostButton}"
-                    Padding="10,7" FontSize="12"
-                    HorizontalAlignment="Stretch"
-                    Margin="0,0,0,6"
-                    IsEnabled="False"
-                    Click="Save_Click"/>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="UndoButton"
+                        Grid.Column="0"
+                        Content="Undo"
+                        Style="{StaticResource GhostButton}"
+                        Padding="10,7" FontSize="12"
+                        IsEnabled="False"
+                        Click="Undo_Click"/>
+                <Button x:Name="RedoButton"
+                        Grid.Column="2"
+                        Content="Redo"
+                        Style="{StaticResource GhostButton}"
+                        Padding="10,7" FontSize="12"
+                        IsEnabled="False"
+                        Click="Redo_Click"/>
+            </Grid>
 
             <Button x:Name="ClearButton"
                     Content="Clear All"

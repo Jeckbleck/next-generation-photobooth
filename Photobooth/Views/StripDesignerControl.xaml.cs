@@ -84,6 +84,7 @@ namespace Photobooth.Views
         private bool _autoDetectBusy;
         private Color _sampledColor;
         private string? _backgroundColor;
+        private readonly UndoRedoStack<StripTemplateConfig> _history = new();
 
         public StripDesignerControl()
         {
@@ -111,6 +112,7 @@ namespace Photobooth.Views
             _eventId     = eventId;
             _eventSlug   = slug;
             _templateDir = templateDir;
+            _history.Clear();
             ClearCanvas();
 
             if (slug is null || templateDir is null)
@@ -139,15 +141,7 @@ namespace Photobooth.Views
                 var config = JsonSerializer.Deserialize<StripTemplateConfig>(File.ReadAllText(jsonPath));
                 if (config is null) return;
 
-                foreach (var def in config.Slots.OrderBy(s => s.Index))
-                    CreateSlot(def);
-
-                foreach (var def in config.TextElements)
-                    CreateTextElement(def);
-
-                if (!string.IsNullOrEmpty(config.BackgroundColor))
-                    ApplyBackgroundColor(config.BackgroundColor);
-
+                ApplyConfig(config);
                 UpdateStatus();
             }
             catch (Exception ex)
@@ -199,6 +193,8 @@ namespace Photobooth.Views
             if (_slots.Count >= MaxSlots) return;
             int nextIndex = Enumerable.Range(1, MaxSlots).First(i => _slots.All(s => s.Index != i));
 
+            _history.Push(CaptureConfig());
+
             // New slots default to a 3:2 landscape box, centered, all starting in the same
             // spot so they stack on top of one another rather than auto-arranging down the
             // canvas — the operator drags each apart afterward. The most recently added slot
@@ -214,59 +210,89 @@ namespace Photobooth.Views
                 Width  = width,
                 Height = height,
             });
+            PersistCurrentState();
             UpdateStatus();
         }
 
-        private void Save_Click(object sender, RoutedEventArgs e)
+        private StripTemplateConfig CaptureConfig() => new StripTemplateConfig
+        {
+            Slots = _slots.Select(s => new StripSlotDefinition
+            {
+                Index    = s.Index,
+                X        = s.Left     / CanvasW,
+                Y        = s.Top      / CanvasH,
+                Width    = s.Width    / CanvasW,
+                Height   = s.Height   / CanvasH,
+                Rotation = s.Rotation,
+            }).OrderBy(s => s.Index).ToList(),
+            BackgroundColor = _backgroundColor,
+            TextElements = _textElements.Select(t => new TextElementDefinition
+            {
+                Content  = t.Content,
+                X        = t.Left     / CanvasW,
+                Y        = t.Top      / CanvasH,
+                Width    = t.Width    / CanvasW,
+                Height   = t.Height   / CanvasH,
+                Color    = t.Color,
+                FontSize = t.FontSize,
+            }).ToList(),
+        };
+
+        private void ApplyConfig(StripTemplateConfig config)
+        {
+            foreach (var slot in _slots.ToList())
+            {
+                DesignerCanvas.Children.Remove(slot.Body);
+                DesignerCanvas.Children.Remove(slot.RotateBtn);
+                DesignerCanvas.Children.Remove(slot.DeleteBtn);
+                foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
+            }
+            _slots.Clear();
+
+            foreach (var element in _textElements.ToList())
+            {
+                DesignerCanvas.Children.Remove(element.Body);
+                DesignerCanvas.Children.Remove(element.ShrinkBtn);
+                DesignerCanvas.Children.Remove(element.GrowBtn);
+                DesignerCanvas.Children.Remove(element.ColorBtn);
+                DesignerCanvas.Children.Remove(element.DeleteBtn);
+                foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
+            }
+            _textElements.Clear();
+
+            foreach (var def in config.Slots.OrderBy(s => s.Index))
+                CreateSlot(def);
+
+            foreach (var def in config.TextElements)
+                CreateTextElement(def);
+
+            ApplyBackgroundColor(config.BackgroundColor);
+        }
+
+        private void PersistCurrentState()
         {
             if (_templateDir is null) return;
             try
             {
-                var config = new StripTemplateConfig
-                {
-                    Slots = _slots.Select(s => new StripSlotDefinition
-                    {
-                        Index    = s.Index,
-                        X        = s.Left     / CanvasW,
-                        Y        = s.Top      / CanvasH,
-                        Width    = s.Width    / CanvasW,
-                        Height   = s.Height   / CanvasH,
-                        Rotation = s.Rotation,
-                    }).OrderBy(s => s.Index).ToList(),
-                    BackgroundColor = _backgroundColor,
-                    TextElements = _textElements.Select(t => new TextElementDefinition
-                    {
-                        Content  = t.Content,
-                        X        = t.Left     / CanvasW,
-                        Y        = t.Top      / CanvasH,
-                        Width    = t.Width    / CanvasW,
-                        Height   = t.Height   / CanvasH,
-                        Color    = t.Color,
-                        FontSize = t.FontSize,
-                    }).ToList(),
-                };
-
                 File.WriteAllText(JsonPath(),
-                    JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
-
-                StatusText.Text = "Saved.";
-                Log.Information("Strip template saved for event '{Slug}'", _eventSlug);
+                    JsonSerializer.Serialize(CaptureConfig(), new JsonSerializerOptions { WriteIndented = true }));
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to save strip template config");
-                StatusText.Text = "Save failed.";
+                Log.Warning(ex, "Failed to auto-save strip template config for '{Slug}'", _eventSlug);
             }
         }
 
         private void Clear_Click(object sender, RoutedEventArgs e)
         {
+            _history.Push(CaptureConfig());
             ClearCanvas();
             UploadButton.IsEnabled = _eventSlug is not null;
 
             if (_eventId.HasValue)
                 App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, null);
 
+            PersistCurrentState();
             UpdateStatus();
         }
 
@@ -279,11 +305,17 @@ namespace Photobooth.Views
             var picked = popup.ShowPickedColor();
             if (picked is null) return;
 
+            _history.Push(CaptureConfig());
             ApplyBackgroundColor($"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+            PersistCurrentState();
         }
 
-        private void ClearBackgroundColor_Click(object sender, RoutedEventArgs e) =>
+        private void ClearBackgroundColor_Click(object sender, RoutedEventArgs e)
+        {
+            _history.Push(CaptureConfig());
             ApplyBackgroundColor(null);
+            PersistCurrentState();
+        }
 
         private void ApplyBackgroundColor(string? hex)
         {
@@ -494,8 +526,10 @@ namespace Photobooth.Views
 
         private void RotateSlot(SlotControl slot)
         {
+            _history.Push(CaptureConfig());
             slot.Rotation = (slot.Rotation + 90) % 360;
             ((RotateTransform)slot.Body.RenderTransform).Angle = slot.Rotation;
+            PersistCurrentState();
             Log.Debug("Slot {Index} rotated to {Deg}°", slot.Index, slot.Rotation);
         }
 
@@ -503,6 +537,7 @@ namespace Photobooth.Views
 
         private void SlotBody_Down(SlotControl slot, MouseButtonEventArgs e)
         {
+            _history.Push(CaptureConfig());
             _dragging   = slot;
             var pos     = e.GetPosition(DesignerCanvas);
             _dragOffset = new Point(pos.X - slot.Left, pos.Y - slot.Top);
@@ -532,12 +567,14 @@ namespace Photobooth.Views
         {
             _dragging = null;
             slot.Body.ReleaseMouseCapture();
+            PersistCurrentState();
         }
 
         // --- Resize --------------------------------------------------------------
 
         private void Handle_Down(SlotControl slot, int handle, MouseButtonEventArgs e)
         {
+            _history.Push(CaptureConfig());
             _resizing        = slot;
             _resizeHandle    = handle;
             _resizeOrigin    = e.GetPosition(DesignerCanvas);
@@ -567,12 +604,14 @@ namespace Photobooth.Views
         {
             _resizing = null;
             slot.Handles[handle].ReleaseMouseCapture();
+            PersistCurrentState();
         }
 
         // --- Text element creation ------------------------------------------------
 
         private void AddText_Click(object sender, RoutedEventArgs e)
         {
+            _history.Push(CaptureConfig());
             CreateTextElement(new TextElementDefinition
             {
                 Content  = "Text",
@@ -583,6 +622,7 @@ namespace Photobooth.Views
                 Color    = "#FFFFFF",
                 FontSize = 24,
             });
+            PersistCurrentState();
             UpdateStatus();
         }
 
@@ -749,6 +789,7 @@ namespace Photobooth.Views
 
         private void TextBody_Down(TextElementControl element, MouseButtonEventArgs e)
         {
+            _history.Push(CaptureConfig());
             _draggingText   = element;
             var pos         = e.GetPosition(DesignerCanvas);
             _dragOffsetText = new Point(pos.X - element.Left, pos.Y - element.Top);
@@ -778,12 +819,14 @@ namespace Photobooth.Views
         {
             _draggingText = null;
             element.Body.ReleaseMouseCapture();
+            PersistCurrentState();
         }
 
         // --- Text resize ---------------------------------------------------------
 
         private void TextHandle_Down(TextElementControl element, int handle, MouseButtonEventArgs e)
         {
+            _history.Push(CaptureConfig());
             _resizingText        = element;
             _resizeHandleTextIdx = handle;
             _resizeOriginText    = e.GetPosition(DesignerCanvas);
@@ -813,6 +856,7 @@ namespace Photobooth.Views
         {
             _resizingText = null;
             element.Handles[handle].ReleaseMouseCapture();
+            PersistCurrentState();
         }
 
         // --- Shared resize math (used by both slot and text-element handles) -----
@@ -855,6 +899,8 @@ namespace Photobooth.Views
 
         private void BeginEditText(TextElementControl element)
         {
+            _history.Push(CaptureConfig());
+
             var textBox = new TextBox
             {
                 Text          = element.Content,
@@ -872,6 +918,7 @@ namespace Photobooth.Views
                 element.Content    = string.IsNullOrWhiteSpace(textBox.Text) ? "Text" : textBox.Text;
                 element.Label.Text = element.Content;
                 element.Body.Child = element.Label;
+                PersistCurrentState();
             }
 
             textBox.LostFocus += (_, _) => Commit();
@@ -887,8 +934,10 @@ namespace Photobooth.Views
 
         private void ChangeTextFontSize(TextElementControl element, double delta)
         {
+            _history.Push(CaptureConfig());
             element.FontSize       = Math.Clamp(element.FontSize + delta, 8, 96);
             element.Label.FontSize = Math.Max(1, element.FontSize * CanvasW / PrintStripWidth);
+            PersistCurrentState();
         }
 
         private void PickTextColor(TextElementControl element)
@@ -898,13 +947,16 @@ namespace Photobooth.Views
             var picked  = popup.ShowPickedColor();
             if (picked is null) return;
 
+            _history.Push(CaptureConfig());
             element.Color                = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
             element.Label.Foreground     = new SolidColorBrush(picked.Value);
             element.ColorBtn.Background  = new SolidColorBrush(picked.Value);
+            PersistCurrentState();
         }
 
         private void RemoveTextElement(TextElementControl element)
         {
+            _history.Push(CaptureConfig());
             DesignerCanvas.Children.Remove(element.Body);
             DesignerCanvas.Children.Remove(element.ShrinkBtn);
             DesignerCanvas.Children.Remove(element.GrowBtn);
@@ -913,6 +965,7 @@ namespace Photobooth.Views
             foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
             _textElements.Remove(element);
             RefreshToolbarState();
+            PersistCurrentState();
             UpdateStatus();
         }
 
@@ -987,12 +1040,14 @@ namespace Photobooth.Views
 
         private void RemoveSlot(SlotControl slot)
         {
+            _history.Push(CaptureConfig());
             DesignerCanvas.Children.Remove(slot.Body);
             DesignerCanvas.Children.Remove(slot.RotateBtn);
             DesignerCanvas.Children.Remove(slot.DeleteBtn);
             foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             _slots.Remove(slot);
             RefreshToolbarState();
+            PersistCurrentState();
             UpdateStatus();
         }
 
@@ -1066,7 +1121,8 @@ namespace Photobooth.Views
             AddSlotButton.IsEnabled         = eventSelected && _slots.Count < MaxSlots;
             AddTextButton.IsEnabled         = eventSelected;
             BackgroundColorButton.IsEnabled = eventSelected;
-            SaveButton.IsEnabled            = hasContent;
+            UndoButton.IsEnabled            = _history.CanUndo;
+            RedoButton.IsEnabled            = _history.CanRedo;
             ClearButton.IsEnabled           = hasContent;
             EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode && !_autoDetectBusy;
             ToleranceSlider.IsEnabled       = colorPicked && !_autoDetectBusy;
@@ -1094,7 +1150,7 @@ namespace Photobooth.Views
                 return;
             }
             StatusText.Text = _slots.Count < MaxSlots
-                ? $"{_slots.Count} of {MaxSlots} slots placed — add more or Save."
+                ? $"{_slots.Count} of {MaxSlots} slots placed — add more as needed."
                 : $"All {MaxSlots} slots placed. ↻ to rotate. Drag to reposition, corners to resize.";
         }
 
@@ -1215,6 +1271,7 @@ namespace Photobooth.Views
                 return;
             }
 
+            _history.Push(CaptureConfig());
             _autoDetectBusy = true;
             RefreshToolbarState();
             try
@@ -1267,7 +1324,28 @@ namespace Photobooth.Views
                 _autoDetectBusy = false;
                 RefreshToolbarState();
                 UpdateStatus();
+                PersistCurrentState();
             }
+        }
+
+        private void Undo_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_history.CanUndo) return;
+            var restored = _history.Undo(CaptureConfig());
+            ApplyConfig(restored);
+            PersistCurrentState();
+            RefreshToolbarState();
+            UpdateStatus();
+        }
+
+        private void Redo_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_history.CanRedo) return;
+            var restored = _history.Redo(CaptureConfig());
+            ApplyConfig(restored);
+            PersistCurrentState();
+            RefreshToolbarState();
+            UpdateStatus();
         }
 
         private void SlotModeTab_Changed(object sender, RoutedEventArgs e)
