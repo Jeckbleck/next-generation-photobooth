@@ -210,4 +210,21 @@ public class TemplateSegmenterTests
         Assert.True(slotMaxX >= holeMaxX, $"slot right {slotMaxX} must be >= hole right {holeMaxX}");
         Assert.True(slotMaxY >= holeMaxY, $"slot bottom {slotMaxY} must be >= hole bottom {holeMaxY}");
     }
+
+    [Fact]
+    public void PunchTransparency_IgnoresStraySubThresholdColorMatches()
+    {
+        // 100x100 canvas: a real 40x40 background rectangle at (10,10)-(49,49) — 1600px,
+        // well above the default 0.5% threshold (100*100*0.005 = 50px) — plus a stray 2x2
+        // green patch at (80,80)-(81,81) — 4px, well below threshold — simulating a small
+        // color-matching detail like a letter or logo edge that happens to share the color.
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(10, 10, 40, 40), Color.Green),
+            (new Rectangle(80, 80, 2, 2), Color.Green));
+
+        using var punched = TemplateSegmenter.PunchTransparency(bmp, Color.Green, tolerance: 0);
+
+        Assert.Equal(0,   punched.GetPixel(30, 30).A);   // inside the large qualifying rectangle -> punched
+        Assert.Equal(255, punched.GetPixel(80, 80).A);   // the tiny stray patch -> left opaque
+    }
 }

@@ -37,48 +37,7 @@ public static class TemplateSegmenter
 
         byte tR = sampledColor.R, tG = sampledColor.G, tB = sampledColor.B;
         var mask = BuildMask(pixels, stride, W, H, tR, tG, tB, tolerance);
-
-        bool[] visited = new bool[W * H];
-        var regions = new List<(int count, int minX, int minY, int maxX, int maxY)>();
-
-        int[] dx = { -1, 1,  0, 0 };
-        int[] dy = {  0, 0, -1, 1 };
-
-        for (int y = 0; y < H; y++)
-        for (int x = 0; x < W; x++)
-        {
-            int idx = y * W + x;
-            if (visited[idx] || !mask[idx]) continue;
-
-            var queue = new Queue<int>();
-            queue.Enqueue(idx);
-            visited[idx] = true;
-
-            int count = 0, minX = x, minY = y, maxX = x, maxY = y;
-
-            while (queue.Count > 0)
-            {
-                int cur = queue.Dequeue();
-                int cx  = cur % W;
-                int cy  = cur / W;
-                count++;
-                if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
-                if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
-
-                for (int d = 0; d < 4; d++)
-                {
-                    int nx = cx + dx[d], ny = cy + dy[d];
-                    if ((uint)nx >= (uint)W || (uint)ny >= (uint)H) continue;
-                    int nIdx = ny * W + nx;
-                    if (visited[nIdx] || !mask[nIdx]) continue;
-                    visited[nIdx] = true;
-                    queue.Enqueue(nIdx);
-                }
-            }
-
-            if (count >= minPixels)
-                regions.Add((count, minX, minY, maxX, maxY));
-        }
+        var (regions, _) = FindQualifyingRegions(mask, W, H, minPixels);
 
         return regions
             .OrderBy(r => r.minY)
@@ -101,14 +60,22 @@ public static class TemplateSegmenter
             .ToList();
     }
 
-    // Returns a copy of the template with every pixel matching sampledColor (within
-    // tolerance, then grown by dilatePixels) made fully transparent, so the photo
-    // underneath shows through where the operator marked a photo window with a flat
-    // placeholder color.
-    public static Bitmap PunchTransparency(Bitmap template, Color sampledColor, int tolerance, int dilatePixels = 0)
+    // Returns a copy of the template with every pixel belonging to a large-enough
+    // (minAreaFraction-qualifying) connected region matching sampledColor — grown by
+    // dilatePixels — made fully transparent, so the photo underneath shows through where
+    // the operator marked a photo window with a flat placeholder color. Small stray color
+    // matches (e.g. a letter or logo edge that happens to be a similar color) never qualify
+    // as a region and are left untouched, instead of being punched transparent too.
+    public static Bitmap PunchTransparency(
+        Bitmap template,
+        Color  sampledColor,
+        int    tolerance,
+        int    dilatePixels    = 0,
+        double minAreaFraction = 0.005)
     {
         int W = template.Width;
         int H = template.Height;
+        int minPixels = Math.Max(1, (int)(W * H * minAreaFraction));
 
         var result = new Bitmap(W, H, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(result))
@@ -125,14 +92,15 @@ public static class TemplateSegmenter
             Marshal.Copy(bd.Scan0, pixels, 0, pixels.Length);
 
             byte tR = sampledColor.R, tG = sampledColor.G, tB = sampledColor.B;
-            var mask = BuildMask(pixels, stride, W, H, tR, tG, tB, tolerance);
-            if (dilatePixels > 0)
-                mask = Dilate(mask, W, H, dilatePixels);
+            var colorMask = BuildMask(pixels, stride, W, H, tR, tG, tB, tolerance);
+            var (_, regionMask) = FindQualifyingRegions(colorMask, W, H, minPixels);
+
+            var punchMask = dilatePixels > 0 ? Dilate(regionMask, W, H, dilatePixels) : regionMask;
 
             for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++)
             {
-                if (mask[y * W + x])
+                if (punchMask[y * W + x])
                     pixels[y * stride + x * 4 + 3] = 0;
             }
 
@@ -160,6 +128,65 @@ public static class TemplateSegmenter
             mask[y * W + x] = IsMatch(pixels[off + 2], pixels[off + 1], pixels[off], tR, tG, tB, tolerance);
         }
         return mask;
+    }
+
+    // Runs 4-connected BFS over a color-match mask and returns only the components whose
+    // pixel count meets minPixels — both as bounding-box regions (for Detect's slot
+    // placement) and as a flattened per-pixel mask covering every pixel of every qualifying
+    // component (for PunchTransparency, so stray sub-threshold matches are never punched).
+    private static (List<(int count, int minX, int minY, int maxX, int maxY)> regions, bool[] regionMask)
+        FindQualifyingRegions(bool[] mask, int W, int H, int minPixels)
+    {
+        bool[] visited    = new bool[W * H];
+        bool[] regionMask = new bool[W * H];
+        var regions = new List<(int count, int minX, int minY, int maxX, int maxY)>();
+
+        int[] dx = { -1, 1,  0, 0 };
+        int[] dy = {  0, 0, -1, 1 };
+
+        for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+        {
+            int idx = y * W + x;
+            if (visited[idx] || !mask[idx]) continue;
+
+            var queue = new Queue<int>();
+            var componentPixels = new List<int>();
+            queue.Enqueue(idx);
+            visited[idx] = true;
+
+            int count = 0, minX = x, minY = y, maxX = x, maxY = y;
+
+            while (queue.Count > 0)
+            {
+                int cur = queue.Dequeue();
+                componentPixels.Add(cur);
+                int cx  = cur % W;
+                int cy  = cur / W;
+                count++;
+                if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+                if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+
+                for (int d = 0; d < 4; d++)
+                {
+                    int nx = cx + dx[d], ny = cy + dy[d];
+                    if ((uint)nx >= (uint)W || (uint)ny >= (uint)H) continue;
+                    int nIdx = ny * W + nx;
+                    if (visited[nIdx] || !mask[nIdx]) continue;
+                    visited[nIdx] = true;
+                    queue.Enqueue(nIdx);
+                }
+            }
+
+            if (count >= minPixels)
+            {
+                regions.Add((count, minX, minY, maxX, maxY));
+                foreach (var p in componentPixels)
+                    regionMask[p] = true;
+            }
+        }
+
+        return (regions, regionMask);
     }
 
     // Grows a bool mask outward by `radius` pixels in every direction (Chebyshev/square
