@@ -217,13 +217,6 @@
                         IsEnabled="False"
                         Margin="0,0,0,8"
                         ValueChanged="PhotoOverlapSlider_ValueChanged"/>
-                <Button x:Name="DetectButton"
-                        Content="Detect Slots"
-                        Style="{StaticResource GhostButton}"
-                        Padding="10,7" FontSize="12"
-                        HorizontalAlignment="Stretch"
-                        IsEnabled="False"
-                        Click="Detect_Click"/>
             </StackPanel>
 
             <!-- Manual panel -->

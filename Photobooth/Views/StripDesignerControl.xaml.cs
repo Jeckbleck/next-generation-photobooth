@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,10 +74,11 @@ namespace Photobooth.Views
         private Point  _panStart;
         private double _panHOrig, _panVOrig;
         private BitmapSource? _templateBitmapSource;
+        private BitmapSource? _originalBitmapSource;
         private bool _autoDetectMode = true;
         private bool _eyedropperActive;
         private bool _hasColor;
-        private bool _detectedOnce;
+        private bool _autoDetectBusy;
         private Color _sampledColor;
         private string? _backgroundColor;
 
@@ -85,6 +87,18 @@ namespace Photobooth.Views
             InitializeComponent();
             ApplyZoom();
             UpdateStatus();
+
+            foreach (var slider in new[] { ToleranceSlider, EdgeMarginSlider, PhotoOverlapSlider })
+            {
+                slider.AddHandler(Thumb.DragCompletedEvent, (DragCompletedEventHandler)((_, __) => RunAutoDetect()));
+                slider.PreviewKeyUp += AutoDetectSlider_PreviewKeyUp;
+            }
+        }
+
+        private void AutoDetectSlider_PreviewKeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down or Key.PageUp or Key.PageDown or Key.Home or Key.End)
+                RunAutoDetect();
         }
 
         // --- Public API ----------------------------------------------------------
@@ -107,6 +121,12 @@ namespace Photobooth.Views
 
             if (!string.IsNullOrEmpty(templateImagePath) && File.Exists(templateImagePath))
                 LoadTemplateImage(templateImagePath);
+
+            var originalPath = Directory.Exists(templateDir)
+                ? Directory.GetFiles(templateDir, "template-original.*").FirstOrDefault()
+                : null;
+            if (originalPath is not null)
+                LoadOriginalTemplate(originalPath);
 
             var jsonPath = JsonPath();
             if (!File.Exists(jsonPath)) { UpdateStatus(); return; }
@@ -147,7 +167,13 @@ namespace Photobooth.Views
             try
             {
                 LoadTemplateImage(dlg.FileName);
-                _detectedOnce = false;
+
+                if (_templateDir is not null)
+                {
+                    var originalPath = Path.Combine(_templateDir, "template-original" + Path.GetExtension(dlg.FileName));
+                    File.Copy(dlg.FileName, originalPath, overwrite: true);
+                    LoadOriginalTemplate(originalPath);
+                }
 
                 if (_eventId.HasValue)
                     App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, dlg.FileName);
@@ -964,7 +990,7 @@ namespace Photobooth.Views
             UpdateStatus();
         }
 
-        private void LoadTemplateImage(string path)
+        private static BitmapImage LoadBitmapFile(string path)
         {
             var bmp = new BitmapImage();
             bmp.BeginInit();
@@ -973,9 +999,20 @@ namespace Photobooth.Views
             bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
             bmp.EndInit();
             bmp.Freeze();
+            return bmp;
+        }
+
+        private void LoadTemplateImage(string path)
+        {
+            var bmp = LoadBitmapFile(path);
             TemplateImage.Source  = bmp;
             _templateBitmapSource = bmp;
             RefreshToolbarState();
+        }
+
+        private void LoadOriginalTemplate(string path)
+        {
+            _originalBitmapSource = LoadBitmapFile(path);
         }
 
         private void ClearCanvas()
@@ -1002,8 +1039,8 @@ namespace Photobooth.Views
 
             TemplateImage.Source  = null;
             _templateBitmapSource = null;
+            _originalBitmapSource = null;
             _hasColor = false;
-            _detectedOnce = false;
             _eyedropperActive = false;
             ColorSwatch.Background = System.Windows.Media.Brushes.Transparent;
             ColorSwatch.Visibility = Visibility.Collapsed;
@@ -1018,19 +1055,17 @@ namespace Photobooth.Views
             bool hasTemplate   = TemplateImage.Source is not null;
             bool eventSelected = _eventSlug is not null;
             bool hasContent    = hasTemplate || _slots.Count > 0 || _backgroundColor is not null || _textElements.Count > 0;
+            bool colorPicked   = hasTemplate && _autoDetectMode && _hasColor;
 
             AddSlotButton.IsEnabled         = eventSelected && _slots.Count < MaxSlots;
             AddTextButton.IsEnabled         = eventSelected;
             BackgroundColorButton.IsEnabled = eventSelected;
             SaveButton.IsEnabled            = hasContent;
             ClearButton.IsEnabled           = hasContent;
-            bool colorPicked   = hasTemplate && _autoDetectMode && _hasColor;
-
-            EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode;
-            ToleranceSlider.IsEnabled       = colorPicked;
-            EdgeMarginSlider.IsEnabled      = colorPicked;
-            PhotoOverlapSlider.IsEnabled    = colorPicked;
-            DetectButton.IsEnabled          = colorPicked && !_detectedOnce;
+            EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode && !_autoDetectBusy;
+            ToleranceSlider.IsEnabled       = colorPicked && !_autoDetectBusy;
+            EdgeMarginSlider.IsEnabled      = colorPicked && !_autoDetectBusy;
+            PhotoOverlapSlider.IsEnabled    = colorPicked && !_autoDetectBusy;
         }
 
         private void UpdateStatus()
@@ -1048,7 +1083,7 @@ namespace Photobooth.Views
                     return;
                 }
                 StatusText.Text = _autoDetectMode
-                    ? "Pick a color with the eyedropper, then click Detect Slots."
+                    ? "Pick a color with the eyedropper — slots detect automatically."
                     : "Click '+ Add Slot' to place photo slots manually.";
                 return;
             }
@@ -1096,22 +1131,23 @@ namespace Photobooth.Views
             ColorSwatch.Background  = new SolidColorBrush(_sampledColor);
             ColorSwatch.Visibility  = Visibility.Visible;
             RefreshToolbarState();
+            RunAutoDetect();
         }
 
         private Color SamplePixel(Point canvasPos)
         {
-            if (_templateBitmapSource == null) return Colors.Transparent;
+            if (_originalBitmapSource == null) return Colors.Transparent;
 
             // Map canvas coords (150×450) to BitmapSource pixel coords
-            double scaleX = _templateBitmapSource.PixelWidth  / DesignerCanvas.ActualWidth;
-            double scaleY = _templateBitmapSource.PixelHeight / DesignerCanvas.ActualHeight;
+            double scaleX = _originalBitmapSource.PixelWidth  / DesignerCanvas.ActualWidth;
+            double scaleY = _originalBitmapSource.PixelHeight / DesignerCanvas.ActualHeight;
             int px = (int)(canvasPos.X * scaleX);
             int py = (int)(canvasPos.Y * scaleY);
-            px = Math.Max(0, Math.Min(px, _templateBitmapSource.PixelWidth  - 1));
-            py = Math.Max(0, Math.Min(py, _templateBitmapSource.PixelHeight - 1));
+            px = Math.Max(0, Math.Min(px, _originalBitmapSource.PixelWidth  - 1));
+            py = Math.Max(0, Math.Min(py, _originalBitmapSource.PixelHeight - 1));
 
             // Read one pixel — FormatConvertedBitmap ensures Bgra32
-            var conv = new FormatConvertedBitmap(_templateBitmapSource,
+            var conv = new FormatConvertedBitmap(_originalBitmapSource,
                                                   PixelFormats.Bgra32, null, 0);
             byte[] pixel = new byte[4];
             conv.CopyPixels(new Int32Rect(px, py, 1, 1), pixel, 4, 0);
@@ -1163,39 +1199,47 @@ namespace Photobooth.Views
                 PhotoOverlapLabel.Text = ((int)PhotoOverlapSlider.Value).ToString();
         }
 
-        private void Detect_Click(object sender, RoutedEventArgs e)
+        private void RunAutoDetect()
         {
-            if (_templateBitmapSource == null || !_hasColor) return;
+            if (!_hasColor || _autoDetectBusy) return;
 
-            // Remove existing slot visuals only — do NOT call ClearCanvas()
-            foreach (var slot in _slots.ToList())
+            if (_originalBitmapSource == null)
             {
-                DesignerCanvas.Children.Remove(slot.Body);
-                DesignerCanvas.Children.Remove(slot.RotateBtn);
-                DesignerCanvas.Children.Remove(slot.DeleteBtn);
-                foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
+                StatusText.Text = "This template predates live auto-detect — re-upload it to enable adjustable slot detection.";
+                return;
             }
-            _slots.Clear();
 
-            int tolerance    = (int)ToleranceSlider.Value;
-            int edgeMargin   = (int)EdgeMarginSlider.Value;
-            int photoOverlap = (int)PhotoOverlapSlider.Value;
-            edgeMargin       = Math.Min(edgeMargin, photoOverlap);
-            using var bmp = ToBitmap(_templateBitmapSource);
-            var drawingColor = System.Drawing.Color.FromArgb(
-                _sampledColor.A, _sampledColor.R, _sampledColor.G, _sampledColor.B);
-            var defs = TemplateSegmenter.Detect(bmp, drawingColor, tolerance, expandPixels: photoOverlap);
-
-            foreach (var def in defs)
-                CreateSlot(def);
-
-            // The detected color marks a photo window, but the uploaded frame is a flat,
-            // fully-opaque PNG — drawn on top of the photos at print time it would hide
-            // them completely. Punch the matched pixels to real transparency and save that
-            // as the frame actually used for preview and printing, instead of the raw upload.
-            if (_templateDir is not null)
+            _autoDetectBusy = true;
+            RefreshToolbarState();
+            try
             {
-                try
+                // Remove existing slot visuals only — do NOT call ClearCanvas()
+                foreach (var slot in _slots.ToList())
+                {
+                    DesignerCanvas.Children.Remove(slot.Body);
+                    DesignerCanvas.Children.Remove(slot.RotateBtn);
+                    DesignerCanvas.Children.Remove(slot.DeleteBtn);
+                    foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
+                }
+                _slots.Clear();
+
+                int tolerance    = (int)ToleranceSlider.Value;
+                int edgeMargin   = (int)EdgeMarginSlider.Value;
+                int photoOverlap = (int)PhotoOverlapSlider.Value;
+                edgeMargin       = Math.Min(edgeMargin, photoOverlap);
+                using var bmp = ToBitmap(_originalBitmapSource);
+                var drawingColor = System.Drawing.Color.FromArgb(
+                    _sampledColor.A, _sampledColor.R, _sampledColor.G, _sampledColor.B);
+                var defs = TemplateSegmenter.Detect(bmp, drawingColor, tolerance, expandPixels: photoOverlap);
+
+                foreach (var def in defs)
+                    CreateSlot(def);
+
+                // The detected color marks a photo window, but the uploaded frame is a flat,
+                // fully-opaque PNG — drawn on top of the photos at print time it would hide
+                // them completely. Punch the matched pixels to real transparency and save that
+                // as the frame actually used for preview and printing, instead of the raw upload.
+                if (_templateDir is not null)
                 {
                     using var punched = TemplateSegmenter.PunchTransparency(bmp, drawingColor, tolerance, dilatePixels: edgeMargin);
                     var punchedPath = Path.Combine(_templateDir, "frame-detected.png");
@@ -1206,20 +1250,18 @@ namespace Photobooth.Views
                         App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, punchedPath);
 
                     Log.Information("Punched transparent photo windows into strip template for '{Slug}'", _eventSlug);
-                    _detectedOnce = true;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to punch transparency into strip template for '{Slug}'", _eventSlug);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                _detectedOnce = true;
+                Log.Warning(ex, "Failed to auto-detect/punch strip template for '{Slug}'", _eventSlug);
             }
-
-            RefreshToolbarState();
-            UpdateStatus();
+            finally
+            {
+                _autoDetectBusy = false;
+                RefreshToolbarState();
+                UpdateStatus();
+            }
         }
 
         private void SlotModeTab_Changed(object sender, RoutedEventArgs e)
