@@ -237,8 +237,8 @@ namespace Photobooth.Services
         public static List<CameraPreset> DefaultCameraPresets() => new()
         {
             new CameraPreset { Name = "Outdoor Daylight", Iso = 0x00000048, Tv = 0x00000070, Av = 0x00000030 },
-            new CameraPreset { Name = "Indoor",           Iso = 0x00000058, Tv = 0x00000060, Av = 0x00000028 },
-            new CameraPreset { Name = "Low Light",        Iso = 0x00000060, Tv = 0x00000060, Av = 0x00000020 },
+            new CameraPreset { Name = "Indoor",           Iso = 0x00000058, Tv = 0x00000068, Av = 0x00000028 },
+            new CameraPreset { Name = "Low Light",        Iso = 0x00000060, Tv = 0x00000068, Av = 0x00000020 },
         };
     }
 

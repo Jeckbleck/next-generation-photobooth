@@ -122,9 +122,21 @@ public sealed class SettingsManagerTests : IDisposable
         File.Delete(_tempFile);
         var sm = new SettingsManager(_tempFile);
         Assert.Equal(3, sm.CameraPresets.Count);
-        Assert.Contains(sm.CameraPresets, p => p.Name == "Outdoor Daylight");
-        Assert.Contains(sm.CameraPresets, p => p.Name == "Indoor");
-        Assert.Contains(sm.CameraPresets, p => p.Name == "Low Light");
+
+        var outdoor = sm.CameraPresets.Single(p => p.Name == "Outdoor Daylight");
+        Assert.Equal((uint)0x00000048, outdoor.Iso);
+        Assert.Equal((uint)0x00000070, outdoor.Tv);
+        Assert.Equal((uint)0x00000030, outdoor.Av);
+
+        var indoor = sm.CameraPresets.Single(p => p.Name == "Indoor");
+        Assert.Equal((uint)0x00000058, indoor.Iso);
+        Assert.Equal((uint)0x00000068, indoor.Tv);
+        Assert.Equal((uint)0x00000028, indoor.Av);
+
+        var lowLight = sm.CameraPresets.Single(p => p.Name == "Low Light");
+        Assert.Equal((uint)0x00000060, lowLight.Iso);
+        Assert.Equal((uint)0x00000068, lowLight.Tv);
+        Assert.Equal((uint)0x00000020, lowLight.Av);
     }
 
     [Fact]

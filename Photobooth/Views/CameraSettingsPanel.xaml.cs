@@ -15,6 +15,7 @@ public partial class CameraSettingsPanel : UserControl
     private readonly CameraService   _camera;
     private readonly SettingsManager _settings;
     private bool     _settingCameraControls;
+    private bool     _presetStatusNoteActive;
     private EvfPump? _inlineEvfPump;
 
     public CameraSettingsPanel(CameraService camera, SettingsManager settings)
@@ -50,6 +51,7 @@ public partial class CameraSettingsPanel : UserControl
         {
             CameraModelLabel.Text            = "No camera connected";
             CameraSettingStatusText.Text     = "Connect a camera and retry.";
+            _presetStatusNoteActive          = false;
             ReconnectCameraButton.Visibility = Visibility.Visible;
             IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
                 MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled =
@@ -63,6 +65,7 @@ public partial class CameraSettingsPanel : UserControl
 
         CameraModelLabel.Text        = _camera.ModelName ?? "Camera";
         CameraSettingStatusText.Text = "Loading valid values from camera…";
+        _presetStatusNoteActive      = false;
         IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
             MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled =
             ImageQualityComboBox.IsEnabled = true;
@@ -164,9 +167,16 @@ public partial class CameraSettingsPanel : UserControl
         ApplyPresetValue(EDSDKLib.EDSDK.PropID_Tv,       preset.Tv,  "Tv",  applied, skipped);
         ApplyPresetValue(EDSDKLib.EDSDK.PropID_Av,       preset.Av,  "Av",  applied, skipped);
 
-        CameraSettingStatusText.Text = skipped.Count > 0
-            ? $"Applied {string.Join(", ", applied)} — {string.Join(", ", skipped)} not supported on this camera."
-            : string.Empty;
+        string message;
+        if (skipped.Count == 0)
+            message = string.Empty;
+        else if (applied.Count == 0)
+            message = $"None of {string.Join(", ", skipped)} supported on this camera.";
+        else
+            message = $"Applied {string.Join(", ", applied)} — {string.Join(", ", skipped)} not supported on this camera.";
+
+        CameraSettingStatusText.Text = message;
+        _presetStatusNoteActive = skipped.Count > 0;
     }
 
     private void ApplyPresetValue(uint propId, uint value, string label, List<string> applied, List<string> skipped)
@@ -247,7 +257,8 @@ public partial class CameraSettingsPanel : UserControl
                     break;
             }
 
-            CameraSettingStatusText.Text = string.Empty;
+            if (!_presetStatusNoteActive)
+                CameraSettingStatusText.Text = string.Empty;
         });
     }
 
@@ -257,6 +268,7 @@ public partial class CameraSettingsPanel : UserControl
         if (sender is not ComboBox cb) return;
         if (cb.SelectedItem is not ComboBoxItem item) return;
         if (item.Tag is not uint value) return;
+        _presetStatusNoteActive = false;
 
         uint propId = cb == IsoComboBox          ? EDSDKLib.EDSDK.PropID_ISOSpeed
                     : cb == TvComboBox            ? EDSDKLib.EDSDK.PropID_Tv
