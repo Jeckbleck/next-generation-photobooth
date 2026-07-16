@@ -55,7 +55,7 @@ namespace Photobooth.Views
             _displayPanel.BackgroundImageChanged    += OnBackgroundImageChanged;
             _displayPanel.GreetingTextSaved         += OnGreetingTextSaved;
             _displayPanel.GreetingTextColorChanged  += OnGreetingTextColorChanged;
-            _cameraPanel = new CameraSettingsPanel(_camera);
+            _cameraPanel = new CameraSettingsPanel(_camera, _settings);
             CameraSettingsPanelHost.Content = _cameraPanel;
             _aiPanel = new AIConfigPanel(_aiClient, _settings);
             AIConfigPanelHost.Content = _aiPanel;

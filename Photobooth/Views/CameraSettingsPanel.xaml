@@ -44,6 +44,29 @@
                 </Grid>
             </Border>
 
+            <TextBlock Text="PRESET" Foreground="{DynamicResource AccentBrush}"
+                       FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
+
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Preset" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" VerticalAlignment="Center"/>
+                <ComboBox x:Name="PresetComboBox" Grid.Column="1" Padding="8,6" Margin="0,0,8,0"
+                          SelectionChanged="PresetComboBox_SelectionChanged"/>
+                <Button x:Name="SavePresetButton" Grid.Column="2" Content="Save"
+                        Style="{StaticResource GhostButton}" Padding="12,6" FontSize="12"
+                        Margin="0,0,8,0" Click="SavePreset_Click"/>
+                <Button x:Name="DeletePresetButton" Grid.Column="3" Content="Delete"
+                        Style="{StaticResource GhostButton}" Padding="12,6" FontSize="12"
+                        IsEnabled="False" Click="DeletePreset_Click"/>
+            </Grid>
+
             <TextBlock Text="EXPOSURE" Foreground="{DynamicResource AccentBrush}"
                        FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
             <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>

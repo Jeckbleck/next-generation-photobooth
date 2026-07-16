@@ -5,19 +5,22 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using Photobooth.Camera;
 using Photobooth.Helpers;
+using Photobooth.Services;
 using Serilog;
 
 namespace Photobooth.Views;
 
 public partial class CameraSettingsPanel : UserControl
 {
-    private readonly CameraService _camera;
+    private readonly CameraService   _camera;
+    private readonly SettingsManager _settings;
     private bool     _settingCameraControls;
     private EvfPump? _inlineEvfPump;
 
-    public CameraSettingsPanel(CameraService camera)
+    public CameraSettingsPanel(CameraService camera, SettingsManager settings)
     {
-        _camera = camera;
+        _camera   = camera;
+        _settings = settings;
         InitializeComponent();
     }
 
@@ -51,6 +54,8 @@ public partial class CameraSettingsPanel : UserControl
             IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
                 MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled =
                 ImageQualityComboBox.IsEnabled = false;
+            RefreshPresetDropdown();
+            PresetComboBox.IsEnabled = SavePresetButton.IsEnabled = false;
             return;
         }
 
@@ -61,6 +66,8 @@ public partial class CameraSettingsPanel : UserControl
         IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
             MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled =
             ImageQualityComboBox.IsEnabled = true;
+        PresetComboBox.IsEnabled = SavePresetButton.IsEnabled = true;
+        RefreshPresetDropdown();
 
         _camera.CameraPropertyChanged -= OnCameraPropertyChanged;
         _camera.CameraPropertyChanged += OnCameraPropertyChanged;
@@ -109,6 +116,107 @@ public partial class CameraSettingsPanel : UserControl
         {
             _settingCameraControls = false;
         }
+    }
+
+    private void RefreshPresetDropdown()
+    {
+        _settingCameraControls = true;
+        try
+        {
+            PresetComboBox.Items.Clear();
+            PresetComboBox.Items.Add(new ComboBoxItem { Content = "— Select preset —", Tag = null });
+            foreach (var preset in _settings.CameraPresets)
+            {
+                PresetComboBox.Items.Add(new ComboBoxItem { Content = preset.Name, Tag = preset.Name });
+            }
+            PresetComboBox.SelectedIndex = 0;
+            DeletePresetButton.IsEnabled = false;
+        }
+        finally
+        {
+            _settingCameraControls = false;
+        }
+    }
+
+    private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_settingCameraControls) return;
+        if (PresetComboBox.SelectedItem is not ComboBoxItem { Tag: string presetName })
+        {
+            DeletePresetButton.IsEnabled = false;
+            return;
+        }
+
+        DeletePresetButton.IsEnabled = true;
+
+        var preset = _settings.CameraPresets.FirstOrDefault(p => p.Name == presetName);
+        if (preset is null) return;
+
+        ApplyPreset(preset);
+    }
+
+    private void ApplyPreset(CameraPreset preset)
+    {
+        var applied = new List<string>();
+        var skipped = new List<string>();
+
+        ApplyPresetValue(EDSDKLib.EDSDK.PropID_ISOSpeed, preset.Iso, "Iso", applied, skipped);
+        ApplyPresetValue(EDSDKLib.EDSDK.PropID_Tv,       preset.Tv,  "Tv",  applied, skipped);
+        ApplyPresetValue(EDSDKLib.EDSDK.PropID_Av,       preset.Av,  "Av",  applied, skipped);
+
+        CameraSettingStatusText.Text = skipped.Count > 0
+            ? $"Applied {string.Join(", ", applied)} — {string.Join(", ", skipped)} not supported on this camera."
+            : string.Empty;
+    }
+
+    private void ApplyPresetValue(uint propId, uint value, string label, List<string> applied, List<string> skipped)
+    {
+        int[]? desc = _camera.GetPropertyDesc(propId);
+        if (CameraPropertyMaps.IsSupportedValue(desc, value))
+        {
+            _camera.SetProperty(propId, value);
+            applied.Add(label);
+        }
+        else
+        {
+            skipped.Add(label);
+        }
+    }
+
+    private void SavePreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedTag(IsoComboBox) is not uint iso) return;
+        if (GetSelectedTag(TvComboBox)  is not uint tv)  return;
+        if (GetSelectedTag(AvComboBox)  is not uint av)  return;
+
+        var dialog = new SavePresetDialog(_settings.CameraPresets.Select(p => p.Name))
+        {
+            Owner = Window.GetWindow(this)
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        _settings.SaveCameraPreset(dialog.PresetName, iso, tv, av);
+        RefreshPresetDropdown();
+    }
+
+    private static uint? GetSelectedTag(ComboBox cb) =>
+        cb.SelectedItem is ComboBoxItem { Tag: uint v } ? v : null;
+
+    private void DeletePreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (PresetComboBox.SelectedItem is not ComboBoxItem { Tag: string name }) return;
+
+        var result = MessageBox.Show(
+            $"Delete preset \"{name}\"?",
+            "Delete Preset",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        _settings.DeleteCameraPreset(name);
+        RefreshPresetDropdown();
     }
 
     private void OnCameraPropertyChanged(object? sender, uint propId)
