@@ -113,4 +113,74 @@ public sealed class SettingsManagerTests : IDisposable
         var doc = JsonDocument.Parse(text); // throws if invalid JSON
         Assert.NotNull(doc);
     }
+
+    // --- Camera presets ---
+
+    [Fact]
+    public void DefaultCameraPresets_SeededOnFirstLoad()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        Assert.Equal(3, sm.CameraPresets.Count);
+        Assert.Contains(sm.CameraPresets, p => p.Name == "Outdoor Daylight");
+        Assert.Contains(sm.CameraPresets, p => p.Name == "Indoor");
+        Assert.Contains(sm.CameraPresets, p => p.Name == "Low Light");
+    }
+
+    [Fact]
+    public void SaveCameraPreset_AddsNewPreset()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.SaveCameraPreset("Custom", 0x60, 0x60, 0x20);
+
+        Assert.Contains(sm.CameraPresets,
+            p => p.Name == "Custom" && p.Iso == 0x60 && p.Tv == 0x60 && p.Av == 0x20);
+    }
+
+    [Fact]
+    public void SaveCameraPreset_OverwritesExistingByName_CaseInsensitive()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.SaveCameraPreset("outdoor daylight", 0x11, 0x22, 0x33);
+
+        var matches = sm.CameraPresets
+            .Where(p => string.Equals(p.Name, "Outdoor Daylight", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        Assert.Single(matches);
+        Assert.Equal((uint)0x11, matches[0].Iso);
+    }
+
+    [Fact]
+    public void DeleteCameraPreset_RemovesByName()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.DeleteCameraPreset("Indoor");
+
+        Assert.DoesNotContain(sm.CameraPresets, p => p.Name == "Indoor");
+    }
+
+    [Fact]
+    public void DeleteCameraPreset_NonexistentName_IsNoOp()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        int before = sm.CameraPresets.Count;
+        sm.DeleteCameraPreset("Nonexistent");
+
+        Assert.Equal(before, sm.CameraPresets.Count);
+    }
+
+    [Fact]
+    public void CameraPresets_PersistAcrossReload()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.SaveCameraPreset("Custom", 0x60, 0x60, 0x20);
+
+        var sm2 = new SettingsManager(_tempFile);
+        Assert.Contains(sm2.CameraPresets, p => p.Name == "Custom");
+    }
 }

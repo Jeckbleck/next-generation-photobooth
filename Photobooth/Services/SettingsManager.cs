@@ -144,6 +144,23 @@ namespace Photobooth.Services
             Log.Information("Storage root updated to {Path}", path);
         }
 
+        public IReadOnlyList<CameraPreset> CameraPresets => _settings.CameraPresets;
+
+        public void SaveCameraPreset(string name, uint iso, uint tv, uint av)
+        {
+            _settings.CameraPresets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            _settings.CameraPresets.Add(new CameraPreset { Name = name, Iso = iso, Tv = tv, Av = av });
+            Save();
+            Log.Information("Camera preset saved: {Name}", name);
+        }
+
+        public void DeleteCameraPreset(string name)
+        {
+            _settings.CameraPresets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            Save();
+            Log.Information("Camera preset deleted: {Name}", name);
+        }
+
         private AppSettings Load()
         {
             try
@@ -215,5 +232,21 @@ namespace Photobooth.Services
         public bool    AIEnhancementEnabled  { get; set; } = false;
         public string  AIServerUrl           { get; set; } = "http://localhost:8000";
         public string  AIApiKey              { get; set; } = "";
+        public List<CameraPreset> CameraPresets { get; set; } = DefaultCameraPresets();
+
+        public static List<CameraPreset> DefaultCameraPresets() => new()
+        {
+            new CameraPreset { Name = "Outdoor Daylight", Iso = 0x00000048, Tv = 0x00000070, Av = 0x00000030 },
+            new CameraPreset { Name = "Indoor",           Iso = 0x00000058, Tv = 0x00000060, Av = 0x00000028 },
+            new CameraPreset { Name = "Low Light",        Iso = 0x00000060, Tv = 0x00000060, Av = 0x00000020 },
+        };
+    }
+
+    public class CameraPreset
+    {
+        public string Name { get; set; } = "";
+        public uint   Iso  { get; set; }
+        public uint   Tv   { get; set; }
+        public uint   Av   { get; set; }
     }
 }
