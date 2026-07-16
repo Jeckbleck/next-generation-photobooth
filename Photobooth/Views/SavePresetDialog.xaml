@@ -1,0 +1,95 @@
+<Window x:Class="Photobooth.Views.SavePresetDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Save Camera Preset"
+        Width="460" SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        KeyDown="Window_KeyDown">
+
+    <Border Background="{DynamicResource SurfaceBrush}" Margin="20">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="0" Opacity="0.7"/>
+        </Border.Effect>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header bar -->
+        <Border Grid.Row="0" Background="{DynamicResource NavBrush}"
+                BorderBrush="#1E2F4A" BorderThickness="0,0,0,1">
+            <Grid Margin="20,0">
+                <TextBlock Text="Save Camera Preset"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           FontSize="15" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Width="32" Height="32"
+                        Click="Cancel_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="CloseBorder" Background="Transparent" CornerRadius="4">
+                                <TextBlock Text="✕" Foreground="#777799"
+                                           FontSize="14" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CloseBorder" Property="Background" Value="#1A2B44"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1" Margin="28,24,28,24">
+
+            <TextBlock Text="Preset name"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12" Margin="0,0,0,4"/>
+            <TextBox x:Name="NameBox"
+                     Background="{DynamicResource NavBrush}"
+                     Foreground="White" BorderBrush="#334"
+                     Padding="10,7" FontSize="13"
+                     MaxLength="100"
+                     Margin="0,0,0,6"
+                     TextChanged="NameBox_TextChanged"/>
+            <TextBlock x:Name="ErrorLabel"
+                       Text="Name is required."
+                       Foreground="#E05555"
+                       FontSize="12"
+                       Visibility="Collapsed"
+                       Margin="0,0,0,12"/>
+            <TextBlock x:Name="OverwriteHintLabel"
+                       Text="This will overwrite the existing preset with this name."
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontSize="12"
+                       Visibility="Collapsed"
+                       Margin="0,0,0,12"/>
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,8,0,0">
+                <Button Content="Cancel"
+                        Style="{StaticResource GhostButton}"
+                        Padding="18,7" FontSize="13"
+                        Margin="0,0,8,0"
+                        Click="Cancel_Click"/>
+                <Button Content="Save"
+                        Style="{StaticResource KioskButton}"
+                        Padding="18,7" FontSize="13"
+                        Click="Save_Click"/>
+            </StackPanel>
+
+        </StackPanel>
+    </Grid>
+    </Border>
+</Window>
