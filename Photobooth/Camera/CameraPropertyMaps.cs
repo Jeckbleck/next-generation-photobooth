@@ -192,5 +192,8 @@ namespace Photobooth.Camera
         internal static string LookupWb(uint v) => WhiteBalance.TryGetValue(v, out var s) ? s : $"WB {v}";
         internal static string LookupIq(uint v) => ImageQuality.TryGetValue(v, out var s) ? s : $"Quality 0x{v:X8}";
         internal static string LookupMeteringMode(uint v) => MeteringMode.TryGetValue(v, out var s) ? s : $"Metering 0x{v:X}";
+
+        internal static bool IsSupportedValue(int[]? desc, uint value) =>
+            desc == null || desc.Length == 0 || desc.Contains((int)value);
     }
 }
