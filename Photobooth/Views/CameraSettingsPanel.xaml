@@ -25,15 +25,9 @@
                         <TextBlock x:Name="CameraModelLabel"
                                    Foreground="{StaticResource TextPrimaryBrush}"
                                    FontSize="13" FontWeight="SemiBold"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                            <local:LoadingSpinner x:Name="PresetApplySpinner"
-                                                   Width="14" Height="14"
-                                                   Visibility="Collapsed"
-                                                   Margin="0,0,6,0"/>
-                            <TextBlock x:Name="CameraSettingStatusText"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
-                                       FontSize="12"/>
-                        </StackPanel>
+                        <TextBlock x:Name="CameraSettingStatusText"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="12" Margin="0,2,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <local:LoadingSpinner x:Name="ReconnectSpinner"
@@ -181,6 +175,13 @@
                                    FontSize="13"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
+                        <Border x:Name="PresetApplyOverlay"
+                                Background="#99000000"
+                                Visibility="Collapsed">
+                            <local:LoadingSpinner Width="36" Height="36"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                        </Border>
                     </Grid>
                 </Border>
 

@@ -175,7 +175,7 @@ public partial class CameraSettingsPanel : UserControl
             SetPresetControlsEnabled(false);
             _inlineEvfPump?.Stop();
             _inlineEvfPump = null;
-            PresetApplySpinner.Visibility = Visibility.Visible;
+            PresetApplyOverlay.Visibility = Visibility.Visible;
             CameraSettingStatusText.Text  = "Applying preset…";
             _presetStatusNoteActive       = true;
 
@@ -198,7 +198,7 @@ public partial class CameraSettingsPanel : UserControl
 
             CameraSettingStatusText.Text = BuildPresetStatusMessage(applied, skipped, timedOut);
             _presetStatusNoteActive      = skipped.Count > 0 || timedOut.Count > 0;
-            PresetApplySpinner.Visibility = Visibility.Collapsed;
+            PresetApplyOverlay.Visibility = Visibility.Collapsed;
 
             // If the camera disconnected mid-apply, no PropertyChanged event will ever
             // arrive for the pending properties — they simply resolve false when
