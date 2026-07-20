@@ -23,6 +23,7 @@ namespace Photobooth.Camera
         public event EventHandler? CameraDisconnected;
         public event EventHandler<string>? Error;
         public event EventHandler<uint>? CameraPropertyChanged;
+        public event EventHandler? DeviceBusy;
 
         private bool _sdkInitialized;
         private IntPtr _cameraRef;
@@ -305,6 +306,7 @@ namespace Photobooth.Camera
 
                 case CameraEvent.Type.DEVICE_BUSY:
                     Log.Warning("Camera reported device busy");
+                    DeviceBusy?.Invoke(this, EventArgs.Empty);
                     break;
 
                 case CameraEvent.Type.PROPERTY_CHANGED:

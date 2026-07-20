@@ -179,6 +179,30 @@ public sealed class CameraServiceTests : IDisposable
         Assert.Equal(0u, result);
     }
 
+    // ── DeviceBusy ───────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Update_DeviceBusyEvent_RaisesDeviceBusy()
+    {
+        bool fired = false;
+        _sut.DeviceBusy += (_, _) => fired = true;
+
+        _sut.Update(null!, new CameraEvent(CameraEvent.Type.DEVICE_BUSY, IntPtr.Zero));
+
+        Assert.True(fired, "DeviceBusy should have been raised for CameraEvent.Type.DEVICE_BUSY");
+    }
+
+    [Fact]
+    public void Update_NonBusyEvent_DoesNotRaiseDeviceBusy()
+    {
+        bool fired = false;
+        _sut.DeviceBusy += (_, _) => fired = true;
+
+        _sut.Update(null!, new CameraEvent(CameraEvent.Type.DOWNLOAD_START, IntPtr.Zero));
+
+        Assert.False(fired, "DeviceBusy must not fire for unrelated event types");
+    }
+
     // ── SetPropertyAsync ─────────────────────────────────────────────────────────
 
     private const uint TestPropId      = 0x00000405u;

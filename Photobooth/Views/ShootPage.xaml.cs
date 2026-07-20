@@ -159,6 +159,7 @@ namespace Photobooth.Views
         {
             _camera.CameraDisconnected += OnCameraDisconnected;
             _camera.Error              += OnCameraError;
+            _camera.DeviceBusy         += OnCameraDeviceBusy;
 
             if (!_camera.IsConnected)
             {
@@ -203,6 +204,7 @@ namespace Photobooth.Views
 
             _camera.CameraDisconnected -= OnCameraDisconnected;
             _camera.Error              -= OnCameraError;
+            _camera.DeviceBusy         -= OnCameraDeviceBusy;
         }
 
         // --- Photo sequence ------------------------------------------------------
@@ -439,6 +441,15 @@ namespace Photobooth.Views
             Log.Error("Camera error on shoot page: {Message}", msg);
             if (!_shooting)
                 Dispatcher.Invoke(() => StatusText.Text = $"Error: {msg}");
+        }
+
+        // EDSDK reports DEVICE_BUSY for any in-flight command (EVF frame pulls included),
+        // so this only surfaces to the UI while actively shooting — otherwise routine EVF
+        // busy retries during normal live view would spam the status text.
+        private void OnCameraDeviceBusy(object? sender, EventArgs e)
+        {
+            if (!_shooting) return;
+            Dispatcher.Invoke(() => StatusText.Text = "Camera busy — please wait…");
         }
 
         private async Task RecoverCameraAsync(CancellationToken ct)
