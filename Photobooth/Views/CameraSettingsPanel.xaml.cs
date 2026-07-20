@@ -37,7 +37,12 @@ public partial class CameraSettingsPanel : UserControl
         InlinePreviewInfoText.Text         = string.Empty;
         ResumePreviewButton.Visibility     = Visibility.Collapsed;
         PreviewSpinner.Visibility          = _camera.IsConnected ? Visibility.Visible : Visibility.Collapsed;
-        StartInlinePreview();
+
+        // If a preset apply is in flight, it owns the EVF pump for its duration and
+        // will restart it itself once it resolves (see ApplyPresetAsync) — starting
+        // a second pump here would fight it and violate the "pump stopped for the
+        // duration of the apply" invariant.
+        if (!_presetApplyInFlight) StartInlinePreview();
     }
 
     // Call when the Camera tab loses focus or the page unloads.
