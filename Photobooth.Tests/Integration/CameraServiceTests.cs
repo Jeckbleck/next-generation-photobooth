@@ -178,4 +178,46 @@ public sealed class CameraServiceTests : IDisposable
 
         Assert.Equal(0u, result);
     }
+
+    // ── SetPropertyAsync ─────────────────────────────────────────────────────────
+
+    private const uint TestPropId      = 0x00000405u;
+    private const uint OtherTestPropId = 0x00000406u;
+
+    [Fact]
+    public async Task SetPropertyAsync_MatchingPropertyChangedEvent_ResolvesTrue()
+    {
+        Task<bool> task = _sut.SetPropertyAsync(TestPropId, 0x48u, CancellationToken.None);
+
+        _sut.Update(null!, new CameraEvent(CameraEvent.Type.PROPERTY_CHANGED, (IntPtr)TestPropId));
+
+        bool result = await task;
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task SetPropertyAsync_NonMatchingPropertyChangedEvent_DoesNotResolveEarly()
+    {
+        using var cts = new CancellationTokenSource();
+
+        Task<bool> task = _sut.SetPropertyAsync(TestPropId, 0x48u, cts.Token);
+
+        _sut.Update(null!, new CameraEvent(CameraEvent.Type.PROPERTY_CHANGED, (IntPtr)OtherTestPropId));
+
+        Assert.False(task.IsCompleted);
+
+        cts.Cancel();
+        bool result = await task;
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task SetPropertyAsync_CancelledBeforeConfirmation_ResolvesFalse()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        bool result = await _sut.SetPropertyAsync(TestPropId, 0x48u, cts.Token);
+
+        Assert.False(result);
+    }
 }

@@ -226,6 +226,39 @@ namespace Photobooth.Camera
             _processor.PostCommand(new SetPropertyCommand(ref _model, propertyID, value));
         }
 
+        private static readonly TimeSpan PropertyConfirmTimeout = TimeSpan.FromSeconds(6);
+
+        // Applies a property and waits for the camera to confirm the change via
+        // CameraPropertyChanged, rather than assuming success as soon as the
+        // command is queued. Resolves false if no matching event arrives before
+        // the timeout (or ct is cancelled) — e.g. the camera disconnected mid-apply.
+        public async Task<bool> SetPropertyAsync(uint propertyId, uint value, CancellationToken ct = default)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void OnPropertyChanged(object? sender, uint changedId)
+            {
+                if (changedId == propertyId) tcs.TrySetResult(true);
+            }
+
+            CameraPropertyChanged += OnPropertyChanged;
+            try
+            {
+                SetProperty(propertyId, value);
+
+                using var timeoutCts = new CancellationTokenSource(PropertyConfirmTimeout);
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+                using (linked.Token.Register(() => tcs.TrySetResult(false)))
+                {
+                    return await tcs.Task;
+                }
+            }
+            finally
+            {
+                CameraPropertyChanged -= OnPropertyChanged;
+            }
+        }
+
         public uint? GetPropertyValue(uint propertyID)
         {
             if (_model == null) return null;
