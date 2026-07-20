@@ -402,19 +402,19 @@ public partial class CameraSettingsPanel : UserControl
         if (!_camera.IsConnected || _presetApplyInFlight || _testShotInFlight) return;
 
         _testShotInFlight = true;
-        SetPresetControlsEnabled(false);
-        ResumePreviewButton.Visibility = Visibility.Collapsed;
-
-        _inlineEvfPump?.Stop();
-        _inlineEvfPump = null;
-
-        InlinePreviewStatusText.Text       = "Capturing…";
-        InlinePreviewStatusText.Visibility = Visibility.Visible;
-        InlinePreviewInfoText.Text         = string.Empty;
-        PreviewSpinner.Visibility          = Visibility.Visible;
-
         try
         {
+            SetPresetControlsEnabled(false);
+            ResumePreviewButton.Visibility = Visibility.Collapsed;
+
+            _inlineEvfPump?.Stop();
+            _inlineEvfPump = null;
+
+            InlinePreviewStatusText.Text       = "Capturing…";
+            InlinePreviewStatusText.Visibility = Visibility.Visible;
+            InlinePreviewInfoText.Text         = string.Empty;
+            PreviewSpinner.Visibility          = Visibility.Visible;
+
             string path = await _camera.TakePictureAsync();
             if (!IsVisible) return;
 
