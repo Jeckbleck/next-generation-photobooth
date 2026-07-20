@@ -16,6 +16,7 @@ public partial class CameraSettingsPanel : UserControl
     private readonly SettingsManager _settings;
     private bool     _settingCameraControls;
     private bool     _presetStatusNoteActive;
+    private bool     _presetApplyInFlight;
     private EvfPump? _inlineEvfPump;
 
     public CameraSettingsPanel(CameraService camera, SettingsManager settings)
@@ -47,6 +48,7 @@ public partial class CameraSettingsPanel : UserControl
 
     private void LoadCameraSettings()
     {
+        if (_presetApplyInFlight) return;
         if (!_camera.IsConnected)
         {
             CameraModelLabel.Text            = "No camera connected";
@@ -143,7 +145,7 @@ public partial class CameraSettingsPanel : UserControl
 
     private async void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_settingCameraControls) return;
+        if (_settingCameraControls || _presetApplyInFlight) return;
         if (PresetComboBox.SelectedItem is not ComboBoxItem { Tag: string presetName })
         {
             DeletePresetButton.IsEnabled = false;
@@ -160,41 +162,49 @@ public partial class CameraSettingsPanel : UserControl
 
     private async Task ApplyPresetAsync(CameraPreset preset)
     {
-        SetPresetControlsEnabled(false);
-        _inlineEvfPump?.Stop();
-        _inlineEvfPump = null;
-        PresetApplySpinner.Visibility = Visibility.Visible;
-        CameraSettingStatusText.Text  = "Applying preset…";
-        _presetStatusNoteActive       = true;
-
-        var skipped = new List<string>();
-        var pending = new List<(string Label, Task<bool> Task)>();
-
-        QueuePresetValue(EDSDKLib.EDSDK.PropID_ISOSpeed, preset.Iso, "Iso", skipped, pending);
-        QueuePresetValue(EDSDKLib.EDSDK.PropID_Tv,       preset.Tv,  "Tv",  skipped, pending);
-        QueuePresetValue(EDSDKLib.EDSDK.PropID_Av,       preset.Av,  "Av",  skipped, pending);
-
-        await Task.WhenAll(pending.Select(p => p.Task));
-
-        var applied  = new List<string>();
-        var timedOut = new List<string>();
-        foreach (var (label, task) in pending)
+        _presetApplyInFlight = true;
+        try
         {
-            if (task.Result) applied.Add(label);
-            else timedOut.Add(label);
+            SetPresetControlsEnabled(false);
+            _inlineEvfPump?.Stop();
+            _inlineEvfPump = null;
+            PresetApplySpinner.Visibility = Visibility.Visible;
+            CameraSettingStatusText.Text  = "Applying preset…";
+            _presetStatusNoteActive       = true;
+
+            var skipped = new List<string>();
+            var pending = new List<(string Label, Task<bool> Task)>();
+
+            QueuePresetValue(EDSDKLib.EDSDK.PropID_ISOSpeed, preset.Iso, "Iso", skipped, pending);
+            QueuePresetValue(EDSDKLib.EDSDK.PropID_Tv,       preset.Tv,  "Tv",  skipped, pending);
+            QueuePresetValue(EDSDKLib.EDSDK.PropID_Av,       preset.Av,  "Av",  skipped, pending);
+
+            await Task.WhenAll(pending.Select(p => p.Task));
+
+            var applied  = new List<string>();
+            var timedOut = new List<string>();
+            foreach (var (label, task) in pending)
+            {
+                if (task.Result) applied.Add(label);
+                else timedOut.Add(label);
+            }
+
+            CameraSettingStatusText.Text = BuildPresetStatusMessage(applied, skipped, timedOut);
+            _presetStatusNoteActive      = skipped.Count > 0 || timedOut.Count > 0;
+            PresetApplySpinner.Visibility = Visibility.Collapsed;
+
+            // If the camera disconnected mid-apply, no PropertyChanged event will ever
+            // arrive for the pending properties — they simply resolve false when
+            // PropertyConfirmTimeout elapses, and this method still unwinds normally
+            // (spinner hidden, controls re-enabled) without needing to listen for
+            // CameraDisconnected explicitly.
+            if (_camera.IsConnected) StartInlinePreview();
+            SetPresetControlsEnabled(true);
         }
-
-        CameraSettingStatusText.Text = BuildPresetStatusMessage(applied, skipped, timedOut);
-        _presetStatusNoteActive      = skipped.Count > 0 || timedOut.Count > 0;
-        PresetApplySpinner.Visibility = Visibility.Collapsed;
-
-        // If the camera disconnected mid-apply, no PropertyChanged event will ever
-        // arrive for the pending properties — they simply resolve false when
-        // PropertyConfirmTimeout elapses, and this method still unwinds normally
-        // (spinner hidden, controls re-enabled) without needing to listen for
-        // CameraDisconnected explicitly.
-        if (_camera.IsConnected) StartInlinePreview();
-        SetPresetControlsEnabled(true);
+        finally
+        {
+            _presetApplyInFlight = false;
+        }
     }
 
     private void QueuePresetValue(uint propId, uint value, string label,
@@ -325,6 +335,7 @@ public partial class CameraSettingsPanel : UserControl
     private void StartInlinePreview()
     {
         if (!_camera.IsConnected) return;
+        _inlineEvfPump?.Stop();
         _inlineEvfPump = new EvfPump(
             _camera,
             Dispatcher,
