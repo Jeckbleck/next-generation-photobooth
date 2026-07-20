@@ -22,6 +22,7 @@ Logs/
 publish/
 .publish-temp/
 releases/
+installer/test-fixtures/out/
 
 # OS
 Thumbs.db

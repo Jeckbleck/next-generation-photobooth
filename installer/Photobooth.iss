@@ -5,7 +5,7 @@
   #define PublishDir "..\.publish-temp"
 #endif
 
-#define MyAppId "{{8F3A1C9E-4B7D-4A2F-9E61-3C8D5F2A71B4}}"
+#define MyAppId "{{8F3A1C9E-4B7D-4A2F-9E61-3C8D5F2A71B4}"
 #define MyAppName "Photobooth Kiosk"
 #define MyAppExeName "Photobooth.exe"
 
