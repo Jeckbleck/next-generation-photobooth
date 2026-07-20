@@ -212,11 +212,19 @@ public partial class CameraSettingsPanel : UserControl
 
             // If Activate() ran while this apply was in flight, LoadCameraSettings()
             // no-opped instead of doing its normal reload (dropdown refresh, property
-            // resubscription). Catch up now that the flag is clear.
+            // resubscription). Catch up now that the flag is clear — but LoadCameraSettings()
+            // resets the status text and _presetStatusNoteActive as a side effect, which
+            // would silently erase the "Applied ..."/"None applied ..." message this method
+            // just set. Snapshot and restore both around the catch-up call so the apply's
+            // own outcome message survives.
             if (_settingsReloadPendingAfterApply)
             {
                 _settingsReloadPendingAfterApply = false;
+                string savedStatusText = CameraSettingStatusText.Text;
+                bool   savedNoteActive = _presetStatusNoteActive;
                 LoadCameraSettings();
+                CameraSettingStatusText.Text = savedStatusText;
+                _presetStatusNoteActive      = savedNoteActive;
             }
         }
     }
