@@ -141,7 +141,7 @@ public partial class CameraSettingsPanel : UserControl
         }
     }
 
-    private void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_settingCameraControls) return;
         if (PresetComboBox.SelectedItem is not ComboBoxItem { Tag: string presetName })
@@ -155,42 +155,81 @@ public partial class CameraSettingsPanel : UserControl
         var preset = _settings.CameraPresets.FirstOrDefault(p => p.Name == presetName);
         if (preset is null) return;
 
-        ApplyPreset(preset);
+        await ApplyPresetAsync(preset);
     }
 
-    private void ApplyPreset(CameraPreset preset)
+    private async Task ApplyPresetAsync(CameraPreset preset)
     {
-        var applied = new List<string>();
+        SetPresetControlsEnabled(false);
+        _inlineEvfPump?.Stop();
+        _inlineEvfPump = null;
+        PresetApplySpinner.Visibility = Visibility.Visible;
+        CameraSettingStatusText.Text  = "Applying preset…";
+        _presetStatusNoteActive       = true;
+
         var skipped = new List<string>();
+        var pending = new List<(string Label, Task<bool> Task)>();
 
-        ApplyPresetValue(EDSDKLib.EDSDK.PropID_ISOSpeed, preset.Iso, "Iso", applied, skipped);
-        ApplyPresetValue(EDSDKLib.EDSDK.PropID_Tv,       preset.Tv,  "Tv",  applied, skipped);
-        ApplyPresetValue(EDSDKLib.EDSDK.PropID_Av,       preset.Av,  "Av",  applied, skipped);
+        QueuePresetValue(EDSDKLib.EDSDK.PropID_ISOSpeed, preset.Iso, "Iso", skipped, pending);
+        QueuePresetValue(EDSDKLib.EDSDK.PropID_Tv,       preset.Tv,  "Tv",  skipped, pending);
+        QueuePresetValue(EDSDKLib.EDSDK.PropID_Av,       preset.Av,  "Av",  skipped, pending);
 
-        string message;
-        if (skipped.Count == 0)
-            message = string.Empty;
-        else if (applied.Count == 0)
-            message = $"None of {string.Join(", ", skipped)} supported on this camera.";
-        else
-            message = $"Applied {string.Join(", ", applied)} — {string.Join(", ", skipped)} not supported on this camera.";
+        await Task.WhenAll(pending.Select(p => p.Task));
 
-        CameraSettingStatusText.Text = message;
-        _presetStatusNoteActive = skipped.Count > 0;
+        var applied  = new List<string>();
+        var timedOut = new List<string>();
+        foreach (var (label, task) in pending)
+        {
+            if (task.Result) applied.Add(label);
+            else timedOut.Add(label);
+        }
+
+        CameraSettingStatusText.Text = BuildPresetStatusMessage(applied, skipped, timedOut);
+        _presetStatusNoteActive      = skipped.Count > 0 || timedOut.Count > 0;
+        PresetApplySpinner.Visibility = Visibility.Collapsed;
+
+        // If the camera disconnected mid-apply, no PropertyChanged event will ever
+        // arrive for the pending properties — they simply resolve false when
+        // PropertyConfirmTimeout elapses, and this method still unwinds normally
+        // (spinner hidden, controls re-enabled) without needing to listen for
+        // CameraDisconnected explicitly.
+        if (_camera.IsConnected) StartInlinePreview();
+        SetPresetControlsEnabled(true);
     }
 
-    private void ApplyPresetValue(uint propId, uint value, string label, List<string> applied, List<string> skipped)
+    private void QueuePresetValue(uint propId, uint value, string label,
+        List<string> skipped, List<(string Label, Task<bool> Task)> pending)
     {
         int[]? desc = _camera.GetPropertyDesc(propId);
         if (CameraPropertyMaps.IsSupportedValue(desc, value))
-        {
-            _camera.SetProperty(propId, value);
-            applied.Add(label);
-        }
+            pending.Add((label, _camera.SetPropertyAsync(propId, value)));
         else
-        {
             skipped.Add(label);
-        }
+    }
+
+    private static string BuildPresetStatusMessage(List<string> applied, List<string> skipped, List<string> timedOut)
+    {
+        if (skipped.Count == 0 && timedOut.Count == 0)
+            return $"Applied {string.Join(", ", applied)}";
+
+        var problems = new List<string>();
+        if (skipped.Count  > 0) problems.Add($"{string.Join(", ", skipped)} not supported on this camera");
+        if (timedOut.Count > 0) problems.Add($"{string.Join(", ", timedOut)} did not confirm in time");
+
+        if (applied.Count == 0)
+            return $"None applied — {string.Join("; ", problems)}.";
+
+        return $"Applied {string.Join(", ", applied)} — {string.Join("; ", problems)}.";
+    }
+
+    private void SetPresetControlsEnabled(bool enabled)
+    {
+        PresetComboBox.IsEnabled     = enabled;
+        IsoComboBox.IsEnabled        = enabled;
+        TvComboBox.IsEnabled         = enabled;
+        AvComboBox.IsEnabled         = enabled;
+        SavePresetButton.IsEnabled   = enabled;
+        DeletePresetButton.IsEnabled = enabled && PresetComboBox.SelectedItem is ComboBoxItem { Tag: string };
     }
 
     private void SavePreset_Click(object sender, RoutedEventArgs e)
