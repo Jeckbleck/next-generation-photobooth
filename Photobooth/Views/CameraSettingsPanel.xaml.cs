@@ -17,6 +17,7 @@ public partial class CameraSettingsPanel : UserControl
     private bool     _settingCameraControls;
     private bool     _presetStatusNoteActive;
     private bool     _presetApplyInFlight;
+    private bool     _settingsReloadPendingAfterApply;
     private EvfPump? _inlineEvfPump;
 
     public CameraSettingsPanel(CameraService camera, SettingsManager settings)
@@ -48,7 +49,7 @@ public partial class CameraSettingsPanel : UserControl
 
     private void LoadCameraSettings()
     {
-        if (_presetApplyInFlight) return;
+        if (_presetApplyInFlight) { _settingsReloadPendingAfterApply = true; return; }
         if (!_camera.IsConnected)
         {
             CameraModelLabel.Text            = "No camera connected";
@@ -198,12 +199,25 @@ public partial class CameraSettingsPanel : UserControl
             // PropertyConfirmTimeout elapses, and this method still unwinds normally
             // (spinner hidden, controls re-enabled) without needing to listen for
             // CameraDisconnected explicitly.
-            if (_camera.IsConnected) StartInlinePreview();
+            //
+            // StartInlinePreview() is skipped if the panel is no longer visible (the
+            // user navigated away mid-apply), so it doesn't spin up an EVF pump nobody
+            // is watching, competing with other consumers of the shared camera.
+            if (IsVisible && _camera.IsConnected) StartInlinePreview();
             SetPresetControlsEnabled(true);
         }
         finally
         {
             _presetApplyInFlight = false;
+
+            // If Activate() ran while this apply was in flight, LoadCameraSettings()
+            // no-opped instead of doing its normal reload (dropdown refresh, property
+            // resubscription). Catch up now that the flag is clear.
+            if (_settingsReloadPendingAfterApply)
+            {
+                _settingsReloadPendingAfterApply = false;
+                LoadCameraSettings();
+            }
         }
     }
 
