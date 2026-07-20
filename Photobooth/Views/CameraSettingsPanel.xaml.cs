@@ -17,6 +17,7 @@ public partial class CameraSettingsPanel : UserControl
     private bool     _settingCameraControls;
     private bool     _presetStatusNoteActive;
     private bool     _presetApplyInFlight;
+    private bool     _testShotInFlight;
     private bool     _settingsReloadPendingAfterApply;
     private EvfPump? _inlineEvfPump;
 
@@ -38,11 +39,11 @@ public partial class CameraSettingsPanel : UserControl
         ResumePreviewButton.Visibility     = Visibility.Collapsed;
         PreviewSpinner.Visibility          = _camera.IsConnected ? Visibility.Visible : Visibility.Collapsed;
 
-        // If a preset apply is in flight, it owns the EVF pump for its duration and
-        // will restart it itself once it resolves (see ApplyPresetAsync) — starting
-        // a second pump here would fight it and violate the "pump stopped for the
-        // duration of the apply" invariant.
-        if (!_presetApplyInFlight) StartInlinePreview();
+        // If a preset apply or test shot is in flight, it owns the EVF pump/preview
+        // pane for its duration and will restart the pump itself once it resolves
+        // (see ApplyPresetAsync / TakeTestShot_Click) — starting a second pump here
+        // would fight it.
+        if (!_presetApplyInFlight && !_testShotInFlight) StartInlinePreview();
     }
 
     // Call when the Camera tab loses focus or the page unloads.
@@ -54,7 +55,7 @@ public partial class CameraSettingsPanel : UserControl
 
     private void LoadCameraSettings()
     {
-        if (_presetApplyInFlight) { _settingsReloadPendingAfterApply = true; return; }
+        if (_presetApplyInFlight || _testShotInFlight) { _settingsReloadPendingAfterApply = true; return; }
         if (!_camera.IsConnected)
         {
             CameraModelLabel.Text            = "No camera connected";
@@ -151,7 +152,7 @@ public partial class CameraSettingsPanel : UserControl
 
     private async void PresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_settingCameraControls || _presetApplyInFlight) return;
+        if (_settingCameraControls || _presetApplyInFlight || _testShotInFlight) return;
         if (PresetComboBox.SelectedItem is not ComboBoxItem { Tag: string presetName })
         {
             DeletePresetButton.IsEnabled = false;
@@ -214,24 +215,25 @@ public partial class CameraSettingsPanel : UserControl
         finally
         {
             _presetApplyInFlight = false;
-
-            // If Activate() ran while this apply was in flight, LoadCameraSettings()
-            // no-opped instead of doing its normal reload (dropdown refresh, property
-            // resubscription). Catch up now that the flag is clear — but LoadCameraSettings()
-            // resets the status text and _presetStatusNoteActive as a side effect, which
-            // would silently erase the "Applied ..."/"None applied ..." message this method
-            // just set. Snapshot and restore both around the catch-up call so the apply's
-            // own outcome message survives.
-            if (_settingsReloadPendingAfterApply)
-            {
-                _settingsReloadPendingAfterApply = false;
-                string savedStatusText = CameraSettingStatusText.Text;
-                bool   savedNoteActive = _presetStatusNoteActive;
-                LoadCameraSettings();
-                CameraSettingStatusText.Text = savedStatusText;
-                _presetStatusNoteActive      = savedNoteActive;
-            }
+            CatchUpDeferredSettingsReload();
         }
+    }
+
+    // If Activate() (or a test shot) ran while a preset apply/test shot was in flight,
+    // LoadCameraSettings() no-opped instead of doing its normal reload (dropdown
+    // refresh, property resubscription). Catch up here — but LoadCameraSettings()
+    // resets the status text and _presetStatusNoteActive as a side effect, which would
+    // silently erase whatever outcome message the caller just set, so snapshot and
+    // restore both around the catch-up call.
+    private void CatchUpDeferredSettingsReload()
+    {
+        if (!_settingsReloadPendingAfterApply) return;
+        _settingsReloadPendingAfterApply = false;
+        string savedStatusText = CameraSettingStatusText.Text;
+        bool   savedNoteActive = _presetStatusNoteActive;
+        LoadCameraSettings();
+        CameraSettingStatusText.Text = savedStatusText;
+        _presetStatusNoteActive      = savedNoteActive;
     }
 
     private void QueuePresetValue(uint propId, uint value, string label,
@@ -267,6 +269,13 @@ public partial class CameraSettingsPanel : UserControl
         AvComboBox.IsEnabled         = enabled;
         SavePresetButton.IsEnabled   = enabled;
         DeletePresetButton.IsEnabled = enabled && PresetComboBox.SelectedItem is ComboBoxItem { Tag: string };
+
+        // The live-preview-pane buttons also touch _inlineEvfPump or trigger a capture,
+        // both of which a preset apply (or a test shot) owns for its duration — lock
+        // them too so a test shot or resume-preview click can't collide with an
+        // in-flight preset apply, and vice versa (see TakeTestShot_Click).
+        TakeTestShotButton.IsEnabled  = enabled;
+        ResumePreviewButton.IsEnabled = enabled;
     }
 
     private void SavePreset_Click(object sender, RoutedEventArgs e)
@@ -390,9 +399,10 @@ public partial class CameraSettingsPanel : UserControl
 
     private async void TakeTestShot_Click(object sender, RoutedEventArgs e)
     {
-        if (!_camera.IsConnected) return;
+        if (!_camera.IsConnected || _presetApplyInFlight || _testShotInFlight) return;
 
-        TakeTestShotButton.IsEnabled   = false;
+        _testShotInFlight = true;
+        SetPresetControlsEnabled(false);
         ResumePreviewButton.Visibility = Visibility.Collapsed;
 
         _inlineEvfPump?.Stop();
@@ -434,12 +444,15 @@ public partial class CameraSettingsPanel : UserControl
         finally
         {
             if (IsVisible) PreviewSpinner.Visibility = Visibility.Collapsed;
-            TakeTestShotButton.IsEnabled = true;
+            _testShotInFlight = false;
+            SetPresetControlsEnabled(true);
+            CatchUpDeferredSettingsReload();
         }
     }
 
     private void ResumePreview_Click(object sender, RoutedEventArgs e)
     {
+        if (_presetApplyInFlight || _testShotInFlight) return;
         ResumePreviewButton.Visibility     = Visibility.Collapsed;
         InlinePreviewImage.Source          = null;
         InlinePreviewStatusText.Text       = "Starting camera preview…";
