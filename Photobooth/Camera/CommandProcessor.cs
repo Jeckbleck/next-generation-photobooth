@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Photobooth.Camera.Commands;
+using Serilog;
 
 namespace Photobooth.Camera
 {
@@ -21,9 +23,15 @@ namespace Photobooth.Camera
                     Thread.Sleep(1);
                     if (_queue.TryDequeue(out var cmd))
                     {
+                        var waitMs = (DateTime.UtcNow - cmd.EnqueuedAt).TotalMilliseconds;
+                        if (waitMs > 200)
+                            Log.Debug("{Command} waited {WaitMs}ms in queue before executing",
+                                cmd.GetType().Name, (int)waitMs);
+
                         if (!cmd.Execute())
                         {
                             Thread.Sleep(500);
+                            cmd.EnqueuedAt = DateTime.UtcNow;
                             _queue.Enqueue(cmd);
                         }
                     }
@@ -38,6 +46,10 @@ namespace Photobooth.Camera
             _task?.Dispose();
         }
 
-        public void PostCommand(Command command) => _queue.Enqueue(command);
+        public void PostCommand(Command command)
+        {
+            command.EnqueuedAt = DateTime.UtcNow;
+            _queue.Enqueue(command);
+        }
     }
 }

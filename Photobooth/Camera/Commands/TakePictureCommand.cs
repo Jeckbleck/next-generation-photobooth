@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using Serilog;
 
@@ -17,19 +18,29 @@ namespace Photobooth.Camera.Commands
             _firstAttemptAt ??= DateTime.UtcNow;
 
             // Half-press to allow AF to lock, brief wait, then full press
+            var halfwaySw = Stopwatch.StartNew();
             uint err = EDSDKLib.EDSDK.EdsSendCommand(
                 _model.Camera,
                 EDSDKLib.EDSDK.CameraCommand_PressShutterButton,
                 (int)EDSDKLib.EDSDK.EdsShutterButton.CameraCommand_ShutterButton_Halfway);
+            halfwaySw.Stop();
+            if (halfwaySw.ElapsedMilliseconds > 200)
+                Log.Debug("Shutter halfway-press EdsSendCommand call took {ElapsedMs}ms (attempt {Attempt})",
+                    halfwaySw.ElapsedMilliseconds, _attempt);
 
             if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
             {
                 Thread.Sleep(300);
 
+                var fullSw = Stopwatch.StartNew();
                 err = EDSDKLib.EDSDK.EdsSendCommand(
                     _model.Camera,
                     EDSDKLib.EDSDK.CameraCommand_PressShutterButton,
                     (int)EDSDKLib.EDSDK.EdsShutterButton.CameraCommand_ShutterButton_Completely);
+                fullSw.Stop();
+                if (fullSw.ElapsedMilliseconds > 200)
+                    Log.Debug("Shutter full-press EdsSendCommand call took {ElapsedMs}ms (attempt {Attempt})",
+                        fullSw.ElapsedMilliseconds, _attempt);
             }
 
             EDSDKLib.EDSDK.EdsSendCommand(

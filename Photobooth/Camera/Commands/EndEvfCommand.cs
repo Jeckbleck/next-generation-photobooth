@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using Serilog;
 
 namespace Photobooth.Camera.Commands
 {
@@ -10,7 +12,12 @@ namespace Photobooth.Camera.Commands
         {
             uint device = _model.EvfOutputDevice;
             device &= ~EDSDKLib.EDSDK.EvfOutputDevice_PC;
+
+            var sw = Stopwatch.StartNew();
             uint err = EDSDKLib.EDSDK.EdsSetPropertyData(_model.Camera, EDSDKLib.EDSDK.PropID_Evf_OutputDevice, 0, sizeof(uint), device);
+            sw.Stop();
+            if (sw.ElapsedMilliseconds > 200)
+                Log.Debug("EndEvfCommand's EdsSetPropertyData call took {ElapsedMs}ms", sw.ElapsedMilliseconds);
 
             if (err != EDSDKLib.EDSDK.EDS_ERR_OK)
             {
