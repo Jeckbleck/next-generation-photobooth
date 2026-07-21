@@ -26,6 +26,42 @@ public partial class CameraSettingsPanel : UserControl
         _camera   = camera;
         _settings = settings;
         InitializeComponent();
+        InitRotationComboBox();
+    }
+
+    private void InitRotationComboBox()
+    {
+        _settingCameraControls = true;
+        try
+        {
+            RotationComboBox.Items.Add(new ComboBoxItem { Content = "0°",   Tag = 0 });
+            RotationComboBox.Items.Add(new ComboBoxItem { Content = "90°",  Tag = 90 });
+            RotationComboBox.Items.Add(new ComboBoxItem { Content = "180°", Tag = 180 });
+            RotationComboBox.Items.Add(new ComboBoxItem { Content = "270°", Tag = 270 });
+
+            foreach (ComboBoxItem item in RotationComboBox.Items)
+            {
+                if (item.Tag is int deg && deg == _settings.CameraRotationDegrees)
+                {
+                    RotationComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            _settingCameraControls = false;
+        }
+    }
+
+    private void RotationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_settingCameraControls) return;
+        if (RotationComboBox.SelectedItem is not ComboBoxItem { Tag: int degrees }) return;
+
+        _settings.SetCameraRotationDegrees(degrees);
+        _camera.RotationDegrees = degrees;
+        Log.Information("Camera rotation set to {Degrees}°", degrees);
     }
 
     // Call when the Camera tab becomes visible.
