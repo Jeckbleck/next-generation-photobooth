@@ -48,16 +48,21 @@ jobs:
           --no-restore
           -o ./publish
 
-      # Bundle install.ps1 so the ZIP is ready to deploy to a kiosk as-is
-      - name: Add install script to package
-        run: Copy-Item scripts/install.ps1 ./publish/
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
 
-      - name: Create release ZIP
-        run: Compress-Archive -Path ./publish/* -DestinationPath photobooth-${{ github.sha }}.zip
+      - name: Compile installer
+        shell: pwsh
+        run: >-
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          installer\Photobooth.iss
+          "/DMyAppVersion=${{ github.sha }}"
+          "/DPublishDir=./publish"
+          "/O."
 
-      - name: Upload package artifact
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: photobooth-${{ github.sha }}
-          path: photobooth-${{ github.sha }}.zip
+          name: PhotoboothSetup-${{ github.sha }}
+          path: PhotoboothSetup-${{ github.sha }}.exe
           retention-days: 30
