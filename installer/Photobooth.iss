@@ -38,3 +38,6 @@ Name: "autostart"; Description: "Launch Photobooth automatically when Windows st
 
 [Registry]
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Photobooth Kiosk"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
+
+[Dirs]
+Name: "C:\Photobooth"; Flags: uninsneveruninstall
