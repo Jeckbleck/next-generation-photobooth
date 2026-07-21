@@ -60,7 +60,9 @@ namespace Photobooth
             }
 
             Log.Information("App startup — initializing camera");
-            Services.GetRequiredService<CameraService>().Initialize();
+            var camera = Services.GetRequiredService<CameraService>();
+            camera.Initialize();
+            camera.RotationDegrees = settings.CameraRotationDegrees;
         }
 
         protected override void OnExit(ExitEventArgs e)

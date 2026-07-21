@@ -30,6 +30,7 @@ namespace Photobooth.Camera
 
         public bool IsConnected { get; private set; }
         public string? ModelName => _model?.ModelName;
+        public int RotationDegrees { get; set; }
 
         public string SessionDirectory { get; set; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Photobooth");
@@ -402,7 +403,7 @@ namespace Photobooth.Camera
                 byte[] buffer = new byte[length];
                 Marshal.Copy(pointer, buffer, 0, (int)length);
 
-                var frame = EvfDecoder.Decode(buffer);
+                var frame = EvfDecoder.Decode(buffer, RotationDegrees);
                 if (frame != null)
                     EvfFrameReady?.Invoke(this, frame);
             }

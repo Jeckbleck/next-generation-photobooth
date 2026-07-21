@@ -203,6 +203,22 @@ public sealed class CameraServiceTests : IDisposable
         Assert.False(fired, "DeviceBusy must not fire for unrelated event types");
     }
 
+    // ── RotationDegrees ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public void RotationDegrees_DefaultsToZero()
+    {
+        Assert.Equal(0, _sut.RotationDegrees);
+    }
+
+    [Fact]
+    public void RotationDegrees_CanBeSetAndRead()
+    {
+        _sut.RotationDegrees = 180;
+
+        Assert.Equal(180, _sut.RotationDegrees);
+    }
+
     // ── SetPropertyAsync ─────────────────────────────────────────────────────────
 
     private const uint TestPropId      = 0x00000405u;
