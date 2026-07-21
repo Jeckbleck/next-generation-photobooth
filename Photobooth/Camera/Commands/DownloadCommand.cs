@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Photobooth.Helpers;
 using Serilog;
 
 namespace Photobooth.Camera.Commands
@@ -8,13 +9,16 @@ namespace Photobooth.Camera.Commands
     {
         private IntPtr _directoryItem;
         private readonly string _destinationDir;
+        private readonly int _rotationDegrees;
         private readonly Action<string>? _onComplete;
 
-        public DownloadCommand(ref CameraModel model, ref IntPtr inRef, string destinationDir, Action<string>? onComplete)
+        public DownloadCommand(ref CameraModel model, ref IntPtr inRef, string destinationDir,
+            int rotationDegrees, Action<string>? onComplete)
             : base(ref model)
         {
             _directoryItem = inRef;
             _destinationDir = destinationDir;
+            _rotationDegrees = rotationDegrees;
             _onComplete = onComplete;
         }
 
@@ -77,6 +81,7 @@ namespace Photobooth.Camera.Commands
             if (err == EDSDKLib.EDSDK.EDS_ERR_OK)
             {
                 Log.Information("Photo saved: {Path}", destPath);
+                ImageRotation.RotateFileInPlace(destPath, _rotationDegrees);
                 _model.NotifyObservers(new CameraEvent(CameraEvent.Type.DOWNLOAD_COMPLETE, IntPtr.Zero));
                 _onComplete?.Invoke(destPath);
             }

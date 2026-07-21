@@ -345,7 +345,7 @@ namespace Photobooth.Camera
             if (inEvent == EDSDKLib.EDSDK.ObjectEvent_DirItemRequestTransfer && _model != null && _processor != null)
             {
                 Log.Debug("ObjectEvent_DirItemRequestTransfer — queuing download to {Dir}", SessionDirectory);
-                _processor.PostCommand(new DownloadCommand(ref _model, ref inRef, SessionDirectory, OnPhotoSaved));
+                _processor.PostCommand(new DownloadCommand(ref _model, ref inRef, SessionDirectory, RotationDegrees, OnPhotoSaved));
             }
             else if (inRef != IntPtr.Zero)
             {
