@@ -34,6 +34,36 @@ public sealed class EvfDecoderTests
         Assert.Equal(6, result.PixelHeight);
     }
 
+    [Theory]
+    [InlineData(90)]
+    [InlineData(270)]
+    public void Decode_WithRotation90Or270_SwapsDimensions(int rotationDegrees)
+    {
+        var result = EvfDecoder.Decode(MakeJpeg(8, 6), rotationDegrees);
+        Assert.NotNull(result);
+        Assert.Equal(6, result!.PixelWidth);
+        Assert.Equal(8, result.PixelHeight);
+    }
+
+    [Fact]
+    public void Decode_WithRotation180_PreservesDimensions()
+    {
+        var result = EvfDecoder.Decode(MakeJpeg(8, 6), 180);
+        Assert.NotNull(result);
+        Assert.Equal(8, result!.PixelWidth);
+        Assert.Equal(6, result.PixelHeight);
+    }
+
+    [Fact]
+    public void Decode_DefaultRotation_IsZero()
+    {
+        // No rotationDegrees argument — must behave exactly like Decode(data, 0)
+        var result = EvfDecoder.Decode(MakeJpeg(8, 6));
+        Assert.NotNull(result);
+        Assert.Equal(8, result!.PixelWidth);
+        Assert.Equal(6, result.PixelHeight);
+    }
+
     [Fact]
     public void Decode_EmptyArray_ReturnsNull()
     {

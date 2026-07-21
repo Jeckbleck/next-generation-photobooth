@@ -9,7 +9,8 @@ namespace Photobooth.Camera;
 internal static class EvfDecoder
 {
     // Returns null on empty input or decode failure; never throws.
-    internal static BitmapSource? Decode(byte[] data)
+    // rotationDegrees must be one of 0, 90, 180, 270 (clockwise); any other value behaves as 0.
+    internal static BitmapSource? Decode(byte[] data, int rotationDegrees = 0)
     {
         if (data is null || data.Length == 0) return null;
         try
@@ -19,6 +20,13 @@ internal static class EvfDecoder
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.StreamSource = ms;
+            bitmap.Rotation = rotationDegrees switch
+            {
+                90  => Rotation.Rotate90,
+                180 => Rotation.Rotate180,
+                270 => Rotation.Rotate270,
+                _   => Rotation.Rotate0,
+            };
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
