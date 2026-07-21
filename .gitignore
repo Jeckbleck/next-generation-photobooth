@@ -23,6 +23,7 @@ publish/
 .publish-temp/
 releases/
 installer/test-fixtures/out/
+installer/test-fixtures/fake-publish-*
 
 # OS
 Thumbs.db
