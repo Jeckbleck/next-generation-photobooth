@@ -1,16 +1,17 @@
 <#
 .SYNOPSIS
-    Builds a self-contained release package ready to copy to kiosk mini PCs.
+    Builds a self-contained installer ready to copy to kiosk mini PCs.
 
 .DESCRIPTION
-    Runs dotnet publish (win-x86, self-contained) then bundles the output plus
-    install.ps1 into a single ZIP file under releases\.
+    Runs dotnet publish (win-x86, self-contained) then compiles the output
+    into a double-click Inno Setup installer (PhotoboothSetup-{version}.exe)
+    under releases\.
 
-    The ZIP contains everything the target machine needs - no .NET runtime,
-    no Visual Studio, no dev tools.
+    The installer contains everything the target machine needs - no .NET
+    runtime, no Visual Studio, no dev tools.
 
 .PARAMETER Version
-    Version string used in the ZIP filename. Defaults to today's date.
+    Version string used in the installer filename. Defaults to today's date.
 
 .EXAMPLE
     .\package.ps1
@@ -26,7 +27,6 @@ $repoRoot   = Split-Path $PSScriptRoot -Parent
 $project    = Join-Path $repoRoot "Photobooth\Photobooth.csproj"
 $publishDir = Join-Path $repoRoot ".publish-temp"
 $releaseDir = Join-Path $repoRoot "releases"
-$zipPath    = Join-Path $releaseDir "photobooth-$Version.zip"
 
 # Clean staging area
 if (Test-Path $publishDir) { Remove-Item -Recurse -Force $publishDir }
@@ -42,15 +42,21 @@ dotnet publish $project `
 
 if ($LASTEXITCODE -ne 0) { Write-Error "dotnet publish failed (exit $LASTEXITCODE)"; exit 1 }
 
-# Bundle install.ps1 so the ZIP is self-contained
-Copy-Item (Join-Path $PSScriptRoot "install.ps1") $publishDir
+$iscc = Get-Command iscc -ErrorAction SilentlyContinue
+if (-not $iscc) {
+    Write-Error "ISCC.exe (Inno Setup Compiler) not found on PATH. Install it with 'choco install innosetup' or from https://jrsoftware.org/isdl.php"
+    exit 1
+}
 
-Write-Host "Zipping to $zipPath ..." -ForegroundColor Cyan
-Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -Force
+$issScript = Join-Path $repoRoot "installer\Photobooth.iss"
+Write-Host "Compiling installer..." -ForegroundColor Cyan
+& $iscc.Source $issScript "/DMyAppVersion=$Version" "/DPublishDir=$publishDir" "/O$releaseDir"
+if ($LASTEXITCODE -ne 0) { Write-Error "ISCC compile failed (exit $LASTEXITCODE)"; exit 1 }
 
 # Clean up staging area
 Remove-Item -Recurse -Force $publishDir
 
-$size = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
-Write-Host "Done - photobooth-$Version.zip ($size MB)" -ForegroundColor Green
-Write-Host "Distribute this file to each kiosk and run: powershell -ExecutionPolicy Bypass .\install.ps1"
+$setupExe = Join-Path $releaseDir "PhotoboothSetup-$Version.exe"
+$size = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
+Write-Host "Done - PhotoboothSetup-$Version.exe ($size MB)" -ForegroundColor Green
+Write-Host "Distribute this file to each kiosk and double-click it to install."
