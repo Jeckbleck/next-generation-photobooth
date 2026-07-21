@@ -41,3 +41,6 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Dirs]
 Name: "C:\Photobooth"; Flags: uninsneveruninstall
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName} now"; Flags: nowait postinstall skipifsilent
