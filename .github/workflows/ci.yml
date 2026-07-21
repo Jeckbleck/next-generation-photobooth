@@ -57,7 +57,7 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           installer\Photobooth.iss
           "/DMyAppVersion=${{ github.sha }}"
-          "/DPublishDir=./publish"
+          "/DPublishDir=..\publish"
           "/O."
 
       - name: Upload installer artifact
