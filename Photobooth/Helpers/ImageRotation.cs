@@ -34,6 +34,7 @@ namespace Photobooth.Helpers
 
                 var codec = ImageCodecInfo.GetImageDecoders()
                     .First(c => c.FormatID == ImageFormat.Jpeg.Guid);
+                // Re-encode at quality 95 strips EXIF and re-compresses, but a one-time tradeoff for photobooth (not cumulative).
                 using var ep = new EncoderParameters(1);
                 ep.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
                 src.Save(path, codec, ep);

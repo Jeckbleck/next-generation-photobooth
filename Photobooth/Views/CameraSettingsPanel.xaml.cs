@@ -61,7 +61,6 @@ public partial class CameraSettingsPanel : UserControl
 
         _settings.SetCameraRotationDegrees(degrees);
         _camera.RotationDegrees = degrees;
-        Log.Information("Camera rotation set to {Degrees}°", degrees);
     }
 
     // Call when the Camera tab becomes visible.

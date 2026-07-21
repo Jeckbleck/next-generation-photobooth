@@ -30,6 +30,7 @@ namespace Photobooth.Camera
 
         public bool IsConnected { get; private set; }
         public string? ModelName => _model?.ModelName;
+        // Written on UI thread via RotationComboBox; read on callback threads without sync. Safe: 32-bit reads are atomic, setting only changed via PIN-gated admin panel (never mid-session).
         public int RotationDegrees { get; set; }
 
         public string SessionDirectory { get; set; } = Path.Combine(
