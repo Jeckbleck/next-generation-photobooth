@@ -161,6 +161,22 @@ namespace Photobooth.Services
             Log.Information("Camera preset deleted: {Name}", name);
         }
 
+        public int CameraRotationDegrees => _settings.CameraRotationDegrees;
+
+        // Snaps to {0,90,180,270} (mod 360). Any value that isn't exactly one of those
+        // four after modulo — e.g. 45 — falls back to 0 rather than guessing a "nearest"
+        // angle, since only those four values are ever meaningful for this setting.
+        public void SetCameraRotationDegrees(int degrees)
+        {
+            int normalized = ((degrees % 360) + 360) % 360;
+            if (normalized is not (0 or 90 or 180 or 270))
+                normalized = 0;
+
+            _settings.CameraRotationDegrees = normalized;
+            Save();
+            Log.Information("Camera rotation set to {Degrees}°", normalized);
+        }
+
         private AppSettings Load()
         {
             try
@@ -233,6 +249,7 @@ namespace Photobooth.Services
         public string  AIServerUrl           { get; set; } = "http://localhost:8000";
         public string  AIApiKey              { get; set; } = "";
         public List<CameraPreset> CameraPresets { get; set; } = DefaultCameraPresets();
+        public int CameraRotationDegrees { get; set; } = 0;
 
         public static List<CameraPreset> DefaultCameraPresets() => new()
         {

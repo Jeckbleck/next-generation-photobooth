@@ -195,4 +195,51 @@ public sealed class SettingsManagerTests : IDisposable
         var sm2 = new SettingsManager(_tempFile);
         Assert.Contains(sm2.CameraPresets, p => p.Name == "Custom");
     }
+
+    // --- Camera rotation ---
+
+    [Fact]
+    public void CameraRotationDegrees_DefaultsToZero()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        Assert.Equal(0, sm.CameraRotationDegrees);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(90)]
+    [InlineData(180)]
+    [InlineData(270)]
+    public void SetCameraRotationDegrees_AcceptsValidValues(int degrees)
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.SetCameraRotationDegrees(degrees);
+        Assert.Equal(degrees, sm.CameraRotationDegrees);
+    }
+
+    [Theory]
+    [InlineData(45, 0)]
+    [InlineData(360, 0)]
+    [InlineData(450, 90)]
+    [InlineData(-90, 270)]
+    public void SetCameraRotationDegrees_NormalizesInvalidValues(int input, int expected)
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.SetCameraRotationDegrees(input);
+        Assert.Equal(expected, sm.CameraRotationDegrees);
+    }
+
+    [Fact]
+    public void CameraRotationDegrees_PersistsAcrossReload()
+    {
+        File.Delete(_tempFile);
+        var sm = new SettingsManager(_tempFile);
+        sm.SetCameraRotationDegrees(180);
+
+        var sm2 = new SettingsManager(_tempFile);
+        Assert.Equal(180, sm2.CameraRotationDegrees);
+    }
 }
