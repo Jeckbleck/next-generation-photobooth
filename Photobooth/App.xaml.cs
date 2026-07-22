@@ -74,7 +74,13 @@ namespace Photobooth
             Log.Information("App startup — initializing camera");
             splash.SetStatus("Connecting to camera…");
             var camera = Services.GetRequiredService<CameraService>();
-            await Task.Run(() => camera.Initialize());
+            // Must run on this thread, not Task.Run: EdsInitializeSDK binds the SDK's
+            // internal event/callback plumbing to whichever OS thread calls it, and that
+            // thread must keep running for the app's lifetime (this one, via the WPF
+            // Dispatcher loop, does). A ThreadPool thread is recycled the instant this
+            // call returns, permanently orphaning EVF/property/object event delivery —
+            // camera.Initialize() ran here silently breaking live view app-wide.
+            camera.Initialize();
             camera.RotationDegrees = settings.CameraRotationDegrees;
 
             var mainWindow = new MainWindow();
