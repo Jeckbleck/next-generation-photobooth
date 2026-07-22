@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Photobooth.Camera;
+using Photobooth.Print;
 using Photobooth.Services;
 using Serilog;
 
@@ -17,6 +18,7 @@ namespace Photobooth.Views
         private readonly IFileStorageService _fileStorage;
         private readonly AIEnhancementClient _aiClient;
         private readonly FlowController      _flow;
+        private readonly PrintService        _printService;
 
         private SettingsTabController _tabController = null!;
         private bool _tapsEnabled;
@@ -37,14 +39,16 @@ namespace Photobooth.Views
             SettingsManager     settings,
             IFileStorageService fileStorage,
             AIEnhancementClient aiClient,
-            FlowController      flow)
+            FlowController      flow,
+            PrintService        printService)
         {
-            _camera      = camera;
-            _events      = events;
-            _settings    = settings;
-            _fileStorage = fileStorage;
-            _aiClient    = aiClient;
-            _flow        = flow;
+            _camera       = camera;
+            _events       = events;
+            _settings     = settings;
+            _fileStorage  = fileStorage;
+            _aiClient     = aiClient;
+            _flow         = flow;
+            _printService = printService;
             InitializeComponent();
             _eventPanel = new EventManagementPanel(_events, _settings, _fileStorage, _aiClient);
             EventPanelHost.Content = _eventPanel;
@@ -60,7 +64,7 @@ namespace Photobooth.Views
             _aiPanel = new AIConfigPanel(_aiClient, _settings);
             AIConfigPanelHost.Content = _aiPanel;
             _aiPanel.AIEnhancementEnabledChanged += OnAIEnhancementEnabledChanged;
-            _printerPanel = new PrinterPanel(_settings);
+            _printerPanel = new PrinterPanel(_settings, _printService);
             PrinterPanelHost.Content = _printerPanel;
             _securityPanel = new SecurityPanel(_settings);
             SecurityPanelHost.Content = _securityPanel;

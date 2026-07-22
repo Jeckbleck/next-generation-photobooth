@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using Photobooth.Print;
 using Photobooth.Services;
 using Serilog;
 
@@ -9,10 +11,12 @@ namespace Photobooth.Views;
 public partial class PrinterPanel : UserControl
 {
     private readonly SettingsManager _settings;
+    private readonly PrintService    _printService;
 
-    public PrinterPanel(SettingsManager settings)
+    public PrinterPanel(SettingsManager settings, PrintService printService)
     {
-        _settings = settings;
+        _settings     = settings;
+        _printService = printService;
         InitializeComponent();
     }
 
@@ -61,6 +65,16 @@ public partial class PrinterPanel : UserControl
     private void AutoPrintToggle_Click(object sender, RoutedEventArgs e)
     {
         _settings.SetAutoPrint(AutoPrintToggle.IsChecked == true);
+    }
+
+    private void OpenPrinterPropertiesNote_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        bool opened = _printService.OpenPrinterProperties();
+        PrinterStatusText.Text = opened
+            ? PrinterStatusText.Text
+            : "No printer selected — choose one above first.";
+        if (!opened)
+            Log.Warning("Open printer properties requested with no printer resolved");
     }
 
     private void PrinterDropdown_SelectionChanged(object sender, SelectionChangedEventArgs e)

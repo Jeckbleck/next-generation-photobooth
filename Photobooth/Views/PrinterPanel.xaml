@@ -31,11 +31,22 @@
             </ComboBox>
         </Grid>
 
-        <Border Background="{DynamicResource NavBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,24">
+        <Border Background="{DynamicResource NavBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,24"
+                Cursor="Hand" ToolTip="Click to open printing preferences for the active printer"
+                MouseLeftButtonUp="OpenPrinterPropertiesNote_MouseLeftButtonUp">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#1A2B44"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="⚠" Foreground="#E9A020" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Top"/>
                 <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12">
-                    Enable <Run FontWeight="Bold" Foreground="White">2-inch cut</Run> in the DNP driver once: Printer Properties → Advanced → Printing Defaults → Printer Features → 2 inch cut.
+                    Enable <Run FontWeight="Bold" Foreground="White">2-inch cut</Run> in the DNP driver once: Printer Properties → Advanced → Printing Defaults → Printer Features → 2 inch cut. <Run FontStyle="Italic" Foreground="{StaticResource TextSecondaryBrush}">(Click to open it now.)</Run>
                 </TextBlock>
             </StackPanel>
         </Border>

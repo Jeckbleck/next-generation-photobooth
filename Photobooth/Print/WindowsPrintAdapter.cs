@@ -53,4 +53,18 @@ public sealed class WindowsPrintAdapter : IPrintAdapter
         doc.Print();
         Log.Information("Print job submitted");
     }
+
+    // Opens the driver's own Printing Preferences dialog for the given printer —
+    // where DNP's "Printer Features" tab (2-inch cut) lives — via the same
+    // rundll32 printui.dll entry point Windows itself uses for that menu item.
+    public void OpenPrinterProperties(string printerName)
+    {
+        Log.Information("Opening printer preferences for {Printer}", printerName);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName        = "rundll32.exe",
+            Arguments       = $"printui.dll,PrintUIEntry /e /n \"{printerName}\"",
+            UseShellExecute = true,
+        });
+    }
 }

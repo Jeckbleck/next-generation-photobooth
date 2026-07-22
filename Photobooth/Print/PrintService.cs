@@ -38,6 +38,18 @@ namespace Photobooth.Print
             return FindDnpPrinter();
         }
 
+        // Opens the driver's Printing Preferences for whichever printer is currently
+        // in use (manual override, else DNP auto-detect). Returns false if no printer
+        // could be resolved, so the caller can show a status message instead.
+        public bool OpenPrinterProperties()
+        {
+            string? printerName = EffectivePrinterName();
+            if (printerName == null) return false;
+
+            _adapter.OpenPrinterProperties(printerName);
+            return true;
+        }
+
         public Task PrintStripAsync(Bitmap strip)
         {
             // PrintDocument and some drivers (e.g. DNP) require an STA thread.

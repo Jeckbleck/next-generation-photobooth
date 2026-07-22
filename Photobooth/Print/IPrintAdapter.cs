@@ -9,4 +9,5 @@ public interface IPrintAdapter
     IEnumerable<string> GetInstalledPrinterNames();
     IEnumerable<PaperSize> GetPaperSizes(string printerName);
     void SubmitJob(string? printerName, PaperSize? paperSize, Bitmap bitmap);
+    void OpenPrinterProperties(string printerName);
 }

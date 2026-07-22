@@ -186,6 +186,47 @@ public sealed class PrintServiceTests : IDisposable
         _adapter.Verify(a => a.SubmitJob(null, null, bmp), Times.Once);
     }
 
+    // ── OpenPrinterProperties ───────────────────────────────────────────────────
+
+    [Fact]
+    public void OpenPrinterProperties_ReturnsTrueAndCallsAdapter_WhenPrinterResolved()
+    {
+        _settings.SetPrinterName("DNP DS620A");
+        var sut = CreateSut();
+
+        bool result = sut.OpenPrinterProperties();
+
+        Assert.True(result);
+        _adapter.Verify(a => a.OpenPrinterProperties("DNP DS620A"), Times.Once);
+    }
+
+    [Fact]
+    public void OpenPrinterProperties_UsesDnpAutoDetect_WhenNoSettingsOverride()
+    {
+        _settings.SetPrinterName(null);
+        _adapter.Setup(a => a.GetInstalledPrinterNames())
+                .Returns(new[] { "DNP DS620A" });
+        var sut = CreateSut();
+
+        bool result = sut.OpenPrinterProperties();
+
+        Assert.True(result);
+        _adapter.Verify(a => a.OpenPrinterProperties("DNP DS620A"), Times.Once);
+    }
+
+    [Fact]
+    public void OpenPrinterProperties_ReturnsFalse_WhenNoPrinterResolved()
+    {
+        _settings.SetPrinterName(null);
+        _adapter.Setup(a => a.GetInstalledPrinterNames()).Returns(Array.Empty<string>());
+        var sut = CreateSut();
+
+        bool result = sut.OpenPrinterProperties();
+
+        Assert.False(result);
+        _adapter.Verify(a => a.OpenPrinterProperties(It.IsAny<string>()), Times.Never);
+    }
+
     [Fact]
     public async Task PrintStripAsync_PropagatesException_WhenSubmitJobThrows()
     {
