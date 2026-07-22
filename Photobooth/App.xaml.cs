@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,10 +16,19 @@ namespace Photobooth
     {
         public static IServiceProvider Services { get; private set; } = null!;
 
-        protected override void OnStartup(StartupEventArgs e)
+        // async void is the accepted exception to the rule for WPF's OnStartup —
+        // it's the top-level entry point, not a method with a caller to signal back to.
+        protected override async void OnStartup(StartupEventArgs e)
         {
             AppLogger.Initialize();
             base.OnStartup(e);
+
+            // Shown immediately, before any of the slower startup work below, so the
+            // kiosk never shows a blank/absent window while the DB migrates and the
+            // camera connects. Uses the settings default until the real SettingsManager
+            // is resolved a few lines down (near-instant, so no visible flash in practice).
+            var splash = new SplashWindow(new AppSettings().BrandingText);
+            splash.Show();
 
             var sc = new ServiceCollection();
 
@@ -47,12 +57,14 @@ namespace Photobooth
 
             Services = sc.BuildServiceProvider();
 
+            var settings = Services.GetRequiredService<SettingsManager>();
+            splash.SetBranding(settings.BrandingText);
+
             Log.Information("Initialising database — applying migrations");
-            Services.GetRequiredService<PhotoboothDbContext>().Database.Migrate();
+            splash.SetStatus("Loading database…");
+            await Task.Run(() => Services.GetRequiredService<PhotoboothDbContext>().Database.Migrate());
 
-            var settings    = Services.GetRequiredService<SettingsManager>();
-            var eventRepo   = Services.GetRequiredService<IEventRepository>();
-
+            var eventRepo = Services.GetRequiredService<IEventRepository>();
             if (settings.ActiveEventId.HasValue && eventRepo.FindById(settings.ActiveEventId.Value) is null)
             {
                 Log.Warning("ActiveEventId {Id} not found in database — clearing stale reference", settings.ActiveEventId.Value);
@@ -60,9 +72,15 @@ namespace Photobooth
             }
 
             Log.Information("App startup — initializing camera");
+            splash.SetStatus("Connecting to camera…");
             var camera = Services.GetRequiredService<CameraService>();
-            camera.Initialize();
+            await Task.Run(() => camera.Initialize());
             camera.RotationDegrees = settings.CameraRotationDegrees;
+
+            var mainWindow = new MainWindow();
+            Application.Current.MainWindow = mainWindow;
+            mainWindow.Show();
+            splash.Close();
         }
 
         protected override void OnExit(ExitEventArgs e)

@@ -1,0 +1,34 @@
+<Window x:Class="Photobooth.SplashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Photobooth.Views"
+        Title="The Next Generation Photobooth"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        AllowsTransparency="True">
+    <Border Background="{DynamicResource BackgroundBrush}"
+            BorderBrush="#334"
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="48,40">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="BrandingTextBlock"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="20" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Margin="0,0,0,28"/>
+            <local:LoadingSpinner Width="40" Height="40"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,0,0,16"/>
+            <TextBlock x:Name="StatusTextBlock"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       FontSize="13"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+    </Border>
+</Window>
