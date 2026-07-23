@@ -1,6 +1,75 @@
 <UserControl x:Class="Photobooth.Views.DisplayPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- Larger touch target than the app-wide Slider style, for this panel only -->
+        <Style TargetType="Slider">
+            <Setter Property="Cursor"               Value="Hand"/>
+            <Setter Property="FocusVisualStyle"     Value="{x:Null}"/>
+            <Setter Property="IsSnapToTickEnabled"  Value="True"/>
+            <Setter Property="TickFrequency"        Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="44" VerticalAlignment="Center">
+                            <!-- Unfilled track -->
+                            <Border Height="10" CornerRadius="5" Background="#1E2F4A"
+                                    VerticalAlignment="Center"/>
+                            <!-- Track handles fill + thumb positioning -->
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Focusable="False" IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="10" CornerRadius="5"
+                                                        Background="{DynamicResource AccentBrush}"
+                                                        VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb FocusVisualStyle="{x:Null}">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse x:Name="ThumbDot"
+                                                         Width="40" Height="40"
+                                                         Fill="{DynamicResource AccentBrush}"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbDot" Property="Fill"
+                                                                Value="{DynamicResource AccentHoverBrush}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbDot" Property="Fill"
+                                                                Value="{DynamicResource AccentPressedBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Focusable="False" IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <StackPanel>
         <TextBlock Text="Display" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="Bold" Margin="0,0,0,20"/>
 
@@ -48,7 +117,7 @@
         <Grid Margin="0,0,0,10">
             <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
             <TextBlock Text="Preview hold" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
-            <Slider x:Name="PreviewHoldSlider" Grid.Column="1" Minimum="1" Maximum="10" Value="5" ValueChanged="PreviewHoldSlider_ValueChanged" ScrollViewer.PanningMode="None"/>
+            <Slider x:Name="PreviewHoldSlider" Grid.Column="1" Minimum="1" Maximum="60" Value="5" ValueChanged="PreviewHoldSlider_ValueChanged" ScrollViewer.PanningMode="None"/>
             <TextBlock Grid.Column="2"
                        Text="{Binding Value, ElementName=PreviewHoldSlider, StringFormat='{}{0:0} s'}"
                        Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="6,0,0,0"/>

@@ -86,7 +86,7 @@ namespace Photobooth.Services
 
         public void SetPreviewHoldSeconds(int value)
         {
-            _settings.PreviewHoldSeconds = Math.Clamp(value, 1, 10);
+            _settings.PreviewHoldSeconds = Math.Clamp(value, 1, 60);
             Save();
         }
 
