@@ -29,10 +29,19 @@
         <!-- EVF fills the full row. Side buttons float over the edges.       -->
         <Grid Grid.Row="1">
 
-            <!-- Live view feed — full frame visible, letterboxed against background -->
+            <!-- Live view feed — full frame visible, letterboxed against background.
+                 Mirrored by default (RenderTransform below) so people can position
+                 themselves naturally, like a mirror, while framing up before a shot;
+                 flipped back to unmirrored while the just-captured photo is shown so
+                 any text in frame reads correctly, matching the final printed strip. -->
             <Image x:Name="EvfImage"
                    Stretch="Uniform"
-                   IsHitTestVisible="False"/>
+                   IsHitTestVisible="False"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.RenderTransform>
+                    <ScaleTransform x:Name="EvfMirrorTransform" ScaleX="-1"/>
+                </Image.RenderTransform>
+            </Image>
 
             <!-- Loading spinner while waiting for photo download -->
             <local:LoadingSpinner x:Name="CaptureSpinner"

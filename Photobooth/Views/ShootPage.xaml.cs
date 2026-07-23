@@ -174,6 +174,7 @@ namespace Photobooth.Views
                 Dispatcher,
                 frame =>
                 {
+                    EvfMirrorTransform.ScaleX = -1;
                     EvfImage.Source = frame;
                     _stallLogged = false;
                     if (StatusText.Text == "Camera preview unavailable.")
@@ -388,7 +389,11 @@ namespace Photobooth.Views
                     return b;
                 }, ct);
 
-                await Dispatcher.InvokeAsync(() => EvfImage.Source = bmp);
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    EvfMirrorTransform.ScaleX = 1;
+                    EvfImage.Source           = bmp;
+                });
                 await FadeOutFlash();
             }
             catch (OperationCanceledException) { }
