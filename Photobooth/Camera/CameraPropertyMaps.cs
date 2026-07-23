@@ -148,34 +148,40 @@ namespace Photobooth.Camera
             [0x00000003] = "Tungsten",
             [0x00000004] = "Fluorescent",
             [0x00000005] = "Flash",
-            [0x00000006] = "Custom",
             [0x00000008] = "Shade",
             [0x00000009] = "Color Temperature",
             [0x0000000A] = "Custom WB 1",
-            [0x0000000C] = "Custom WB 2",
-            [0x0000000D] = "Custom WB 3",
+            [0x0000000B] = "Custom WB 2",
+            [0x0000000C] = "Custom WB 3",
         };
 
-        // ImageQuality values are compound: [size1][quality1][size2][quality2]
-        // size: 0x00=Large, 0x01=Med, 0x02=Small, 0x05=Med2, 0x06=S2, 0x07=S3
-        // quality: 0x10=Fine JPEG, 0x13=Normal JPEG, 0x64=RAW
+        // Manual custom WB (EDSDK WhiteBalance_Manual1, value 6) requires the operator
+        // to take a reference shot of a gray/white card and dial it in on the camera
+        // body — there's no way to do that from the kiosk UI, so it's hidden even when
+        // the camera reports it as a valid option.
+        internal static readonly HashSet<uint> WhiteBalanceHidden = new() { 0x00000006 };
+
+        // ImageQuality values are compound: [size1][quality1][size2][quality2], one pair
+        // per image saved to the card (JPEG-only formats leave the second pair as a
+        // 0xFF/0x0F filler meaning "no second image"). See DecodeImageQuality below.
         internal static readonly Dictionary<uint, string> ImageQuality = new()
         {
-            [0x0010FF0F] = "JPEG Large Fine",
-            [0x0013FF0F] = "JPEG Large Normal",
-            [0x0110FF0F] = "JPEG Medium Fine",
-            [0x0113FF0F] = "JPEG Medium Normal",
-            [0x0210FF0F] = "JPEG Small Fine",
-            [0x0213FF0F] = "JPEG Small Normal",
-            [0x0510FF0F] = "JPEG Small1 Fine",
-            [0x0513FF0F] = "JPEG Small1 Normal",
-            [0x0610FF0F] = "JPEG Small2",
-            [0x0710FF0F] = "JPEG Small3",
-            [0x00640F0F] = "RAW",
-            [0x00648010] = "RAW + JPEG Large Fine",
-            [0x00648013] = "RAW + JPEG Large Normal",
-            [0x00648110] = "RAW + JPEG Medium Fine",
-            [0x00648210] = "RAW + JPEG Small Fine",
+            [0x0010FF0F] = "JPEG Large",
+            [0x0012FF0F] = "JPEG Large Normal",
+            [0x0013FF0F] = "JPEG Large Fine",
+            [0x0110FF0F] = "JPEG Medium",
+            [0x0112FF0F] = "JPEG Medium Normal",
+            [0x0113FF0F] = "JPEG Medium Fine",
+            [0x0210FF0F] = "JPEG Small",
+            [0x0212FF0F] = "JPEG Small Normal",
+            [0x0213FF0F] = "JPEG Small Fine",
+            [0x0064FF0F] = "RAW",
+            [0x00640012] = "RAW + JPEG Large Normal",
+            [0x00640013] = "RAW + JPEG Large Fine",
+            [0x00640113] = "RAW + JPEG Medium Fine",
+            [0x00640213] = "RAW + JPEG Small Fine",
+            [0x0063FF0F] = "CRAW",
+            [0x00630013] = "CRAW + JPEG Large Fine",
         };
 
         internal static readonly Dictionary<uint, string> MeteringMode = new()
@@ -190,8 +196,57 @@ namespace Photobooth.Camera
         internal static string LookupTv(uint v) => Tv.TryGetValue(v, out var s) ? s : $"Tv 0x{v:X}";
         internal static string LookupAv(uint v) => Av.TryGetValue(v, out var s) ? s : $"Av 0x{v:X}";
         internal static string LookupWb(uint v) => WhiteBalance.TryGetValue(v, out var s) ? s : $"WB {v}";
-        internal static string LookupIq(uint v) => ImageQuality.TryGetValue(v, out var s) ? s : $"Quality 0x{v:X8}";
+        internal static string LookupIq(uint v) => ImageQuality.TryGetValue(v, out var s) ? s : DecodeImageQuality(v);
         internal static string LookupMeteringMode(uint v) => MeteringMode.TryGetValue(v, out var s) ? s : $"Metering 0x{v:X}";
+
+        // Decodes an ImageQuality value not covered by the curated table above (e.g. a
+        // Medium1/Medium2/Small1/Small2/Small3 tier, or a CRAW combo the kiosk's camera
+        // doesn't ship with but another model might) by reading its two [size][quality]
+        // byte pairs directly, instead of showing the raw hex code to the user.
+        private static string DecodeImageQuality(uint v)
+        {
+            string? first  = DescribeImageSlot((byte)(v >> 24), (byte)(v >> 16));
+            string? second = DescribeImageSlot((byte)(v >> 8), (byte)v);
+
+            if (first == null && second == null) return $"Quality 0x{v:X8}";
+            if (first == null) return second!;
+            if (second == null) return first;
+            return $"{first} + {second}";
+        }
+
+        // Returns null for a filler pair (quality 0x0F), meaning "no image in this slot".
+        private static string? DescribeImageSlot(byte size, byte quality) => quality switch
+        {
+            0x10 => $"JPEG {SizeLabel(size)}",
+            0x12 => $"JPEG {SizeLabel(size)} Normal",
+            0x13 => $"JPEG {SizeLabel(size)} Fine",
+            0x63 => "CRAW",
+            0x64 => RawLabel(size),
+            0x80 => $"HEIF {SizeLabel(size)}",
+            0x82 => $"HEIF {SizeLabel(size)} Normal",
+            0x83 => $"HEIF {SizeLabel(size)} Fine",
+            _    => null,
+        };
+
+        private static string SizeLabel(byte size) => size switch
+        {
+            0x00 => "Large",
+            0x01 => "Medium",
+            0x02 => "Small",
+            0x05 => "Medium 1",
+            0x06 => "Medium 2",
+            0x0E => "Small 1",
+            0x0F => "Small 2",
+            0x10 => "Small 3",
+            _    => $"(0x{size:X2})",
+        };
+
+        private static string RawLabel(byte size) => size switch
+        {
+            0x01 => "mRAW",
+            0x02 => "sRAW",
+            _    => "RAW",
+        };
 
         internal static bool IsSupportedValue(int[]? desc, uint value) =>
             desc == null || desc.Length == 0 || desc.Contains((int)value);

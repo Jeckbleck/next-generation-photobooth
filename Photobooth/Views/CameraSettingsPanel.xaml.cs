@@ -98,8 +98,7 @@ public partial class CameraSettingsPanel : UserControl
             _presetStatusNoteActive          = false;
             ReconnectCameraButton.Visibility = Visibility.Visible;
             IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
-                MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled =
-                ImageQualityComboBox.IsEnabled = false;
+                MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled = false;
             RefreshPresetDropdown();
             PresetComboBox.IsEnabled = SavePresetButton.IsEnabled = false;
             return;
@@ -111,8 +110,7 @@ public partial class CameraSettingsPanel : UserControl
         CameraSettingStatusText.Text = "Loading valid values from camera…";
         _presetStatusNoteActive      = false;
         IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
-            MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled =
-            ImageQualityComboBox.IsEnabled = true;
+            MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled = true;
         PresetComboBox.IsEnabled = SavePresetButton.IsEnabled = true;
         RefreshPresetDropdown();
 
@@ -123,14 +121,13 @@ public partial class CameraSettingsPanel : UserControl
         RefreshCameraDropdown(TvComboBox,           EDSDKLib.EDSDK.PropID_Tv,           CameraPropertyMaps.Tv,           CameraPropertyMaps.LookupTv);
         RefreshCameraDropdown(AvComboBox,           EDSDKLib.EDSDK.PropID_Av,           CameraPropertyMaps.Av,           CameraPropertyMaps.LookupAv);
         RefreshCameraDropdown(MeteringModeComboBox, EDSDKLib.EDSDK.PropID_MeteringMode, CameraPropertyMaps.MeteringMode, CameraPropertyMaps.LookupMeteringMode);
-        RefreshCameraDropdown(WhiteBalanceComboBox, EDSDKLib.EDSDK.PropID_WhiteBalance, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
-        RefreshCameraDropdown(ImageQualityComboBox, EDSDKLib.EDSDK.PropID_ImageQuality, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
+        RefreshCameraDropdown(WhiteBalanceComboBox, EDSDKLib.EDSDK.PropID_WhiteBalance, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb, CameraPropertyMaps.WhiteBalanceHidden);
 
         _camera.RequestPropertyDescs();
     }
 
     private void RefreshCameraDropdown(ComboBox cb, uint propId,
-        Dictionary<uint, string> map, Func<uint, string> fallback)
+        Dictionary<uint, string> map, Func<uint, string> fallback, HashSet<uint>? hidden = null)
     {
         _settingCameraControls = true;
         try
@@ -143,6 +140,8 @@ public partial class CameraSettingsPanel : UserControl
             IEnumerable<uint> values = (desc != null && desc.Length > 0)
                 ? desc.Select(v => (uint)v)
                 : map.Keys;
+
+            if (hidden != null) values = values.Where(v => !hidden.Contains(v));
 
             foreach (uint v in values)
             {
@@ -370,10 +369,7 @@ public partial class CameraSettingsPanel : UserControl
                     RefreshCameraDropdown(MeteringModeComboBox, propId, CameraPropertyMaps.MeteringMode, CameraPropertyMaps.LookupMeteringMode);
                     break;
                 case EDSDKLib.EDSDK.PropID_WhiteBalance:
-                    RefreshCameraDropdown(WhiteBalanceComboBox, propId, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb);
-                    break;
-                case EDSDKLib.EDSDK.PropID_ImageQuality:
-                    RefreshCameraDropdown(ImageQualityComboBox, propId, CameraPropertyMaps.ImageQuality, CameraPropertyMaps.LookupIq);
+                    RefreshCameraDropdown(WhiteBalanceComboBox, propId, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb, CameraPropertyMaps.WhiteBalanceHidden);
                     break;
             }
 
@@ -395,7 +391,6 @@ public partial class CameraSettingsPanel : UserControl
                     : cb == AvComboBox            ? EDSDKLib.EDSDK.PropID_Av
                     : cb == MeteringModeComboBox  ? EDSDKLib.EDSDK.PropID_MeteringMode
                     : cb == WhiteBalanceComboBox  ? EDSDKLib.EDSDK.PropID_WhiteBalance
-                    : cb == ImageQualityComboBox  ? EDSDKLib.EDSDK.PropID_ImageQuality
                     : 0u;
 
         if (propId == 0) return;

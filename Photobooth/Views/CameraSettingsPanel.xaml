@@ -127,23 +127,8 @@
                           SelectionChanged="CameraComboBox_SelectionChanged"/>
             </Grid>
 
-            <TextBlock Text="FILE" Foreground="{DynamicResource AccentBrush}"
-                       FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
-            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
-
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="130"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="Image quality" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
-                <ComboBox x:Name="ImageQualityComboBox" Grid.Column="1" Padding="8,6"
-                          SelectionChanged="CameraComboBox_SelectionChanged"/>
-            </Grid>
-
             <TextBlock Text="ROTATION" Foreground="{DynamicResource AccentBrush}"
-                       FontSize="11" FontWeight="Bold" Margin="0,20,0,8"/>
+                       FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
             <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
             <Grid>
