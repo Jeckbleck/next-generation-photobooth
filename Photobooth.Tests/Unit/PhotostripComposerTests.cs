@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -112,6 +113,56 @@ public sealed class PhotostripComposerTests
             g.Clear(fill);
         bmp.Save(path, ImageFormat.Png);
         return path;
+    }
+
+    private static string CreateTempTemplate(int size, Color borderColor, Rectangle transparentHole)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.png");
+        using var bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.CompositingMode = CompositingMode.SourceCopy; // paint the fixture's alpha exactly, no blending
+            g.Clear(borderColor);
+            using var clearBrush = new SolidBrush(Color.FromArgb(0, 0, 0, 0));
+            g.FillRectangle(clearBrush, transparentHole);
+        }
+        bmp.Save(path, ImageFormat.Png);
+        return path;
+    }
+
+    [Fact]
+    public void ComposeFromTemplate_WithTemplateFile_DrawsPhotoThroughHoleAndFrameOverBorder()
+    {
+        // Exercises the template- and photo-loading code path with a real, non-null
+        // template file — every other test in this class passes templatePath: null, so
+        // this is the only coverage of that branch (the one that switched from
+        // Image.FromFile to a stream-based read to avoid the GDI+ file-lock issue
+        // documented in BitmapHelper.cs).
+        const int size = 100;
+        var templatePath = CreateTempTemplate(size, Color.Red, new Rectangle(20, 20, 60, 60));
+        var photoPath = CreateTempPhoto(Color.Blue);
+        try
+        {
+            var slots = new List<StripSlotDefinition>
+            {
+                new() { Index = 1, X = 0.2, Y = 0.2, Width = 0.6, Height = 0.6 },
+            };
+
+            using var result = PhotostripComposer.ComposeFromTemplate(templatePath, slots, new[] { photoPath });
+
+            // Center of the transparent hole: the photo shows through.
+            var centerPixel = result.GetPixel(50, 50);
+            Assert.Equal(Color.Blue.ToArgb(), centerPixel.ToArgb());
+
+            // Near the border, outside the hole: the opaque template frame covers the photo.
+            var borderPixel = result.GetPixel(5, 5);
+            Assert.Equal(Color.Red.ToArgb(), borderPixel.ToArgb());
+        }
+        finally
+        {
+            File.Delete(templatePath);
+            File.Delete(photoPath);
+        }
     }
 
     [Theory]

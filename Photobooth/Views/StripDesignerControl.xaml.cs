@@ -177,8 +177,17 @@ namespace Photobooth.Views
             {
                 if (_templateDir is not null)
                 {
+                    // Remove every template file left over from a previous upload —
+                    // not just template-original.* — before setting up the new one.
+                    // Leaving a stale frame-detected.png behind (e.g. from an earlier
+                    // color-marker template) let it survive alongside a newer, unrelated
+                    // template-original, causing the designer canvas and the actual
+                    // print/preview to show mismatched frame designs.
                     foreach (var stale in Directory.GetFiles(_templateDir, "template-original.*"))
                         File.Delete(stale);
+                    var stalePunched = Path.Combine(_templateDir, "frame-detected.png");
+                    if (File.Exists(stalePunched))
+                        File.Delete(stalePunched);
 
                     var originalPath = Path.Combine(_templateDir, "template-original" + Path.GetExtension(dlg.FileName));
                     File.Copy(dlg.FileName, originalPath, overwrite: true);

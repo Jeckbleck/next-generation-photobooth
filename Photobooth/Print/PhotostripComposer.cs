@@ -31,11 +31,23 @@ namespace Photobooth.Print
             g.Clear(Color.White);
 
             var images = new List<Image>(PhotoSlots);
+            // Backing streams for images loaded below — Image.FromStream requires the
+            // stream to stay open for the image's whole lifetime, so these are disposed
+            // alongside (after) the images, not at the end of the loop body.
+            var streams = new List<MemoryStream>(PhotoSlots);
             try
             {
                 foreach (var path in photoPaths)
                 {
-                    try   { images.Add(Image.FromFile(path)); }
+                    try
+                    {
+                        // Read bytes up front instead of Image.FromFile, which keeps a
+                        // GDI+ lock on the file for the image's whole lifetime — see the
+                        // same fix and rationale in Helpers/BitmapHelper.cs.
+                        var stream = new MemoryStream(File.ReadAllBytes(path));
+                        streams.Add(stream);
+                        images.Add(Image.FromStream(stream));
+                    }
                     catch (Exception ex)
                     {
                         Log.Warning(ex, "Could not load photo for strip: {Path}", path);
@@ -49,6 +61,7 @@ namespace Photobooth.Print
             finally
             {
                 foreach (var img in images) img.Dispose();
+                foreach (var s in streams) s.Dispose();
             }
 
             return canvas;
@@ -111,9 +124,19 @@ namespace Photobooth.Print
             string? backgroundColor = null,
             IReadOnlyList<TextElementDefinition>? textElements = null)
         {
-            Image? template = templatePath is not null && File.Exists(templatePath)
-                ? Image.FromFile(templatePath)
-                : null;
+            // Read the file's bytes up front and load from a MemoryStream instead of
+            // Image.FromFile, which keeps a GDI+ lock on the file for the whole lifetime
+            // of the returned Image — see the same fix and rationale in
+            // Helpers/BitmapHelper.cs. The stream must stay alive for as long as
+            // `template` is used (Image.FromStream's documented contract), so it's
+            // disposed in the same finally block below, not right after this line.
+            MemoryStream? templateStream = null;
+            Image?        template       = null;
+            if (templatePath is not null && File.Exists(templatePath))
+            {
+                templateStream = new MemoryStream(File.ReadAllBytes(templatePath));
+                template       = Image.FromStream(templateStream);
+            }
 
             try
             {
@@ -159,7 +182,11 @@ namespace Photobooth.Print
 
                         try
                         {
-                            using var photo = Image.FromFile(photoPaths[photoIndex]);
+                            // Same file-lock fix as the template load above — the stream
+                            // and image are declared together so `using` disposes the
+                            // image first, then the stream, on this block's exit.
+                            using var photoStream = new MemoryStream(File.ReadAllBytes(photoPaths[photoIndex]));
+                            using var photo = Image.FromStream(photoStream);
 
                             Bitmap? rotated = null;
                             Image   drawPhoto = photo;
@@ -236,6 +263,7 @@ namespace Photobooth.Print
             finally
             {
                 template?.Dispose();
+                templateStream?.Dispose();
             }
         }
 
