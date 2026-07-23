@@ -1208,6 +1208,7 @@ namespace Photobooth.Views
             ToleranceSlider.Visibility  = colorControlsVisibility;
             EdgeMarginRow.Visibility    = colorControlsVisibility;
             EdgeMarginSlider.Visibility = colorControlsVisibility;
+            ColorSwatch.Visibility      = transparencyMode ? Visibility.Collapsed : (_hasColor ? Visibility.Visible : Visibility.Collapsed);
 
             EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode && !_autoDetectBusy;
             ToleranceSlider.IsEnabled       = colorPicked && !_autoDetectBusy;
@@ -1473,7 +1474,11 @@ namespace Photobooth.Views
         private void TryAutoDetectFromTransparency()
         {
             if (!_autoDetectMode) return;
-            if (RedetectFromTransparency() == 0) return;
+            if (RedetectFromTransparency() == 0)
+            {
+                RefreshToolbarState();
+                return;
+            }
 
             _slotSource = SlotSource.Transparency;
             PersistCurrentState();
