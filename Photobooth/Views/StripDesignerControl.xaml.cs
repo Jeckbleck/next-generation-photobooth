@@ -81,6 +81,12 @@ namespace Photobooth.Views
         // depends on this always being the untouched upload, restored fresh from disk.
         private BitmapSource? _originalBitmapSource;
         private bool _autoDetectMode = true;
+
+        // Tracks which mechanism produced the current slots, so a later Photo Overlap
+        // slider drag re-runs the right detector. Purely in-memory — not persisted,
+        // matching how the color path's sampled color/tolerance aren't persisted either.
+        private enum SlotSource { None, Color, Transparency }
+        private SlotSource _slotSource = SlotSource.None;
         private bool _eyedropperActive;
         private bool _hasColor;
         private bool _autoDetectBusy;
@@ -184,7 +190,11 @@ namespace Photobooth.Views
                 if (_eventId.HasValue)
                     App.Services.GetRequiredService<IEventService>().SetPhotostripTemplatePath(_eventId.Value, dlg.FileName);
 
-                UpdateStatus();
+                _slotSource = SlotSource.None;
+                TryAutoDetectFromTransparency();
+                if (_slotSource != SlotSource.Transparency)
+                    UpdateStatus();
+
                 Log.Information("Strip template set to: {Path}", dlg.FileName);
             }
             catch (Exception ex)
@@ -1164,6 +1174,7 @@ namespace Photobooth.Views
             _templateBitmapSource = null;
             _originalBitmapSource = null;
             _hasColor = false;
+            _slotSource = SlotSource.None;
             _eyedropperActive = false;
             ColorSwatch.Background = System.Windows.Media.Brushes.Transparent;
             ColorSwatch.Visibility = Visibility.Collapsed;
@@ -1175,10 +1186,11 @@ namespace Photobooth.Views
         private void RefreshToolbarState()
         {
             if (EyedropperButton is null) return;   // fires during InitializeComponent
-            bool hasTemplate   = TemplateImage.Source is not null;
-            bool eventSelected = _eventSlug is not null;
-            bool hasContent    = hasTemplate || _slots.Count > 0 || _backgroundColor is not null || _textElements.Count > 0;
-            bool colorPicked   = hasTemplate && _autoDetectMode && _hasColor;
+            bool hasTemplate      = TemplateImage.Source is not null;
+            bool eventSelected    = _eventSlug is not null;
+            bool hasContent       = hasTemplate || _slots.Count > 0 || _backgroundColor is not null || _textElements.Count > 0;
+            bool colorPicked      = hasTemplate && _autoDetectMode && _hasColor;
+            bool transparencyMode = _slotSource == SlotSource.Transparency;
 
             AddSlotButton.IsEnabled         = eventSelected && _slots.Count < MaxSlots;
             AddTextButton.IsEnabled         = eventSelected;
@@ -1186,10 +1198,21 @@ namespace Photobooth.Views
             UndoButton.IsEnabled            = _history.CanUndo;
             RedoButton.IsEnabled            = _history.CanRedo;
             ClearButton.IsEnabled           = hasContent;
+
+            // Color-eyedropper controls don't apply when slots came from the template's own
+            // transparency — hidden instead of just disabled, since there's nothing for the
+            // operator to do with them in that mode.
+            var colorControlsVisibility = transparencyMode ? Visibility.Collapsed : Visibility.Visible;
+            EyedropperButton.Visibility = colorControlsVisibility;
+            ToleranceRow.Visibility     = colorControlsVisibility;
+            ToleranceSlider.Visibility  = colorControlsVisibility;
+            EdgeMarginRow.Visibility    = colorControlsVisibility;
+            EdgeMarginSlider.Visibility = colorControlsVisibility;
+
             EyedropperButton.IsEnabled      = hasTemplate && _autoDetectMode && !_autoDetectBusy;
             ToleranceSlider.IsEnabled       = colorPicked && !_autoDetectBusy;
             EdgeMarginSlider.IsEnabled      = colorPicked && !_autoDetectBusy;
-            PhotoOverlapSlider.IsEnabled    = colorPicked && !_autoDetectBusy;
+            PhotoOverlapSlider.IsEnabled    = (colorPicked || transparencyMode) && !_autoDetectBusy;
         }
 
         private void UpdateStatus()
@@ -1250,7 +1273,8 @@ namespace Photobooth.Views
 
             var pos = e.GetPosition(DesignerCanvas);
             _sampledColor = SamplePixel(pos);
-            _hasColor = true;
+            _hasColor    = true;
+            _slotSource  = SlotSource.Color;
 
             ColorSwatch.Background  = new SolidColorBrush(_sampledColor);
             ColorSwatch.Visibility  = Visibility.Visible;
@@ -1325,7 +1349,32 @@ namespace Photobooth.Views
 
         private void RunAutoDetect()
         {
-            if (!_hasColor || _autoDetectBusy) return;
+            if (_autoDetectBusy) return;
+
+            if (_slotSource == SlotSource.Transparency)
+            {
+                _history.Push(CaptureConfig());
+                _autoDetectBusy = true;
+                RefreshToolbarState();
+                try
+                {
+                    RedetectFromTransparency();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to re-run transparency auto-detect for '{Slug}'", _eventSlug);
+                }
+                finally
+                {
+                    _autoDetectBusy = false;
+                    RefreshToolbarState();
+                    UpdateStatus();
+                    PersistCurrentState();
+                }
+                return;
+            }
+
+            if (!_hasColor) return;
 
             if (_originalBitmapSource == null)
             {
@@ -1388,6 +1437,49 @@ namespace Photobooth.Views
                 UpdateStatus();
                 PersistCurrentState();
             }
+        }
+
+        // Redetects slots from the template's own transparency and rebuilds the canvas.
+        // Returns the number of photo windows found — 0 means this template has no
+        // qualifying transparent region, which the caller uses to decide whether to fall
+        // back to eyedropper color-picking.
+        private int RedetectFromTransparency()
+        {
+            if (_originalBitmapSource is null) return 0;
+
+            int photoOverlap = (int)PhotoOverlapSlider.Value;
+            using var bmp = ToBitmap(_originalBitmapSource);
+            var defs = TemplateSegmenter.DetectFromTransparency(bmp, expandPixels: photoOverlap);
+            if (defs.Count == 0) return 0;
+
+            foreach (var slot in _slots.ToList())
+            {
+                DesignerCanvas.Children.Remove(slot.Body);
+                DesignerCanvas.Children.Remove(slot.RotateBtn);
+                DesignerCanvas.Children.Remove(slot.DeleteBtn);
+                foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
+            }
+            _slots.Clear();
+
+            foreach (var def in defs)
+                CreateSlot(def);
+
+            return defs.Count;
+        }
+
+        // Called right after a template upload, before the operator has done anything else.
+        // If the upload already has its photo windows punched out as real transparency,
+        // place slots straight from those holes and skip the eyedropper step entirely.
+        private void TryAutoDetectFromTransparency()
+        {
+            if (!_autoDetectMode) return;
+            if (RedetectFromTransparency() == 0) return;
+
+            _slotSource = SlotSource.Transparency;
+            PersistCurrentState();
+            StatusText.Text = "Photo windows detected automatically from the template's transparency.";
+            Log.Information("Auto-detected {Count} photo window(s) from template transparency for '{Slug}'",
+                _slots.Count, _eventSlug);
         }
 
         private void Undo_Click(object sender, RoutedEventArgs e)
