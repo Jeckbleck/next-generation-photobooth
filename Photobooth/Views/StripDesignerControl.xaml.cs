@@ -26,7 +26,8 @@ namespace Photobooth.Views
         private const double CanvasW     = 150;
         private const double CanvasH     = 450;
         private const int    MaxSlots    = 6;
-        private const double HandleSize  = 12;
+        private const double HandleSize      = 12;
+        private const double SlotHandleSize  = 22;  // photo-frame resize handles — larger touch target than text-box handles
         private const double MinSlotSize = 40;
         private const double ZoomStep    = 0.25;
         private const double ZoomMin     = 0.5;
@@ -46,6 +47,7 @@ namespace Photobooth.Views
         // Drag state
         private SlotControl? _dragging;
         private Point        _dragOffset;
+        private int          _topSlotZ = 10;   // bumped on click so overlapping frames layer to front on interaction
 
         // Resize state
         private SlotControl? _resizing;
@@ -489,8 +491,8 @@ namespace Photobooth.Views
                 int hi = h;
                 var handle = new Rectangle
                 {
-                    Width           = HandleSize,
-                    Height          = HandleSize,
+                    Width           = SlotHandleSize,
+                    Height          = SlotHandleSize,
                     Fill            = Brushes.White,
                     Stroke          = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x44)),
                     StrokeThickness = 1,
@@ -514,21 +516,39 @@ namespace Photobooth.Views
             slot.Body.Width  = slot.Width;
             slot.Body.Height = slot.Height;
 
+            // Rotate/delete buttons are anchored to the frame's screen-space top corners
+            // at all times — they don't follow the body's rotation, unlike the resize
+            // handles below.
             Canvas.SetLeft(slot.RotateBtn, slot.Left + 3);
             Canvas.SetTop(slot.RotateBtn,  slot.Top  + 3);
 
             Canvas.SetLeft(slot.DeleteBtn, slot.Left + slot.Width - 24);
             Canvas.SetTop(slot.DeleteBtn,  slot.Top  + 3);
 
-            double hs = HandleSize / 2.0;
-            Canvas.SetLeft(slot.Handles[0], slot.Left - hs);
-            Canvas.SetTop(slot.Handles[0],  slot.Top  - hs);
-            Canvas.SetLeft(slot.Handles[1], slot.Left + slot.Width  - hs);
-            Canvas.SetTop(slot.Handles[1],  slot.Top  - hs);
-            Canvas.SetLeft(slot.Handles[2], slot.Left - hs);
-            Canvas.SetTop(slot.Handles[2],  slot.Top  + slot.Height - hs);
-            Canvas.SetLeft(slot.Handles[3], slot.Left + slot.Width  - hs);
-            Canvas.SetTop(slot.Handles[3],  slot.Top  + slot.Height - hs);
+            // The body rotates in place around its own center (RenderTransform), so its
+            // actual on-screen corners swing away from the unrotated Left/Top/Width/Height
+            // rect whenever Rotation is 90/270. The resize handles are positioned by
+            // rotating their unrotated offset-from-center through the same angle, so they
+            // stay pinned to the frame's real, currently-visible corners.
+            double cx = slot.Left + slot.Width  / 2.0;
+            double cy = slot.Top  + slot.Height / 2.0;
+            double hw = slot.Width  / 2.0;
+            double hh = slot.Height / 2.0;
+            var rotate = new RotateTransform(slot.Rotation);
+
+            PlaceAtRotatedOffset(slot.Handles[0], cx, cy, rotate, -hw, -hh);
+            PlaceAtRotatedOffset(slot.Handles[1], cx, cy, rotate,  hw, -hh);
+            PlaceAtRotatedOffset(slot.Handles[2], cx, cy, rotate, -hw,  hh);
+            PlaceAtRotatedOffset(slot.Handles[3], cx, cy, rotate,  hw,  hh);
+        }
+
+        // Places el so its center sits at (cx, cy) plus (dx, dy) rotated by `rotate` —
+        // i.e. dx/dy is the element's offset from the slot's center when Rotation is 0.
+        private static void PlaceAtRotatedOffset(FrameworkElement el, double cx, double cy, RotateTransform rotate, double dx, double dy)
+        {
+            Point p = rotate.Transform(new Point(dx, dy));
+            Canvas.SetLeft(el, cx + p.X - el.Width  / 2.0);
+            Canvas.SetTop (el, cy + p.Y - el.Height / 2.0);
         }
 
         // --- Rotation ------------------------------------------------------------
@@ -538,8 +558,21 @@ namespace Photobooth.Views
             _history.Push(CaptureConfig());
             slot.Rotation = (slot.Rotation + 90) % 360;
             ((RotateTransform)slot.Body.RenderTransform).Angle = slot.Rotation;
+            LayoutSlot(slot);
             PersistCurrentState();
             Log.Debug("Slot {Index} rotated to {Deg}°", slot.Index, slot.Rotation);
+        }
+
+        // Raises every visual belonging to `slot` above every other slot's, so the frame
+        // being interacted with is never buried under an overlapping neighbor — handy
+        // now that resize handles are bigger and easier to mix up between close frames.
+        private void BringSlotToFront(SlotControl slot)
+        {
+            _topSlotZ += 10;
+            Panel.SetZIndex(slot.Body, _topSlotZ);
+            foreach (var h in slot.Handles) Panel.SetZIndex(h, _topSlotZ + 1);
+            Panel.SetZIndex(slot.RotateBtn, _topSlotZ + 2);
+            Panel.SetZIndex(slot.DeleteBtn, _topSlotZ + 2);
         }
 
         // --- Drag ----------------------------------------------------------------
@@ -547,6 +580,7 @@ namespace Photobooth.Views
         private void SlotBody_Down(SlotControl slot, MouseButtonEventArgs e)
         {
             _history.Push(CaptureConfig());
+            BringSlotToFront(slot);
             _dragging   = slot;
             var pos     = e.GetPosition(DesignerCanvas);
             _dragOffset = new Point(pos.X - slot.Left, pos.Y - slot.Top);
@@ -584,6 +618,7 @@ namespace Photobooth.Views
         private void Handle_Down(SlotControl slot, int handle, MouseButtonEventArgs e)
         {
             _history.Push(CaptureConfig());
+            BringSlotToFront(slot);
             _resizing        = slot;
             _resizeHandle    = handle;
             _resizeOrigin    = e.GetPosition(DesignerCanvas);
@@ -596,11 +631,17 @@ namespace Photobooth.Views
             if (_resizing != slot || !slot.Handles[handle].IsMouseCaptured) return;
 
             var pos = e.GetPosition(DesignerCanvas);
-            double dx = pos.X - _resizeOrigin.X;
-            double dy = pos.Y - _resizeOrigin.Y;
+
+            // ComputeResizedRect works in the slot's own unrotated coordinate space, so
+            // the raw screen-space drag delta needs to be rotated back through the
+            // frame's current angle before it means anything to it — otherwise dragging
+            // straight down on a 90°-rotated frame would (correctly, in screen terms, but
+            // uselessly) try to grow it sideways instead of taller.
+            Point local = new RotateTransform(-slot.Rotation).Transform(
+                new Point(pos.X - _resizeOrigin.X, pos.Y - _resizeOrigin.Y));
 
             var rect = ComputeResizedRect(
-                _resizeStartRect, handle, dx, dy, MinSlotSize, CanvasW, CanvasH, GuideStep, _guidelinesVisible);
+                _resizeStartRect, handle, local.X, local.Y, MinSlotSize, CanvasW, CanvasH, GuideStep, _guidelinesVisible);
 
             slot.Left   = rect.Left;
             slot.Top    = rect.Top;
@@ -1019,7 +1060,18 @@ namespace Photobooth.Views
 
         private void CanvasScroller_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton != MouseButton.Middle) return;
+            // Middle-mouse-drag always pans. A touch/left-click also pans, but only when
+            // it lands on empty canvas background rather than a slot/handle/button —
+            // PanningMode stays "None" on this ScrollViewer (see the "added panning mode
+            // in main view" commit) specifically so a touch-drag on a frame moves the
+            // frame instead of fighting WPF's built-in manipulation panning; this recreates
+            // just the "scroll the zoomed canvas with a finger" part on top of that, without
+            // reopening that conflict.
+            bool isBackgroundTap = e.ChangedButton == MouseButton.Left
+                && !_eyedropperActive
+                && ReferenceEquals(e.OriginalSource, DesignerCanvas);
+            if (e.ChangedButton != MouseButton.Middle && !isBackgroundTap) return;
+
             _panning  = true;
             _panStart = e.GetPosition(CanvasScroller);
             _panHOrig = CanvasScroller.HorizontalOffset;
@@ -1039,7 +1091,8 @@ namespace Photobooth.Views
 
         private void CanvasScroller_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (e.ChangedButton != MouseButton.Middle || !_panning) return;
+            if (!_panning) return;
+            if (e.ChangedButton != MouseButton.Middle && e.ChangedButton != MouseButton.Left) return;
             _panning = false;
             CanvasScroller.ReleaseMouseCapture();
             CanvasScroller.Cursor = null;
