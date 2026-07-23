@@ -60,6 +60,76 @@ public static class TemplateSegmenter
             .ToList();
     }
 
+    // Detects photo windows from a template that already has them punched out as real
+    // transparency, instead of a flat placeholder color. A region only counts as a photo
+    // window if it's fully enclosed by opaque pixels — background transparency around the
+    // frame artwork (common on templates designed as overlays) always touches the image's
+    // outer edge, so it's never mistaken for a slot.
+    public static List<StripSlotDefinition> DetectFromTransparency(
+        Bitmap template,
+        int    alphaThreshold  = 10,
+        double minAreaFraction = 0.005,
+        int    expandPixels    = 0)
+    {
+        int W = template.Width;
+        int H = template.Height;
+        int minPixels = Math.Max(1, (int)(W * H * minAreaFraction));
+
+        byte[] pixels;
+        int stride;
+        var bd = template.LockBits(
+            new Rectangle(0, 0, W, H),
+            ImageLockMode.ReadOnly,
+            PixelFormat.Format32bppArgb);
+        stride = Math.Abs(bd.Stride);
+        pixels = new byte[stride * H];
+        try
+        {
+            Marshal.Copy(bd.Scan0, pixels, 0, pixels.Length);
+        }
+        finally
+        {
+            template.UnlockBits(bd);
+        }
+
+        var mask = BuildAlphaMask(pixels, stride, W, H, alphaThreshold);
+        var (regions, _) = FindQualifyingRegions(mask, W, H, minPixels, requireEnclosed: true);
+
+        return regions
+            .OrderBy(r => r.minY)
+            .Select((r, i) =>
+            {
+                int ex0 = Math.Max(0,     r.minX - expandPixels);
+                int ey0 = Math.Max(0,     r.minY - expandPixels);
+                int ex1 = Math.Min(W - 1, r.maxX + expandPixels);
+                int ey1 = Math.Min(H - 1, r.maxY + expandPixels);
+                return new StripSlotDefinition
+                {
+                    Index    = i + 1,
+                    X        = (double)ex0 / W,
+                    Y        = (double)ey0 / H,
+                    Width    = (double)(ex1 - ex0 + 1) / W,
+                    Height   = (double)(ey1 - ey0 + 1) / H,
+                    Rotation = 0,
+                };
+            })
+            .ToList();
+    }
+
+    // Builds a per-pixel bool mask of "is this pixel transparent enough to be inside a
+    // photo window" — the alpha-channel counterpart to BuildMask's color-distance check.
+    private static bool[] BuildAlphaMask(byte[] pixels, int stride, int W, int H, int alphaThreshold)
+    {
+        var mask = new bool[W * H];
+        for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+        {
+            int off = y * stride + x * 4;
+            mask[y * W + x] = pixels[off + 3] <= alphaThreshold;
+        }
+        return mask;
+    }
+
     // Returns a copy of the template with every pixel belonging to a large-enough
     // (minAreaFraction-qualifying) connected region matching sampledColor — grown by
     // dilatePixels — made fully transparent, so the photo underneath shows through where
@@ -135,7 +205,7 @@ public static class TemplateSegmenter
     // placement) and as a flattened per-pixel mask covering every pixel of every qualifying
     // component (for PunchTransparency, so stray sub-threshold matches are never punched).
     private static (List<(int count, int minX, int minY, int maxX, int maxY)> regions, bool[] regionMask)
-        FindQualifyingRegions(bool[] mask, int W, int H, int minPixels)
+        FindQualifyingRegions(bool[] mask, int W, int H, int minPixels, bool requireEnclosed = false)
     {
         bool[] visited    = new bool[W * H];
         bool[] regionMask = new bool[W * H];
@@ -178,7 +248,8 @@ public static class TemplateSegmenter
                 }
             }
 
-            if (count >= minPixels)
+            bool touchesEdge = minX == 0 || minY == 0 || maxX == W - 1 || maxY == H - 1;
+            if (count >= minPixels && (!requireEnclosed || !touchesEdge))
             {
                 regions.Add((count, minX, minY, maxX, maxY));
                 foreach (var p in componentPixels)

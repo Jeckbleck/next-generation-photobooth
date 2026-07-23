@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using Photobooth.Print;
 using Xunit;
 
@@ -11,6 +12,7 @@ public class TemplateSegmenterTests
     {
         var bmp = new Bitmap(w, h);
         using var g = Graphics.FromImage(bmp);
+        g.CompositingMode = CompositingMode.SourceCopy;
         g.Clear(bg);
         foreach (var (rect, color) in fills)
         {
@@ -226,5 +228,88 @@ public class TemplateSegmenterTests
 
         Assert.Equal(0,   punched.GetPixel(30, 30).A);   // inside the large qualifying rectangle -> punched
         Assert.Equal(255, punched.GetPixel(80, 80).A);   // the tiny stray patch -> left opaque
+    }
+
+    [Fact]
+    public void DetectFromTransparency_EnclosedHole_ReturnsSingleSlotWithCorrectBounds()
+    {
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(25, 25, 50, 50), Color.FromArgb(0, 0, 0, 0)));
+        var slots = TemplateSegmenter.DetectFromTransparency(bmp, alphaThreshold: 10);
+        Assert.Single(slots);
+        Assert.Equal(1, slots[0].Index);
+        Assert.InRange(slots[0].X,      0.24, 0.26);
+        Assert.InRange(slots[0].Y,      0.24, 0.26);
+        Assert.InRange(slots[0].Width,  0.49, 0.52);
+        Assert.InRange(slots[0].Height, 0.49, 0.52);
+        Assert.Equal(0, slots[0].Rotation);
+    }
+
+    [Fact]
+    public void DetectFromTransparency_RegionTouchingEdge_IsIgnored()
+    {
+        // Touches the left edge (x=0) — simulates background transparency around the
+        // frame artwork, not an enclosed punched hole, and must never become a slot.
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(0, 25, 50, 50), Color.FromArgb(0, 0, 0, 0)));
+        var slots = TemplateSegmenter.DetectFromTransparency(bmp, alphaThreshold: 10);
+        Assert.Empty(slots);
+    }
+
+    [Fact]
+    public void DetectFromTransparency_TwoEnclosedHoles_ReturnsTwoSlotsSortedTopToBottom()
+    {
+        using var bmp = MakeBitmap(100, 300, Color.White,
+            (new Rectangle(10, 10, 80, 60), Color.FromArgb(0, 0, 0, 0)),
+            (new Rectangle(10, 110, 80, 60), Color.FromArgb(0, 0, 0, 0)));
+        var slots = TemplateSegmenter.DetectFromTransparency(bmp, alphaThreshold: 10);
+        Assert.Equal(2, slots.Count);
+        Assert.Equal(1, slots[0].Index);
+        Assert.Equal(2, slots[1].Index);
+        Assert.True(slots[0].Y < slots[1].Y, "Index 1 must be above Index 2");
+    }
+
+    [Fact]
+    public void DetectFromTransparency_TinyHole_IsFilteredByMinAreaFraction()
+    {
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(50, 50, 2, 2), Color.FromArgb(0, 0, 0, 0)));
+        var slots = TemplateSegmenter.DetectFromTransparency(bmp,
+            alphaThreshold: 10, minAreaFraction: 0.005);
+        Assert.Empty(slots);
+    }
+
+    [Fact]
+    public void DetectFromTransparency_AlphaJustAboveThreshold_IsExcluded()
+    {
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(25, 25, 50, 50), Color.FromArgb(11, 0, 0, 0)));
+        var slots = TemplateSegmenter.DetectFromTransparency(bmp, alphaThreshold: 10);
+        Assert.Empty(slots);
+    }
+
+    [Fact]
+    public void DetectFromTransparency_AlphaAtThreshold_IsIncluded()
+    {
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(25, 25, 50, 50), Color.FromArgb(10, 0, 0, 0)));
+        var slots = TemplateSegmenter.DetectFromTransparency(bmp, alphaThreshold: 10);
+        Assert.Single(slots);
+    }
+
+    [Fact]
+    public void DetectFromTransparency_ExpandPixels_GrowsBoundingBoxBySpecifiedAmount()
+    {
+        // 40x40 hole at (30,30) on a 100x100 canvas -> occupies px x:30-69, y:30-69
+        using var bmp = MakeBitmap(100, 100, Color.White,
+            (new Rectangle(30, 30, 40, 40), Color.FromArgb(0, 0, 0, 0)));
+
+        var expanded = TemplateSegmenter.DetectFromTransparency(bmp, alphaThreshold: 10, expandPixels: 5);
+
+        Assert.Single(expanded);
+        Assert.InRange(expanded[0].X,      0.24, 0.26);   // (30-5)/100 = 0.25
+        Assert.InRange(expanded[0].Y,      0.24, 0.26);
+        Assert.InRange(expanded[0].Width,  0.49, 0.51);   // (40+10)/100 = 0.50
+        Assert.InRange(expanded[0].Height, 0.49, 0.51);
     }
 }
