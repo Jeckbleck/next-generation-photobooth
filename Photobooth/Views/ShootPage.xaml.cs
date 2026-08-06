@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Rectangle = System.Windows.Shapes.Rectangle;
 using Photobooth.Camera;
+using Photobooth.Data.Models;
 using Photobooth.Helpers;
 using Photobooth.Print;
 using Photobooth.Services;
@@ -37,6 +40,10 @@ namespace Photobooth.Views
         private string _sessionDir = string.Empty;
         private int _shotCount = 3;
         private readonly List<Image> _thumbnails = new();
+
+        private StripTemplateConfig? _templateConfig;
+        private string?              _templateImagePath;
+        private int                  _currentShotNumber = 1;
 
         public ShootPage(
             CameraService       camera,
@@ -89,7 +96,9 @@ namespace Photobooth.Views
 
             _paywallActive = ev.PaywallEnabled;
 
-            var config = PrintHelper.LoadTemplateConfig(ev.Id, out _);
+            var config = PrintHelper.LoadTemplateConfig(ev.Id, out var templateImagePath);
+            _templateConfig     = config;
+            _templateImagePath  = templateImagePath;
             _shotCount = config is not null ? Math.Clamp(config.Slots.Count, 1, 6) : 3;
             BuildThumbnailBar(_shotCount);
 
@@ -159,6 +168,114 @@ namespace Photobooth.Views
             }
         }
 
+        // --- Crop guide ------------------------------------------------------------
+
+        // Dims the parts of the live EVF frame that the strip composer will crop away
+        // when this shot is fit into its template slot (ComposeFromTemplate crops to
+        // cover, unlike the legacy non-template layout, which just letterboxes — so
+        // there's nothing to hint about when the event has no saved template).
+        private void UpdateCropOverlay(BitmapSource frame)
+        {
+            double containerW = EvfHost.ActualWidth;
+            double containerH = EvfHost.ActualHeight;
+
+            if (GetCropAspectRatioForShot(_currentShotNumber) is not double target || target <= 0 ||
+                containerW <= 0 || containerH <= 0 || frame.PixelWidth <= 0 || frame.PixelHeight <= 0)
+            {
+                CropOverlay.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            CropOverlay.Visibility = Visibility.Visible;
+
+            double frameAspect = (double)frame.PixelWidth / frame.PixelHeight;
+
+            // Uniform-fit rect of the EVF image within its container — the same math
+            // Stretch="Uniform" uses — since the dim bars must line up with the actual
+            // rendered frame, not the whole (possibly letterboxed) container.
+            double scale = Math.Min(containerW / frame.PixelWidth, containerH / frame.PixelHeight);
+            double dispW = frame.PixelWidth  * scale;
+            double dispH = frame.PixelHeight * scale;
+            double dispX = (containerW - dispW) / 2;
+            double dispY = (containerH - dispH) / 2;
+
+            if (target > frameAspect)
+            {
+                // Slot is relatively wider than the frame — crop off the top and bottom.
+                double keepH = dispW / target;
+                double bar   = Math.Max(0, (dispH - keepH) / 2);
+                PositionBar(CropBarTop,    dispX, dispY,               dispW, bar);
+                PositionBar(CropBarBottom, dispX, dispY + dispH - bar, dispW, bar);
+                PositionBar(CropBarLeft,  0, 0, 0, 0);
+                PositionBar(CropBarRight, 0, 0, 0, 0);
+            }
+            else
+            {
+                // Slot is relatively taller than the frame — crop off the left and right.
+                double keepW = dispH * target;
+                double bar   = Math.Max(0, (dispW - keepW) / 2);
+                PositionBar(CropBarLeft,  dispX,              dispY, bar, dispH);
+                PositionBar(CropBarRight, dispX + dispW - bar, dispY, bar, dispH);
+                PositionBar(CropBarTop,    0, 0, 0, 0);
+                PositionBar(CropBarBottom, 0, 0, 0, 0);
+            }
+        }
+
+        private static void PositionBar(Rectangle bar, double x, double y, double width, double height)
+        {
+            Canvas.SetLeft(bar, x);
+            Canvas.SetTop(bar, y);
+            bar.Width  = width;
+            bar.Height = height;
+        }
+
+        // Aspect ratio (width/height) of the given shot's slot in the active event's
+        // saved strip template, or null if the event has no template / the shot has
+        // no matching slot.
+        private double? GetCropAspectRatioForShot(int shotNumber)
+        {
+            if (_templateConfig is null || _templateConfig.Slots.Count == 0) return null;
+
+            var slot = _templateConfig.Slots.FirstOrDefault(s => s.Index == shotNumber)
+                       ?? _templateConfig.Slots[0];
+            if (slot.Width <= 0 || slot.Height <= 0) return null;
+
+            var (canvasW, canvasH) = GetTemplateCanvasSize();
+            double slotPxW = slot.Width  * canvasW;
+            double slotPxH = slot.Height * canvasH;
+
+            // A slot rotated 90/270 in the template swaps which frame dimension maps
+            // to which slot dimension once composed — approximate by swapping here too
+            // rather than rendering an actually-rotated mask.
+            if (slot.Rotation is 90 or 270) (slotPxW, slotPxH) = (slotPxH, slotPxW);
+
+            return slotPxW > 0 && slotPxH > 0 ? slotPxW / slotPxH : null;
+        }
+
+        private (int Width, int Height) GetTemplateCanvasSize()
+        {
+            if (_templateImagePath is not null && TryGetImagePixelSize(_templateImagePath) is { } size)
+                return size;
+
+            return PhotostripComposer.GetCanvasSize(null, null);
+        }
+
+        private static (int Width, int Height)? TryGetImagePixelSize(string path)
+        {
+            try
+            {
+                using var stream  = File.OpenRead(path);
+                var       decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                var       frame   = decoder.Frames[0];
+                return (frame.PixelWidth, frame.PixelHeight);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Could not read template image dimensions from {Path}", path);
+                return null;
+            }
+        }
+
         // --- Lifecycle -----------------------------------------------------------
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -182,6 +299,7 @@ namespace Photobooth.Views
                 {
                     EvfMirrorTransform.ScaleX = -1;
                     EvfImage.Source = frame;
+                    UpdateCropOverlay(frame);
                     _stallLogged = false;
                     if (StatusText.Text == "Camera preview unavailable.")
                         StatusText.Text = string.Empty;
@@ -239,6 +357,7 @@ namespace Photobooth.Views
             for (int i = 1; i <= _shotCount; i++)
             {
                 if (ct.IsCancellationRequested) return;
+                _currentShotNumber = i;
 
                 int  retakeCount     = 0;
                 bool retakeRequested;
@@ -399,6 +518,7 @@ namespace Photobooth.Views
                 {
                     EvfMirrorTransform.ScaleX = 1;
                     EvfImage.Source           = bmp;
+                    CropOverlay.Visibility    = Visibility.Collapsed;
                 });
                 await FadeOutFlash();
             }

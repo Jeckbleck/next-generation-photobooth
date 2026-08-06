@@ -104,6 +104,13 @@ namespace Photobooth.Print
             g.DrawString(brandingText, font, textBrush, (RectangleF)barRect, sf);
         }
 
+        // Pixel size of the composed strip canvas — the template image's own size when
+        // known, otherwise the legacy default used by Compose() above. Lets callers
+        // (e.g. the live-preview crop guide) convert a slot's normalised 0–1 rect into
+        // real pixels without duplicating these constants.
+        public static (int Width, int Height) GetCanvasSize(int? templateImageWidth, int? templateImageHeight) =>
+            templateImageWidth is int w && templateImageHeight is int h ? (w, h) : (StripW, CanvasH);
+
         internal static Rectangle LetterboxRect(int imgW, int imgH, Rectangle slot)
         {
             float scale = Math.Min((float)slot.Width / imgW, (float)slot.Height / imgH);

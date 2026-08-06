@@ -27,7 +27,7 @@
 
         <!-- ── EVF ROW ───────────────────────────────────────────────────── -->
         <!-- EVF fills the full row. Side buttons float over the edges.       -->
-        <Grid Grid.Row="1">
+        <Grid x:Name="EvfHost" Grid.Row="1">
 
             <!-- Live view feed — full frame visible, letterboxed against background.
                  Mirrored by default (RenderTransform below) so people can position
@@ -42,6 +42,17 @@
                     <ScaleTransform x:Name="EvfMirrorTransform" ScaleX="-1"/>
                 </Image.RenderTransform>
             </Image>
+
+            <!-- Crop guide — dims the parts of the live frame that will be cropped
+                 away when composed into the current photostrip slot. Only shown when
+                 the active event has a saved template with slots (the only path that
+                 crops rather than letterboxing); sized/positioned in code-behind. -->
+            <Canvas x:Name="CropOverlay" IsHitTestVisible="False" Visibility="Collapsed">
+                <Rectangle x:Name="CropBarTop"    Fill="#66000000"/>
+                <Rectangle x:Name="CropBarBottom" Fill="#66000000"/>
+                <Rectangle x:Name="CropBarLeft"   Fill="#66000000"/>
+                <Rectangle x:Name="CropBarRight"  Fill="#66000000"/>
+            </Canvas>
 
             <!-- Loading spinner while waiting for photo download -->
             <local:LoadingSpinner x:Name="CaptureSpinner"
