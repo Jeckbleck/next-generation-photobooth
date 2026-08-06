@@ -359,6 +359,7 @@ namespace Photobooth.Views
                 SettingsOverlay.Visibility = Visibility.Collapsed;
                 OpenSettings();
                 SettingsContentPanel.Visibility = Visibility.Visible;
+                EnterWindowedMode();
             }
             else if (showError)
             {
@@ -450,6 +451,34 @@ namespace Photobooth.Views
             Log.Debug("Settings panel closed");
             SettingsContentPanel.Visibility = Visibility.Collapsed;
             UpdateCameraStatus();
+            ExitWindowedMode();
+        }
+
+        // --- Kiosk / windowed mode ------------------------------------------------
+
+        // Drops the borderless, maximized kiosk window into a normal resizable
+        // window while the settings menu is open, so an operator can move it
+        // aside, minimize it, or alt-tab to the desktop for troubleshooting.
+        private void EnterWindowedMode()
+        {
+            if (Window.GetWindow(this) is not Window window) return;
+
+            window.WindowStyle = WindowStyle.SingleBorderWindow;
+            window.ResizeMode  = ResizeMode.CanResize;
+            window.WindowState = WindowState.Normal;
+            window.Width       = 1280;
+            window.Height      = 800;
+            window.Left        = (SystemParameters.WorkArea.Width  - window.Width)  / 2;
+            window.Top         = (SystemParameters.WorkArea.Height - window.Height) / 2;
+        }
+
+        private void ExitWindowedMode()
+        {
+            if (Window.GetWindow(this) is not Window window) return;
+
+            window.WindowStyle = WindowStyle.None;
+            window.ResizeMode  = ResizeMode.NoResize;
+            window.WindowState = WindowState.Maximized;
         }
 
         private void CloseApplication_Click(object sender, RoutedEventArgs e)
