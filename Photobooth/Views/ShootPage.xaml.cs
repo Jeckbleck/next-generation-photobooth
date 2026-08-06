@@ -121,13 +121,19 @@ namespace Photobooth.Views
             ThumbnailBar.Children.Clear();
             _thumbnails.Clear();
 
+            // Camera mounted in portrait (90°/270°) saves portrait photos — match the
+            // thumbnail boxes to that aspect ratio instead of the default landscape one.
+            bool   vertical  = _camera.RotationDegrees is 90 or 270;
+            double boxWidth  = vertical ? 108 : 162;
+            double boxHeight = vertical ? 162 : 108;
+
             for (int i = 1; i <= count; i++)
             {
                 var image = new Image { Stretch = Stretch.UniformToFill };
                 var border = new Border
                 {
-                    Width           = 162,
-                    Height          = 108,
+                    Width           = boxWidth,
+                    Height          = boxHeight,
                     CornerRadius    = new CornerRadius(6),
                     ClipToBounds    = true,
                     Background      = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1A2B44")),
