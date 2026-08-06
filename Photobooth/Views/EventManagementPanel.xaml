@@ -86,9 +86,9 @@
                     IsEnabled="False"
                     Click="ArchiveEvent_Click"/>
             <Button x:Name="NewEventButton"
-                    Content="New"
+                    Content="Create"
                     Style="{StaticResource EventActionButton}"
-                    ToolTip="New event" Margin="8,0,0,0"
+                    ToolTip="Create event" Margin="8,0,0,0"
                     Click="NewEvent_Click"/>
             <Button x:Name="BrowseEventsButton"
                     Content="Browse"

@@ -19,12 +19,13 @@ namespace Photobooth.Data.Models
 
     public class TextElementDefinition
     {
-        public string Content  { get; set; } = string.Empty;
-        public double X        { get; set; }  // normalised 0–1, same convention as StripSlotDefinition
-        public double Y        { get; set; }
-        public double Width    { get; set; }
-        public double Height   { get; set; }
-        public string Color    { get; set; } = "#FFFFFF";
-        public double FontSize { get; set; } = 24;
+        public string Content    { get; set; } = string.Empty;
+        public double X          { get; set; }  // normalised 0–1, same convention as StripSlotDefinition
+        public double Y          { get; set; }
+        public double Width      { get; set; }
+        public double Height     { get; set; }
+        public string Color      { get; set; } = "#FFFFFF";
+        public double FontSize   { get; set; } = 24;
+        public string FontFamily { get; set; } = "Arial";
     }
 }

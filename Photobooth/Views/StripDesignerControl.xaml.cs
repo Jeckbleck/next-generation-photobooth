@@ -57,6 +57,13 @@ namespace Photobooth.Views
 
         private readonly List<TextElementControl> _textElements = new();
 
+        // Selection — which single frame or text box the SELECTED panel in the left
+        // menu currently acts on. Mutually exclusive; null means nothing is selected.
+        private SlotControl?        _selectedSlot;
+        private TextElementControl? _selectedText;
+        private bool                _settingFontComboBox;
+        private bool                _textColorEyedropperActive;
+
         // Text drag state
         private TextElementControl? _draggingText;
         private Point                _dragOffsetText;
@@ -253,23 +260,25 @@ namespace Photobooth.Views
             BackgroundColor = _backgroundColor,
             TextElements = _textElements.Select(t => new TextElementDefinition
             {
-                Content  = t.Content,
-                X        = t.Left     / CanvasW,
-                Y        = t.Top      / CanvasH,
-                Width    = t.Width    / CanvasW,
-                Height   = t.Height   / CanvasH,
-                Color    = t.Color,
-                FontSize = t.FontSize,
+                Content    = t.Content,
+                X          = t.Left     / CanvasW,
+                Y          = t.Top      / CanvasH,
+                Width      = t.Width    / CanvasW,
+                Height     = t.Height   / CanvasH,
+                Color      = t.Color,
+                FontSize   = t.FontSize,
+                FontFamily = t.FontFamily,
             }).ToList(),
         };
 
         private void ApplyConfig(StripTemplateConfig config)
         {
+            _selectedSlot = null;
+            _selectedText = null;
+
             foreach (var slot in _slots.ToList())
             {
                 DesignerCanvas.Children.Remove(slot.Body);
-                DesignerCanvas.Children.Remove(slot.RotateBtn);
-                DesignerCanvas.Children.Remove(slot.DeleteBtn);
                 foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             }
             _slots.Clear();
@@ -277,10 +286,6 @@ namespace Photobooth.Views
             foreach (var element in _textElements.ToList())
             {
                 DesignerCanvas.Children.Remove(element.Body);
-                DesignerCanvas.Children.Remove(element.ShrinkBtn);
-                DesignerCanvas.Children.Remove(element.GrowBtn);
-                DesignerCanvas.Children.Remove(element.ColorBtn);
-                DesignerCanvas.Children.Remove(element.DeleteBtn);
                 foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
             }
             _textElements.Clear();
@@ -292,6 +297,7 @@ namespace Photobooth.Views
                 CreateTextElement(def);
 
             ApplyBackgroundColor(config.BackgroundColor);
+            RefreshSelectionPanel();
         }
 
         private void PersistCurrentState()
@@ -465,43 +471,6 @@ namespace Photobooth.Views
             DesignerCanvas.Children.Add(body);
             slot.Body = body;
 
-            // Rotate button — top-left corner of slot
-            var rot = new Button
-            {
-                Content         = "↻",
-                Width           = 22,
-                Height          = 22,
-                FontSize        = 13,
-                Foreground      = Brushes.White,
-                Background      = new SolidColorBrush(Color.FromArgb(200, 40, 80, 200)),
-                BorderThickness = new Thickness(0),
-                Cursor          = Cursors.Arrow,
-                Padding         = new Thickness(0),
-                ToolTip         = "Rotate 90°",
-            };
-            rot.Click += (_, _) => RotateSlot(slot);
-            Panel.SetZIndex(rot, 4);
-            DesignerCanvas.Children.Add(rot);
-            slot.RotateBtn = rot;
-
-            // Delete button — top-right corner of slot
-            var del = new Button
-            {
-                Content         = "×",
-                Width           = 22,
-                Height          = 22,
-                FontSize        = 15,
-                Foreground      = Brushes.White,
-                Background      = new SolidColorBrush(Color.FromArgb(200, 180, 40, 40)),
-                BorderThickness = new Thickness(0),
-                Cursor          = Cursors.Arrow,
-                Padding         = new Thickness(0),
-            };
-            del.Click += (_, _) => RemoveSlot(slot);
-            Panel.SetZIndex(del, 4);
-            DesignerCanvas.Children.Add(del);
-            slot.DeleteBtn = del;
-
             // 4 corner resize handles (NW NE SW SE)
             var resizeCursors = new[] { Cursors.SizeNWSE, Cursors.SizeNESW, Cursors.SizeNESW, Cursors.SizeNWSE };
             slot.Handles = new Rectangle[4];
@@ -534,15 +503,6 @@ namespace Photobooth.Views
             Canvas.SetTop(slot.Body,  slot.Top);
             slot.Body.Width  = slot.Width;
             slot.Body.Height = slot.Height;
-
-            // Rotate/delete buttons are anchored to the frame's screen-space top corners
-            // at all times — they don't follow the body's rotation, unlike the resize
-            // handles below.
-            Canvas.SetLeft(slot.RotateBtn, slot.Left + 3);
-            Canvas.SetTop(slot.RotateBtn,  slot.Top  + 3);
-
-            Canvas.SetLeft(slot.DeleteBtn, slot.Left + slot.Width - 24);
-            Canvas.SetTop(slot.DeleteBtn,  slot.Top  + 3);
 
             // The body rotates in place around its own center (RenderTransform), so its
             // actual on-screen corners swing away from the unrotated Left/Top/Width/Height
@@ -590,8 +550,6 @@ namespace Photobooth.Views
             _topSlotZ += 10;
             Panel.SetZIndex(slot.Body, _topSlotZ);
             foreach (var h in slot.Handles) Panel.SetZIndex(h, _topSlotZ + 1);
-            Panel.SetZIndex(slot.RotateBtn, _topSlotZ + 2);
-            Panel.SetZIndex(slot.DeleteBtn, _topSlotZ + 2);
         }
 
         // --- Drag ----------------------------------------------------------------
@@ -600,6 +558,7 @@ namespace Photobooth.Views
         {
             _history.Push(CaptureConfig());
             BringSlotToFront(slot);
+            SelectSlot(slot);
             _dragging   = slot;
             var pos     = e.GetPosition(DesignerCanvas);
             _dragOffset = new Point(pos.X - slot.Left, pos.Y - slot.Top);
@@ -638,6 +597,7 @@ namespace Photobooth.Views
         {
             _history.Push(CaptureConfig());
             BringSlotToFront(slot);
+            SelectSlot(slot);
             _resizing        = slot;
             _resizeHandle    = handle;
             _resizeOrigin    = e.GetPosition(DesignerCanvas);
@@ -683,13 +643,14 @@ namespace Photobooth.Views
             _history.Push(CaptureConfig());
             CreateTextElement(new TextElementDefinition
             {
-                Content  = "Text",
-                X        = 0.10,
-                Y        = 0.40,
-                Width    = 0.80,
-                Height   = 0.12,
-                Color    = "#FFFFFF",
-                FontSize = 24,
+                Content    = "Text",
+                X          = 0.10,
+                Y          = 0.40,
+                Width      = 0.80,
+                Height     = 0.12,
+                Color      = "#FFFFFF",
+                FontSize   = 24,
+                FontFamily = "Arial",
             });
             PersistCurrentState();
             UpdateStatus();
@@ -699,13 +660,14 @@ namespace Photobooth.Views
         {
             var element = new TextElementControl
             {
-                Content  = def.Content,
-                Color    = def.Color,
-                FontSize = def.FontSize,
-                Left     = def.X      * CanvasW,
-                Top      = def.Y      * CanvasH,
-                Width    = def.Width  * CanvasW,
-                Height   = def.Height * CanvasH,
+                Content    = def.Content,
+                Color      = def.Color,
+                FontSize   = def.FontSize,
+                FontFamily = string.IsNullOrWhiteSpace(def.FontFamily) ? "Arial" : def.FontFamily,
+                Left       = def.X      * CanvasW,
+                Top        = def.Y      * CanvasH,
+                Width      = def.Width  * CanvasW,
+                Height     = def.Height * CanvasH,
             };
 
             BuildTextVisuals(element);
@@ -719,6 +681,7 @@ namespace Photobooth.Views
             {
                 Text                = element.Content,
                 FontSize            = Math.Max(1, element.FontSize * CanvasW / PrintStripWidth),
+                FontFamily          = new FontFamily(element.FontFamily),
                 FontWeight          = FontWeights.Bold,
                 Foreground          = new SolidColorBrush((Color)ColorConverter.ConvertFromString(element.Color)),
                 TextAlignment       = TextAlignment.Center,
@@ -748,57 +711,6 @@ namespace Photobooth.Views
             Panel.SetZIndex(body, 2);
             DesignerCanvas.Children.Add(body);
             element.Body = body;
-
-            var shrink = new Button
-            {
-                Content = "A−", Width = 26, Height = 22, FontSize = 11,
-                Foreground = Brushes.White,
-                Background = new SolidColorBrush(Color.FromArgb(200, 40, 80, 200)),
-                BorderThickness = new Thickness(0), Cursor = Cursors.Arrow, Padding = new Thickness(0),
-                ToolTip = "Decrease font size",
-            };
-            shrink.Click += (_, _) => ChangeTextFontSize(element, -2);
-            Panel.SetZIndex(shrink, 4);
-            DesignerCanvas.Children.Add(shrink);
-            element.ShrinkBtn = shrink;
-
-            var grow = new Button
-            {
-                Content = "A+", Width = 26, Height = 22, FontSize = 11,
-                Foreground = Brushes.White,
-                Background = new SolidColorBrush(Color.FromArgb(200, 40, 80, 200)),
-                BorderThickness = new Thickness(0), Cursor = Cursors.Arrow, Padding = new Thickness(0),
-                ToolTip = "Increase font size",
-            };
-            grow.Click += (_, _) => ChangeTextFontSize(element, 2);
-            Panel.SetZIndex(grow, 4);
-            DesignerCanvas.Children.Add(grow);
-            element.GrowBtn = grow;
-
-            var colorBtn = new Button
-            {
-                Width = 22, Height = 22,
-                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(element.Color)),
-                BorderBrush = Brushes.White, BorderThickness = new Thickness(1),
-                Cursor = Cursors.Arrow, Padding = new Thickness(0),
-                ToolTip = "Text color",
-            };
-            colorBtn.Click += (_, _) => PickTextColor(element);
-            Panel.SetZIndex(colorBtn, 4);
-            DesignerCanvas.Children.Add(colorBtn);
-            element.ColorBtn = colorBtn;
-
-            var del = new Button
-            {
-                Content = "×", Width = 22, Height = 22, FontSize = 15,
-                Foreground = Brushes.White,
-                Background = new SolidColorBrush(Color.FromArgb(200, 180, 40, 40)),
-                BorderThickness = new Thickness(0), Cursor = Cursors.Arrow, Padding = new Thickness(0),
-            };
-            del.Click += (_, _) => RemoveTextElement(element);
-            Panel.SetZIndex(del, 4);
-            DesignerCanvas.Children.Add(del);
-            element.DeleteBtn = del;
 
             var resizeCursors = new[] { Cursors.SizeNWSE, Cursors.SizeNESW, Cursors.SizeNESW, Cursors.SizeNWSE };
             element.Handles = new Rectangle[4];
@@ -831,18 +743,6 @@ namespace Photobooth.Views
             element.Body.Width  = element.Width;
             element.Body.Height = element.Height;
 
-            Canvas.SetLeft(element.ShrinkBtn, element.Left + 3);
-            Canvas.SetTop(element.ShrinkBtn,  element.Top  + 3);
-
-            Canvas.SetLeft(element.GrowBtn, element.Left + 3 + 28);
-            Canvas.SetTop(element.GrowBtn,  element.Top  + 3);
-
-            Canvas.SetLeft(element.ColorBtn, element.Left + element.Width - 48);
-            Canvas.SetTop(element.ColorBtn,  element.Top  + 3);
-
-            Canvas.SetLeft(element.DeleteBtn, element.Left + element.Width - 24);
-            Canvas.SetTop(element.DeleteBtn,  element.Top  + 3);
-
             double hs = HandleSize / 2.0;
             Canvas.SetLeft(element.Handles[0], element.Left - hs);
             Canvas.SetTop(element.Handles[0],  element.Top  - hs);
@@ -859,6 +759,7 @@ namespace Photobooth.Views
         private void TextBody_Down(TextElementControl element, MouseButtonEventArgs e)
         {
             _history.Push(CaptureConfig());
+            SelectText(element);
             _draggingText   = element;
             var pos         = e.GetPosition(DesignerCanvas);
             _dragOffsetText = new Point(pos.X - element.Left, pos.Y - element.Top);
@@ -896,6 +797,7 @@ namespace Photobooth.Views
         private void TextHandle_Down(TextElementControl element, int handle, MouseButtonEventArgs e)
         {
             _history.Push(CaptureConfig());
+            SelectText(element);
             _resizingText        = element;
             _resizeHandleTextIdx = handle;
             _resizeOriginText    = e.GetPosition(DesignerCanvas);
@@ -1009,6 +911,15 @@ namespace Photobooth.Views
             PersistCurrentState();
         }
 
+        private void ChangeTextFont(TextElementControl element, string fontFamily)
+        {
+            if (element.FontFamily == fontFamily) return;
+            _history.Push(CaptureConfig());
+            element.FontFamily       = fontFamily;
+            element.Label.FontFamily = new FontFamily(fontFamily);
+            PersistCurrentState();
+        }
+
         private void PickTextColor(TextElementControl element)
         {
             var current = (Color)ColorConverter.ConvertFromString(element.Color);
@@ -1017,9 +928,9 @@ namespace Photobooth.Views
             if (picked is null) return;
 
             _history.Push(CaptureConfig());
-            element.Color                = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
-            element.Label.Foreground     = new SolidColorBrush(picked.Value);
-            element.ColorBtn.Background  = new SolidColorBrush(picked.Value);
+            element.Color            = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
+            element.Label.Foreground = new SolidColorBrush(picked.Value);
+            if (_selectedText == element) TextColorSwatch.Background = new SolidColorBrush(picked.Value);
             PersistCurrentState();
         }
 
@@ -1027,12 +938,9 @@ namespace Photobooth.Views
         {
             _history.Push(CaptureConfig());
             DesignerCanvas.Children.Remove(element.Body);
-            DesignerCanvas.Children.Remove(element.ShrinkBtn);
-            DesignerCanvas.Children.Remove(element.GrowBtn);
-            DesignerCanvas.Children.Remove(element.ColorBtn);
-            DesignerCanvas.Children.Remove(element.DeleteBtn);
             foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
             _textElements.Remove(element);
+            if (_selectedText == element) { _selectedText = null; RefreshSelectionPanel(); }
             RefreshToolbarState();
             PersistCurrentState();
             UpdateStatus();
@@ -1088,6 +996,7 @@ namespace Photobooth.Views
             // reopening that conflict.
             bool isBackgroundTap = e.ChangedButton == MouseButton.Left
                 && !_eyedropperActive
+                && !_textColorEyedropperActive
                 && ReferenceEquals(e.OriginalSource, DesignerCanvas);
             if (e.ChangedButton != MouseButton.Middle && !isBackgroundTap) return;
 
@@ -1117,16 +1026,140 @@ namespace Photobooth.Views
             CanvasScroller.Cursor = null;
         }
 
+        // --- Selection -------------------------------------------------------------
+
+        private void SelectSlot(SlotControl slot)
+        {
+            if (_selectedText is not null) SetTextHighlighted(_selectedText, false);
+            if (_selectedSlot is not null && _selectedSlot != slot) SetSlotHighlighted(_selectedSlot, false);
+
+            _selectedText = null;
+            _selectedSlot = slot;
+            SetSlotHighlighted(slot, true);
+            RefreshSelectionPanel();
+        }
+
+        private void SelectText(TextElementControl element)
+        {
+            if (_selectedSlot is not null) SetSlotHighlighted(_selectedSlot, false);
+            if (_selectedText is not null && _selectedText != element) SetTextHighlighted(_selectedText, false);
+
+            _selectedSlot = null;
+            _selectedText = element;
+            SetTextHighlighted(element, true);
+            RefreshSelectionPanel();
+        }
+
+        private void DeselectAll()
+        {
+            if (_selectedSlot is not null) SetSlotHighlighted(_selectedSlot, false);
+            if (_selectedText is not null) SetTextHighlighted(_selectedText, false);
+            _selectedSlot = null;
+            _selectedText = null;
+            RefreshSelectionPanel();
+        }
+
+        private static void SetSlotHighlighted(SlotControl slot, bool selected) =>
+            slot.Body.BorderBrush = selected ? new SolidColorBrush(AccentColor()) : Brushes.White;
+
+        private static void SetTextHighlighted(TextElementControl element, bool selected) =>
+            element.Body.BorderBrush = selected ? new SolidColorBrush(AccentColor()) : Brushes.White;
+
+        // Shows/hides the left-menu SELECTED panel to match whatever is (or isn't)
+        // currently selected — called any time selection changes or a selected
+        // element's own visuals get rebuilt (undo/redo, auto-detect, etc.).
+        private void RefreshSelectionPanel()
+        {
+            if (FrameSelectionPanel is null) return;   // fires during InitializeComponent
+
+            bool frameSelected = _selectedSlot is not null;
+            bool textSelected  = _selectedText is not null;
+
+            FrameSelectionPanel.Visibility = frameSelected ? Visibility.Visible : Visibility.Collapsed;
+            TextSelectionPanel.Visibility  = textSelected  ? Visibility.Visible : Visibility.Collapsed;
+            NoSelectionText.Visibility     = frameSelected || textSelected ? Visibility.Collapsed : Visibility.Visible;
+
+            if (textSelected)
+            {
+                TextColorSwatch.Background  = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_selectedText!.Color));
+                PickTextColorButton.IsEnabled = _originalBitmapSource is not null;
+
+                _settingFontComboBox = true;
+                foreach (ComboBoxItem item in TextFontComboBox.Items)
+                {
+                    if ((string)item.Tag == _selectedText.FontFamily)
+                    {
+                        TextFontComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+                _settingFontComboBox = false;
+            }
+        }
+
+        private void TextFontComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_settingFontComboBox || _selectedText is null) return;
+            if (TextFontComboBox.SelectedItem is not ComboBoxItem { Tag: string fontFamily }) return;
+            ChangeTextFont(_selectedText, fontFamily);
+        }
+
+        private void RotateFrame_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedSlot is not null) RotateSlot(_selectedSlot);
+        }
+
+        private void DeleteFrame_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedSlot is not null) RemoveSlot(_selectedSlot);
+        }
+
+        private void ShrinkText_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedText is not null) ChangeTextFontSize(_selectedText, -2);
+        }
+
+        private void GrowText_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedText is not null) ChangeTextFontSize(_selectedText, 2);
+        }
+
+        private void TextColorSwatch_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedText is not null) PickTextColor(_selectedText);
+        }
+
+        // Lets the operator sample a color straight from the uploaded template image
+        // instead of dialing one in — handy for matching text to a logo or brand color
+        // already baked into the strip artwork. Reuses the same canvas-sampling
+        // mechanism as the slot auto-detect eyedropper, just applied to text color
+        // instead of triggering a re-detect.
+        private void PickTextColorFromCanvas_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedText is null || _originalBitmapSource is null) return;
+            _textColorEyedropperActive = true;
+            DesignerCanvas.Cursor = Cursors.Cross;
+        }
+
+        private void EditTextContent_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedText is not null) BeginEditText(_selectedText);
+        }
+
+        private void DeleteText_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedText is not null) RemoveTextElement(_selectedText);
+        }
+
         // --- Helpers -------------------------------------------------------------
 
         private void RemoveSlot(SlotControl slot)
         {
             _history.Push(CaptureConfig());
             DesignerCanvas.Children.Remove(slot.Body);
-            DesignerCanvas.Children.Remove(slot.RotateBtn);
-            DesignerCanvas.Children.Remove(slot.DeleteBtn);
             foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             _slots.Remove(slot);
+            if (_selectedSlot == slot) { _selectedSlot = null; RefreshSelectionPanel(); }
             RefreshToolbarState();
             PersistCurrentState();
             UpdateStatus();
@@ -1159,11 +1192,12 @@ namespace Photobooth.Views
 
         private void ClearCanvas()
         {
+            _selectedSlot = null;
+            _selectedText = null;
+
             foreach (var slot in _slots.ToList())
             {
                 DesignerCanvas.Children.Remove(slot.Body);
-                DesignerCanvas.Children.Remove(slot.RotateBtn);
-                DesignerCanvas.Children.Remove(slot.DeleteBtn);
                 foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             }
             _slots.Clear();
@@ -1171,10 +1205,6 @@ namespace Photobooth.Views
             foreach (var element in _textElements.ToList())
             {
                 DesignerCanvas.Children.Remove(element.Body);
-                DesignerCanvas.Children.Remove(element.ShrinkBtn);
-                DesignerCanvas.Children.Remove(element.GrowBtn);
-                DesignerCanvas.Children.Remove(element.ColorBtn);
-                DesignerCanvas.Children.Remove(element.DeleteBtn);
                 foreach (var h in element.Handles) DesignerCanvas.Children.Remove(h);
             }
             _textElements.Clear();
@@ -1189,6 +1219,7 @@ namespace Photobooth.Views
             ColorSwatch.Visibility = Visibility.Collapsed;
             DesignerCanvas.Cursor  = Cursors.Arrow;
             ApplyBackgroundColor(null);
+            RefreshSelectionPanel();
             RefreshToolbarState();
         }
 
@@ -1277,7 +1308,34 @@ namespace Photobooth.Views
 
         private void DesignerCanvas_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (!_eyedropperActive) return;
+            if (_textColorEyedropperActive)
+            {
+                e.Handled = true;
+                _textColorEyedropperActive = false;
+                DesignerCanvas.Cursor = Cursors.Arrow;
+
+                if (_selectedText is not null)
+                {
+                    var color = SamplePixel(e.GetPosition(DesignerCanvas));
+                    _history.Push(CaptureConfig());
+                    _selectedText.Color            = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                    _selectedText.Label.Foreground = new SolidColorBrush(color);
+                    TextColorSwatch.Background     = new SolidColorBrush(color);
+                    PersistCurrentState();
+                }
+                return;
+            }
+
+            if (!_eyedropperActive)
+            {
+                // A tap that lands on bare canvas (not a frame/text body, handle, or the
+                // eyedropper) clears the SELECTED panel — same "tap empty space to
+                // deselect" convention as most design tools.
+                if (ReferenceEquals(e.OriginalSource, DesignerCanvas))
+                    DeselectAll();
+                return;
+            }
+
             e.Handled = true;
             DeactivateEyedropper();
 
@@ -1377,6 +1435,7 @@ namespace Photobooth.Views
                 finally
                 {
                     _autoDetectBusy = false;
+                    RefreshSelectionPanel();
                     RefreshToolbarState();
                     UpdateStatus();
                     PersistCurrentState();
@@ -1401,11 +1460,10 @@ namespace Photobooth.Views
                 foreach (var slot in _slots.ToList())
                 {
                     DesignerCanvas.Children.Remove(slot.Body);
-                    DesignerCanvas.Children.Remove(slot.RotateBtn);
-                    DesignerCanvas.Children.Remove(slot.DeleteBtn);
                     foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
                 }
                 _slots.Clear();
+                _selectedSlot = null;
 
                 int tolerance    = (int)ToleranceSlider.Value;
                 int edgeMargin   = (int)EdgeMarginSlider.Value;
@@ -1443,6 +1501,7 @@ namespace Photobooth.Views
             finally
             {
                 _autoDetectBusy = false;
+                RefreshSelectionPanel();
                 RefreshToolbarState();
                 UpdateStatus();
                 PersistCurrentState();
@@ -1465,11 +1524,10 @@ namespace Photobooth.Views
             foreach (var slot in _slots.ToList())
             {
                 DesignerCanvas.Children.Remove(slot.Body);
-                DesignerCanvas.Children.Remove(slot.RotateBtn);
-                DesignerCanvas.Children.Remove(slot.DeleteBtn);
                 foreach (var h in slot.Handles) DesignerCanvas.Children.Remove(h);
             }
             _slots.Clear();
+            _selectedSlot = null;
 
             foreach (var def in defs)
                 CreateSlot(def);
@@ -1531,8 +1589,6 @@ namespace Photobooth.Views
     {
         public int         Index     { get; set; }
         public Border      Body      { get; set; } = null!;
-        public Button      RotateBtn { get; set; } = null!;
-        public Button      DeleteBtn { get; set; } = null!;
         public Rectangle[] Handles   { get; set; } = Array.Empty<Rectangle>();
         public double      Left      { get; set; }
         public double      Top       { get; set; }
@@ -1543,19 +1599,16 @@ namespace Photobooth.Views
 
     internal class TextElementControl
     {
-        public string      Content   { get; set; } = "Text";
-        public string      Color     { get; set; } = "#FFFFFF";
-        public double      FontSize  { get; set; } = 24;
-        public Border      Body      { get; set; } = null!;
-        public TextBlock   Label     { get; set; } = null!;
-        public Button      ShrinkBtn { get; set; } = null!;
-        public Button      GrowBtn   { get; set; } = null!;
-        public Button      ColorBtn  { get; set; } = null!;
-        public Button      DeleteBtn { get; set; } = null!;
-        public Rectangle[] Handles   { get; set; } = Array.Empty<Rectangle>();
-        public double      Left      { get; set; }
-        public double      Top       { get; set; }
-        public double      Width     { get; set; }
-        public double      Height    { get; set; }
+        public string      Content    { get; set; } = "Text";
+        public string      Color      { get; set; } = "#FFFFFF";
+        public double      FontSize   { get; set; } = 24;
+        public string      FontFamily { get; set; } = "Arial";
+        public Border      Body       { get; set; } = null!;
+        public TextBlock   Label      { get; set; } = null!;
+        public Rectangle[] Handles    { get; set; } = Array.Empty<Rectangle>();
+        public double      Left       { get; set; }
+        public double      Top        { get; set; }
+        public double      Width      { get; set; }
+        public double      Height     { get; set; }
     }
 }

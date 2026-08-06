@@ -237,7 +237,7 @@ namespace Photobooth.Print
 
                             try
                             {
-                                using var font      = new Font("Arial", (float)text.FontSize, FontStyle.Bold, GraphicsUnit.Point);
+                                using var font      = new Font(text.FontFamily, (float)text.FontSize, FontStyle.Bold, GraphicsUnit.Point);
                                 using var textBrush = new SolidBrush(ColorTranslator.FromHtml(text.Color));
                                 var sf = new StringFormat
                                 {

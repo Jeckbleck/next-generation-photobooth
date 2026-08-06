@@ -61,7 +61,11 @@
         </Grid.ColumnDefinitions>
 
         <!-- ══ Left: Controls panel ══════════════════════════════════════════════ -->
-        <StackPanel Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Top">
+        <ScrollViewer Grid.Column="0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      PanningMode="VerticalOnly">
+        <StackPanel Margin="0,0,20,0" VerticalAlignment="Top">
 
             <!-- TEMPLATE section -->
             <TextBlock Text="TEMPLATE"
@@ -258,6 +262,154 @@
                     IsEnabled="False"
                     Click="AddText_Click"/>
 
+            <!-- SELECTED section — controls act on whichever frame/text box was last
+                 tapped on the canvas, instead of each one carrying its own buttons. -->
+            <TextBlock Text="SELECTED"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontSize="11" FontWeight="Bold"
+                       Margin="0,18,0,6"/>
+            <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,10"/>
+
+            <TextBlock x:Name="NoSelectionText"
+                       Text="Tap a photo frame or text box on the canvas to edit it here."
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="11" TextWrapping="Wrap"/>
+
+            <StackPanel x:Name="FrameSelectionPanel" Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="RotateFrameButton" Grid.Column="0"
+                            Content="↻ Rotate"
+                            Style="{StaticResource GhostButton}"
+                            Padding="10,7" FontSize="12"
+                            HorizontalAlignment="Stretch"
+                            Click="RotateFrame_Click"/>
+                    <Button x:Name="DeleteFrameButton" Grid.Column="2"
+                            Content="Delete"
+                            Style="{StaticResource GhostButton}"
+                            Padding="10,7" FontSize="12"
+                            HorizontalAlignment="Stretch"
+                            Click="DeleteFrame_Click"/>
+                </Grid>
+            </StackPanel>
+
+            <StackPanel x:Name="TextSelectionPanel" Visibility="Collapsed">
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ShrinkTextButton" Grid.Column="0"
+                            Content="A－"
+                            Style="{StaticResource GhostButton}"
+                            Padding="10,7" FontSize="12"
+                            HorizontalAlignment="Stretch"
+                            ToolTip="Decrease font size"
+                            Click="ShrinkText_Click"/>
+                    <Button x:Name="GrowTextButton" Grid.Column="2"
+                            Content="A＋"
+                            Style="{StaticResource GhostButton}"
+                            Padding="10,7" FontSize="12"
+                            HorizontalAlignment="Stretch"
+                            ToolTip="Increase font size"
+                            Click="GrowText_Click"/>
+                </Grid>
+
+                <TextBlock Text="Font"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox x:Name="TextFontComboBox"
+                          Padding="8,6" Margin="0,0,0,6"
+                          SelectionChanged="TextFontComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Arial"          Tag="Arial"          FontFamily="Arial"/>
+                    <ComboBoxItem Content="Arial Black"    Tag="Arial Black"    FontFamily="Arial Black"/>
+                    <ComboBoxItem Content="Calibri"        Tag="Calibri"        FontFamily="Calibri"/>
+                    <ComboBoxItem Content="Comic Sans MS"  Tag="Comic Sans MS"  FontFamily="Comic Sans MS"/>
+                    <ComboBoxItem Content="Courier New"    Tag="Courier New"    FontFamily="Courier New"/>
+                    <ComboBoxItem Content="Georgia"        Tag="Georgia"        FontFamily="Georgia"/>
+                    <ComboBoxItem Content="Impact"         Tag="Impact"         FontFamily="Impact"/>
+                    <ComboBoxItem Content="Segoe UI"       Tag="Segoe UI"       FontFamily="Segoe UI"/>
+                    <ComboBoxItem Content="Times New Roman" Tag="Times New Roman" FontFamily="Times New Roman"/>
+                    <ComboBoxItem Content="Trebuchet MS"   Tag="Trebuchet MS"   FontFamily="Trebuchet MS"/>
+                    <ComboBoxItem Content="Verdana"        Tag="Verdana"        FontFamily="Verdana"/>
+                </ComboBox>
+
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Text color"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="12" VerticalAlignment="Center"/>
+                    <Button x:Name="PickTextColorButton" Grid.Column="1"
+                            Style="{StaticResource GhostButton}"
+                            Width="28" Padding="0"
+                            Margin="0,0,6,0"
+                            ToolTip="Pick a color from the template image"
+                            Click="PickTextColorFromCanvas_Click">
+                        <!-- Eyedropper glyph: diagonal barrel with a bulb at the top and a
+                             point at the bottom — built from shapes instead of a font symbol
+                             so it renders consistently regardless of installed fonts. -->
+                        <Grid Width="16" Height="16">
+                            <Rectangle Width="3" Height="14" RadiusX="1" RadiusY="1"
+                                       Fill="{StaticResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <Rectangle.RenderTransform>
+                                    <RotateTransform Angle="45"/>
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+                            <Ellipse Width="7" Height="7"
+                                     Fill="{StaticResource TextSecondaryBrush}"
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-1,-1,0"/>
+                        </Grid>
+                    </Button>
+                    <Button x:Name="TextColorSwatch" Grid.Column="2"
+                            Width="32" Height="22" Padding="0"
+                            BorderBrush="#334" BorderThickness="1"
+                            Cursor="Hand"
+                            ToolTip="Text color"
+                            Click="TextColorSwatch_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="3"/>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="EditTextContentButton" Grid.Column="0"
+                            Content="Edit Text"
+                            Style="{StaticResource GhostButton}"
+                            Padding="10,7" FontSize="12"
+                            HorizontalAlignment="Stretch"
+                            Click="EditTextContent_Click"/>
+                    <Button x:Name="DeleteTextButton" Grid.Column="2"
+                            Content="Delete"
+                            Style="{StaticResource GhostButton}"
+                            Padding="10,7" FontSize="12"
+                            HorizontalAlignment="Stretch"
+                            Click="DeleteText_Click"/>
+                </Grid>
+            </StackPanel>
+
             <!-- VIEW section -->
             <TextBlock Text="VIEW"
                        Foreground="{DynamicResource AccentBrush}"
@@ -318,6 +470,7 @@
                        FontSize="11"
                        TextWrapping="Wrap"/>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- ══ Right: Canvas ═════════════════════════════════════════════════════ -->
         <ScrollViewer x:Name="CanvasScroller"
