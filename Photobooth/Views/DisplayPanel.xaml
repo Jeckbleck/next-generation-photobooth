@@ -116,7 +116,7 @@
 
         <Grid Margin="0,0,0,10">
             <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="36"/></Grid.ColumnDefinitions>
-            <TextBlock Text="Preview hold" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+            <TextBlock Text="Sharing screen timeout" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap"/>
             <Slider x:Name="PreviewHoldSlider" Grid.Column="1" Minimum="1" Maximum="60" Value="5" ValueChanged="PreviewHoldSlider_ValueChanged" ScrollViewer.PanningMode="None"/>
             <TextBlock Grid.Column="2"
                        Text="{Binding Value, ElementName=PreviewHoldSlider, StringFormat='{}{0:0} s'}"
