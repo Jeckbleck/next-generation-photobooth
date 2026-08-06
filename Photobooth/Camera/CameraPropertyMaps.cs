@@ -184,20 +184,11 @@ namespace Photobooth.Camera
             [0x00630013] = "CRAW + JPEG Large Fine",
         };
 
-        internal static readonly Dictionary<uint, string> MeteringMode = new()
-        {
-            [0x00000001] = "Spot",
-            [0x00000003] = "Evaluative",
-            [0x00000004] = "Partial",
-            [0x00000005] = "Center-weighted",
-        };
-
         internal static string LookupIso(uint v) => Iso.TryGetValue(v, out var s) ? s : $"ISO {v}";
         internal static string LookupTv(uint v) => Tv.TryGetValue(v, out var s) ? s : $"Tv 0x{v:X}";
         internal static string LookupAv(uint v) => Av.TryGetValue(v, out var s) ? s : $"Av 0x{v:X}";
         internal static string LookupWb(uint v) => WhiteBalance.TryGetValue(v, out var s) ? s : $"WB {v}";
         internal static string LookupIq(uint v) => ImageQuality.TryGetValue(v, out var s) ? s : DecodeImageQuality(v);
-        internal static string LookupMeteringMode(uint v) => MeteringMode.TryGetValue(v, out var s) ? s : $"Metering 0x{v:X}";
 
         // Decodes an ImageQuality value not covered by the curated table above (e.g. a
         // Medium1/Medium2/Small1/Small2/Small3 tier, or a CRAW combo the kiosk's camera

@@ -76,8 +76,11 @@
                     <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="ISO" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="ISO" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                    <local:InfoIcon Margin="6,0,0,0"
+                                     Text="Sensor's sensitivity to light. Higher values brighten the image in low light but add visible grain/noise."/>
+                </StackPanel>
                 <ComboBox x:Name="IsoComboBox" Grid.Column="1" Padding="8,6"
                           SelectionChanged="CameraComboBox_SelectionChanged"/>
             </Grid>
@@ -86,19 +89,12 @@
                     <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="Shutter speed" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Shutter speed" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                    <local:InfoIcon Margin="6,0,0,0"
+                                     Text="How long the sensor is exposed. Faster speeds freeze motion but let in less light; slower speeds add motion blur and more light."/>
+                </StackPanel>
                 <ComboBox x:Name="TvComboBox" Grid.Column="1" Padding="8,6"
-                          SelectionChanged="CameraComboBox_SelectionChanged"/>
-            </Grid>
-            <Grid Margin="0,0,0,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="130"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="Aperture" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
-                <ComboBox x:Name="AvComboBox" Grid.Column="1" Padding="8,6"
                           SelectionChanged="CameraComboBox_SelectionChanged"/>
             </Grid>
             <Grid Margin="0,0,0,20">
@@ -106,9 +102,12 @@
                     <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="Metering mode" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
-                <ComboBox x:Name="MeteringModeComboBox" Grid.Column="1" Padding="8,6"
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Aperture" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                    <local:InfoIcon Margin="6,0,0,0"
+                                     Text="Size of the lens opening. Lower f-numbers let in more light and blur the background; higher f-numbers keep more of the scene in focus."/>
+                </StackPanel>
+                <ComboBox x:Name="AvComboBox" Grid.Column="1" Padding="8,6"
                           SelectionChanged="CameraComboBox_SelectionChanged"/>
             </Grid>
 
@@ -121,8 +120,11 @@
                     <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="White balance" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="White balance" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                    <local:InfoIcon Margin="6,0,0,0"
+                                     Text="Corrects color tint to match the lighting so whites look white. The wrong setting casts an orange or blue tint."/>
+                </StackPanel>
                 <ComboBox x:Name="WhiteBalanceComboBox" Grid.Column="1" Padding="8,6"
                           SelectionChanged="CameraComboBox_SelectionChanged"/>
             </Grid>
@@ -136,8 +138,11 @@
                     <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="Camera rotation" Foreground="{StaticResource TextSecondaryBrush}"
-                           FontSize="13" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Camera rotation" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13"/>
+                    <local:InfoIcon Margin="6,0,0,0"
+                                     Text="Rotates the captured image to correct for how the camera is physically mounted."/>
+                </StackPanel>
                 <ComboBox x:Name="RotationComboBox" Grid.Column="1" Padding="8,6"
                           SelectionChanged="RotationComboBox_SelectionChanged"/>
             </Grid>

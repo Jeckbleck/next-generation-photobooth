@@ -98,7 +98,7 @@ public partial class CameraSettingsPanel : UserControl
             _presetStatusNoteActive          = false;
             ReconnectCameraButton.Visibility = Visibility.Visible;
             IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
-                MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled = false;
+                WhiteBalanceComboBox.IsEnabled = false;
             RefreshPresetDropdown();
             PresetComboBox.IsEnabled = SavePresetButton.IsEnabled = false;
             return;
@@ -110,7 +110,7 @@ public partial class CameraSettingsPanel : UserControl
         CameraSettingStatusText.Text = "Loading valid values from camera…";
         _presetStatusNoteActive      = false;
         IsoComboBox.IsEnabled = TvComboBox.IsEnabled = AvComboBox.IsEnabled =
-            MeteringModeComboBox.IsEnabled = WhiteBalanceComboBox.IsEnabled = true;
+            WhiteBalanceComboBox.IsEnabled = true;
         PresetComboBox.IsEnabled = SavePresetButton.IsEnabled = true;
         RefreshPresetDropdown();
 
@@ -120,7 +120,6 @@ public partial class CameraSettingsPanel : UserControl
         RefreshCameraDropdown(IsoComboBox,          EDSDKLib.EDSDK.PropID_ISOSpeed,     CameraPropertyMaps.Iso,          CameraPropertyMaps.LookupIso);
         RefreshCameraDropdown(TvComboBox,           EDSDKLib.EDSDK.PropID_Tv,           CameraPropertyMaps.Tv,           CameraPropertyMaps.LookupTv);
         RefreshCameraDropdown(AvComboBox,           EDSDKLib.EDSDK.PropID_Av,           CameraPropertyMaps.Av,           CameraPropertyMaps.LookupAv);
-        RefreshCameraDropdown(MeteringModeComboBox, EDSDKLib.EDSDK.PropID_MeteringMode, CameraPropertyMaps.MeteringMode, CameraPropertyMaps.LookupMeteringMode);
         RefreshCameraDropdown(WhiteBalanceComboBox, EDSDKLib.EDSDK.PropID_WhiteBalance, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb, CameraPropertyMaps.WhiteBalanceHidden);
 
         _camera.RequestPropertyDescs();
@@ -365,9 +364,6 @@ public partial class CameraSettingsPanel : UserControl
                 case EDSDKLib.EDSDK.PropID_Av:
                     RefreshCameraDropdown(AvComboBox, propId, CameraPropertyMaps.Av, CameraPropertyMaps.LookupAv);
                     break;
-                case EDSDKLib.EDSDK.PropID_MeteringMode:
-                    RefreshCameraDropdown(MeteringModeComboBox, propId, CameraPropertyMaps.MeteringMode, CameraPropertyMaps.LookupMeteringMode);
-                    break;
                 case EDSDKLib.EDSDK.PropID_WhiteBalance:
                     RefreshCameraDropdown(WhiteBalanceComboBox, propId, CameraPropertyMaps.WhiteBalance, CameraPropertyMaps.LookupWb, CameraPropertyMaps.WhiteBalanceHidden);
                     break;
@@ -389,7 +385,6 @@ public partial class CameraSettingsPanel : UserControl
         uint propId = cb == IsoComboBox          ? EDSDKLib.EDSDK.PropID_ISOSpeed
                     : cb == TvComboBox            ? EDSDKLib.EDSDK.PropID_Tv
                     : cb == AvComboBox            ? EDSDKLib.EDSDK.PropID_Av
-                    : cb == MeteringModeComboBox  ? EDSDKLib.EDSDK.PropID_MeteringMode
                     : cb == WhiteBalanceComboBox  ? EDSDKLib.EDSDK.PropID_WhiteBalance
                     : 0u;
 

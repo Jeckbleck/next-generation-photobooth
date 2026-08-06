@@ -285,7 +285,6 @@ namespace Photobooth.Camera
                 EDSDKLib.EDSDK.PropID_Av,
                 EDSDKLib.EDSDK.PropID_WhiteBalance,
                 EDSDKLib.EDSDK.PropID_ImageQuality,
-                EDSDKLib.EDSDK.PropID_MeteringMode,
             })
             {
                 _processor.PostCommand(new GetPropertyDescCommand(ref _model, propId));
