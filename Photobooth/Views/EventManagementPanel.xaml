@@ -3,6 +3,38 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <UserControl.Resources>
+        <!-- Shared chrome for the Event Management action row (Archive / New / Browse / Gallery) -->
+        <Style x:Key="EventActionButton" TargetType="Button">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#141F2E" CornerRadius="6"
+                                BorderBrush="#334" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="StepperButton" TargetType="Button">
             <Setter Property="Width" Value="34"/>
             <Setter Property="Padding" Value="0"/>
@@ -48,58 +80,30 @@
 
         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
             <Button x:Name="ArchiveEventButton"
-                    Content="Archive event"
-                    Style="{StaticResource GhostButton}"
-                    VerticalAlignment="Center"
-                    Padding="18,7" FontSize="13"
+                    Content="Archive"
+                    Style="{StaticResource EventActionButton}"
+                    ToolTip="Archive event"
                     IsEnabled="False"
                     Click="ArchiveEvent_Click"/>
             <Button x:Name="NewEventButton"
-                    Width="40" Height="40" Padding="0" Cursor="Hand"
+                    Content="New"
+                    Style="{StaticResource EventActionButton}"
                     ToolTip="New event" Margin="8,0,0,0"
-                    Click="NewEvent_Click">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="#141F2E" CornerRadius="4"
-                                BorderBrush="#334" BorderThickness="1" Width="40" Height="40">
-                            <TextBlock Text="+" Foreground="{StaticResource TextSecondaryBrush}"
-                                       FontSize="22" FontWeight="Light"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-                                <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+                    Click="NewEvent_Click"/>
             <Button x:Name="BrowseEventsButton"
-                    Width="40" Height="40" Padding="0" Cursor="Hand"
-                    ToolTip="Browse all events" Margin="6,0,0,0"
-                    Click="BrowseEvents_Click">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="#141F2E" CornerRadius="4"
-                                BorderBrush="#334" BorderThickness="1" Width="40" Height="40">
-                            <TextBlock Text="&#x229E;" Foreground="{StaticResource TextSecondaryBrush}"
-                                       FontSize="18"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-                                <Setter TargetName="Bd" Property="Background" Value="#1A2B44"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+                    Content="Browse"
+                    Style="{StaticResource EventActionButton}"
+                    ToolTip="Browse all events" Margin="8,0,0,0"
+                    Click="BrowseEvents_Click"/>
+            <Button x:Name="OpenSessionBrowserButton"
+                    Content="Gallery"
+                    Style="{StaticResource EventActionButton}"
+                    ToolTip="View session gallery"
+                    Margin="8,0,0,0"
+                    Click="OpenSessionBrowser_Click"/>
         </StackPanel>
-        <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,20"/>
 
-        <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+        <TextBlock Text="EVENT OPTIONS" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Margin="0,20,0,8"/>
         <Rectangle Height="1" Fill="#1E2F4A" Margin="0,0,0,14"/>
 
         <Grid Margin="0,0,0,12">
@@ -197,15 +201,6 @@
         <TextBlock x:Name="StoragePathWarning"
                    Text="⚠  No storage path set — events cannot be created until a folder is selected."
                    Foreground="#E9A020" FontSize="12" TextWrapping="Wrap"
-                   Visibility="Collapsed" Margin="0,0,0,14"/>
-        <Rectangle Height="1" Fill="#1E2F4A" Margin="0,14,0,14"/>
-
-        <Button x:Name="OpenSessionBrowserButton"
-                Content="View Session Gallery"
-                Style="{StaticResource GhostButton}"
-                Padding="10,10" FontSize="13"
-                HorizontalAlignment="Stretch"
-                Margin="0,0,0,8"
-                Click="OpenSessionBrowser_Click"/>
+                   Visibility="Collapsed" Margin="0,0,0,8"/>
     </StackPanel>
 </UserControl>
